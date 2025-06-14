@@ -1,0 +1,17 @@
+[gd_scene load_steps=3 format=3 uid="uid://1j4uklxing54"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_vhwej"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_q2jmh"]
+
+[node name="SCENE_Test" type="Node3D"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(10, 0, 0, 0, 10, 0, 0, 0, 10, 0, 0, 0)
+mesh = SubResource("PlaneMesh_vhwej")
+
+[node name="CHARACTER" type="Node3D" parent="."]
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="CHARACTER"]
+mesh = SubResource("CapsuleMesh_q2jmh")
+skeleton = NodePath("../..")
