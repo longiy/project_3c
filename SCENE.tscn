@@ -1,7 +1,6 @@
-[gd_scene load_steps=9 format=3 uid="uid://dngafe0y2nx5b"]
+[gd_scene load_steps=8 format=3 uid="uid://dngafe0y2nx5b"]
 
 [ext_resource type="Script" uid="uid://dt54n1ktg7wqr" path="res://Scenes/Controller_Character.gd" id="1_5si1x"]
-[ext_resource type="Script" uid="uid://cws7m480lxvaf" path="res://debug_ui.gd" id="2_u4csh"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_3a8dd"]
 
@@ -19,12 +18,12 @@ data = PackedVector3Array(1, 0, 1, -1, 0, 1, 1, 0, -1, -1, 0, 1, -1, 0, -1, 1, 0
 
 [node name="Scene" type="Node3D"]
 
-[node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.822571, 0.568662, 0, -0.568662, 0.822571, 0, 5.14161, 6.34834)
-
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.707107, 0.5, -0.5, 0, 0.707107, 0.707107, 0.707107, -0.5, 0.5, 0, 0, 0)
 shadow_enabled = true
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.822571, 0.568662, 0, -0.568662, 0.822571, 0, 5.14161, 6.34834)
 
 [node name="GROUND" type="MeshInstance3D" parent="."]
 transform = Transform3D(10, 0, 0, 0, 10, 0, 0, 0, 10, 0, 0, 0)
@@ -55,14 +54,11 @@ skeleton = NodePath("../..")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="CHARACTER"]
 shape = SubResource("CapsuleShape3D_tcevt")
 
-[node name="DebugUI" type="Control" parent="." node_paths=PackedStringArray("debug_label", "character")]
+[node name="DebugUI" type="Control" parent="."]
 layout_mode = 3
 anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
-script = ExtResource("2_u4csh")
-debug_label = NodePath("DebugLabel")
-character = NodePath("../CHARACTER")
 
 [node name="DebugLabel" type="Label" parent="DebugUI"]
 layout_mode = 0
