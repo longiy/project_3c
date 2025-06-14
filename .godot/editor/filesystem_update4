@@ -2,3 +2,5 @@ res://SCENE.tscn
 res://SCENE_TEST.tscn
 res://Scenes/Controller_Character.gd
 res://debug_ui.gd
+res://Scenes/ControllerCharacter.gd
+res://Scripts/ControllerCharacter.gd

@@ -1,6 +1,7 @@
-[gd_scene load_steps=8 format=3 uid="uid://dngafe0y2nx5b"]
+[gd_scene load_steps=9 format=3 uid="uid://dngafe0y2nx5b"]
 
-[ext_resource type="Script" uid="uid://dt54n1ktg7wqr" path="res://Scenes/Controller_Character.gd" id="1_5si1x"]
+[ext_resource type="Script" uid="uid://dt54n1ktg7wqr" path="res://Scripts/ControllerCharacter.gd" id="1_5si1x"]
+[ext_resource type="Script" uid="uid://cws7m480lxvaf" path="res://Scripts/DebugUI.gd" id="2_u4csh"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_3a8dd"]
 
@@ -40,8 +41,6 @@ shape = SubResource("ConcavePolygonShape3D_5si1x")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 slide_on_ceiling = false
 script = ExtResource("1_5si1x")
-allow_rotation_while_jumping = true
-maintain_forward_momentum_when_jumping = true
 
 [node name="PlaceHolderMesh" type="MeshInstance3D" parent="CHARACTER"]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1.5, 0, -1, -6.55671e-08, 0, 0.25, 0)
@@ -56,11 +55,14 @@ skeleton = NodePath("../..")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="CHARACTER"]
 shape = SubResource("CapsuleShape3D_tcevt")
 
-[node name="DebugUI" type="Control" parent="."]
+[node name="DebugUI" type="Control" parent="." node_paths=PackedStringArray("debug_label", "character")]
 layout_mode = 3
 anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
+script = ExtResource("2_u4csh")
+debug_label = NodePath("DebugLabel")
+character = NodePath("../CHARACTER")
 
 [node name="DebugLabel" type="Label" parent="DebugUI"]
 layout_mode = 0

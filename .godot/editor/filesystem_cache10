@@ -1,9 +1,9 @@
 ea4bc82a6ad023ab7ee23ee620429895
-::res://::1749924009
+::res://::1749939592
 character_controller_plan.md::TextFile/TextFile::-1::1749921664::0::1::::<><><>0<>0<><>::
 icon.svg::CompressedTexture2D/CompressedTexture2D::7319379552952027675::1749921664::1749922168::1::::<><><>0<>0<>15fd9e727c8de2b5e0d0ab34ce31311c<>res://.godot/imported/icon.svg-218a8f2b3041327d8a5756f3a245f83b.ctex::
-SCENE.tscn::PackedScene::8084112463708188081::1749923998::0::1::::<><><>0<>0<><>::
-SCENE_TEST.tscn::PackedScene::8928906902791845439::1749923983::0::1::::<><><>0<>0<><>::
-::res://Scenes/::1749923982
-CharacterControler.gd::GDScript/GDScript::6381880847692930190::1749922745::0::1::::<>CharacterBody3D<><>0<>0<><>::
-Controller_Character.gd::GDScript/GDScript::8556566802862425545::1749923355::0::1::::<>CharacterBody3D<><>0<>0<><>::
+SCENE.tscn::PackedScene/PackedScene::8084112463708188081::1749939590::0::1::::<><><>0<>0<><>::uid://dt54n1ktg7wqr::::res://Scenes/ControllerCharacter.gd
+::res://Scenes/::1749939590
+::res://Scripts/::1749939592
+ControllerCharacter.gd::GDScript::8556566802862425545::1749939542::0::1::::<>CharacterBody3D<><>0<>0<><>::
+debug_ui.gd::GDScript::6356120675598589601::1749928619::0::1::::<>Control<><>0<>0<><>::
