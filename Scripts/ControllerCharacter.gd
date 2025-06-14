@@ -11,6 +11,8 @@ extends CharacterBody3D
 @export var rotation_speed = 4.0 ## How fast character rotates to face movement direction
 @export var allow_rotation_while_jumping = false ## Enable/disable rotation during jump
 @export var maintain_forward_momentum_when_jumping = false ## Auto-forward while jumping vs manual control
+@export var camera_relative_movement = false ## Use camera-relative movement instead of world coordinates
+@export var camera: Camera3D ## Camera reference for relative movement
 @export var sprint_speed = 12.0 ## Sprint speed (m/s)
 @export var sprint_acceleration = 200.0 ## Sprint acceleration rate (m/s²)
 
@@ -38,8 +40,18 @@ func _physics_process(delta):
 	
 	# Calculate 8-directional movement
 	var movement_vector = Vector3.ZERO
-	movement_vector.x = input_dir.x   # A/D input: A = left (-X), D = right (+X)  
-	movement_vector.z = input_dir.y   # W/S input: W = forward (-Z), S = backward (+Z)
+	
+	if camera_relative_movement and camera:
+		# Camera-relative movement (ignore pitch)
+		var cam_transform = camera.global_transform.basis
+		var cam_forward = Vector3(-cam_transform.z.x, 0, -cam_transform.z.z).normalized()
+		var cam_right = Vector3(cam_transform.x.x, 0, cam_transform.x.z).normalized()
+		
+		movement_vector = cam_right * input_dir.x + cam_forward * (-input_dir.y)
+	else:
+		# World-coordinate movement
+		movement_vector.x = input_dir.x   # A/D input: A = left (-X), D = right (+X)  
+		movement_vector.z = input_dir.y   # W/S input: W = forward (-Z), S = backward (+Z)
 	
 	if Input.is_action_just_pressed("jump"):
 		if (coyote_timer > 0 and jumps_remaining > 0) or (jumps_remaining > 0 and not is_on_floor()):

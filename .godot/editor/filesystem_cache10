@@ -1,9 +1,11 @@
 ea4bc82a6ad023ab7ee23ee620429895
-::res://::1749939592
+::res://::1749941993
 character_controller_plan.md::TextFile/TextFile::-1::1749921664::0::1::::<><><>0<>0<><>::
 icon.svg::CompressedTexture2D/CompressedTexture2D::7319379552952027675::1749921664::1749922168::1::::<><><>0<>0<>15fd9e727c8de2b5e0d0ab34ce31311c<>res://.godot/imported/icon.svg-218a8f2b3041327d8a5756f3a245f83b.ctex::
-SCENE.tscn::PackedScene/PackedScene::8084112463708188081::1749939590::0::1::::<><><>0<>0<><>::uid://dt54n1ktg7wqr::::res://Scenes/ControllerCharacter.gd
-::res://Scenes/::1749939590
-::res://Scripts/::1749939592
-ControllerCharacter.gd::GDScript::8556566802862425545::1749939542::0::1::::<>CharacterBody3D<><>0<>0<><>::
-debug_ui.gd::GDScript::6356120675598589601::1749928619::0::1::::<>Control<><>0<>0<><>::
+SCENE.tscn::PackedScene::8084112463708188081::1749941988::0::1::::<><><>0<>0<><>::uid://dt54n1ktg7wqr::::res://Scripts/ControllerCharacter.gd<>uid://cms4l0nes10tn::::res://Scripts/ControllerCamera.gd<>uid://cws7m480lxvaf::::res://Scripts/DebugUI.gd
+::res://Scenes/::1749939721
+ControllerCharacter.gd::GDScript::9085621671992098247::1749939733::0::1::::<>CharacterBody3D<><>0<>0<><>::
+::res://Scripts/::1749941751
+ControllerCamera.gd::GDScript::5654048060511906215::1749941854::0::1::::<>Node3D<><>0<>0<><>::
+ControllerCharacter.gd::GDScript::8556566802862425545::1749941211::0::1::::<>CharacterBody3D<><>0<>0<><>::
+DebugUI.gd::GDScript/GDScript::6356120675598589601::1749928619::0::1::::<>Control<><>0<>0<><>::
