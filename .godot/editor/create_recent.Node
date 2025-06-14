@@ -1,0 +1,9 @@
+Label
+Control
+MeshInstance3D
+StaticBody3D
+Camera3D
+DirectionalLight3D
+Node3D
+CollisionShape3D
+CharacterBody3D
