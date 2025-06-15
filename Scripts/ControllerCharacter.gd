@@ -6,9 +6,9 @@ extends CharacterBody3D
 @export var rotation_snapping = false ## Enable snapping to fixed angles
 @export var snap_angle = 45.0 ## Snap angle in degrees (45 = 8 directions, 90 = 4 directions, etc.)
 @export var sprint_speed = 12.0 ## Sprint speed (m/s)
-@export var sprint_acceleration = 200.0 ## Sprint acceleration rate (m/s²)
-@export var acceleration = 150.0 ## Acceleration rate (m/s²)
-@export var deceleration = 200.0 ## Deceleration rate (m/s²)
+@export var sprint_acceleration = 100.0 ## Sprint acceleration rate (m/s²)
+@export var acceleration = 50.0 ## Acceleration rate (m/s²)
+@export var deceleration = 50.0 ## Deceleration rate (m/s²)
 @export var jump_velocity = 6 ## Jump initial velocity (m/s)
 @export var max_jumps = 2 ## Total jumps allowed (1 = single, 2 = double, etc.)
 @export var gravity_multiplier = 1
@@ -17,6 +17,9 @@ extends CharacterBody3D
 @export var allow_rotation_while_jumping = true ## Enable/disable rotation during jump
 @export var maintain_forward_momentum_when_jumping = true ## Auto-forward while jumping vs manual control
 
+# Strafing parameters
+@export var enable_strafing = false ## Enable strafing mode (no rotation until speed threshold)
+@export var rotation_speed_threshold = 0.8 ## Speed percentage before rotation starts (0.0-1.0)
 
 var base_gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 var coyote_timer = 0.0
@@ -33,6 +36,26 @@ func is_near_ground() -> bool:
 	)
 	var result = space_state.intersect_ray(query)
 	return result.size() > 0
+
+func should_allow_rotation(movement_vector: Vector3, is_sprinting: bool) -> bool:
+	# Always allow rotation if strafing is disabled
+	if not enable_strafing:
+		return true
+	
+	# Don't rotate if not moving
+	if movement_vector.length() < 0.1:
+		return false
+	
+	# Calculate current target speed and threshold
+	var target_speed = sprint_speed if is_sprinting else speed
+	var speed_threshold = target_speed * rotation_speed_threshold
+	
+	# Get horizontal velocity (ignore Y for speed calculation)
+	var horizontal_velocity = Vector3(velocity.x, 0, velocity.z)
+	var current_speed = horizontal_velocity.length()
+	
+	# Allow rotation only if we've reached the speed threshold
+	return current_speed >= speed_threshold
 
 func _physics_process(delta):
 	if not is_on_floor():
@@ -80,6 +103,10 @@ func _physics_process(delta):
 	
 	if is_in_air and not allow_rotation_while_jumping:
 		can_rotate = false
+	
+	# Check if we should rotate based on speed threshold (for strafing)
+	if can_rotate and enable_strafing:
+		can_rotate = should_allow_rotation(movement_vector, is_sprinting)
 	
 	# Handle rotation and movement
 	if can_rotate and is_moving:
@@ -167,10 +194,3 @@ func snap_rotation_if_enabled(target_rotation: float) -> float:
 	
 	# Convert back to radians
 	return deg_to_rad(snapped_degrees)
-	var space_state = get_world_3d().direct_space_state
-	var query = PhysicsRayQueryParameters3D.create(
-		global_position, 
-		global_position + Vector3.DOWN * ground_check_distance
-	)
-	var result = space_state.intersect_ray(query)
-	return result.size() > 0

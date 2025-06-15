@@ -41,7 +41,7 @@ func _ready():
 
 func _input(event):
 	# Handle mouse capture toggle
-	if event.is_action_pressed("ui_cancel"):
+	if event.is_action_pressed("toggle_mouse_look"):
 		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		else:
