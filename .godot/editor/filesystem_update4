@@ -1,2 +1,3 @@
 res://SCENE.tscn
 res://Scripts/ControllerCamera.gd
+res://Scripts/ControllerCharacter.gd
