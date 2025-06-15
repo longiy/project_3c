@@ -1,4 +1,4 @@
-# ControllerCamera.gd - Modified to work with both old and new systems
+# ControllerCamera.gd - Simplified without InputManager
 extends Node3D
 
 @export_group("Target & Following")
@@ -15,17 +15,12 @@ extends Node3D
 @export var vertical_limit_min = -80.0 ## Minimum vertical look angle (degrees)
 @export var vertical_limit_max = 50.0 ## Maximum vertical look angle (degrees)
 
-@export_group("System Integration")
-@export var use_new_input_system = false ## Toggle between old and new systems
-
 @onready var spring_arm = $SpringArm3D
 
 var character: CharacterBody3D
 var mouse_delta = Vector2.ZERO
 var camera_rotation_x = 0.0
-
-# New system integration
-var using_input_manager = false
+var is_mouse_captured = true
 
 func _ready():
 	# Get character reference
@@ -34,17 +29,9 @@ func _ready():
 		push_error("No target character assigned to camera!")
 		return
 	
-	# Check if InputManager is available
-	if InputManager and use_new_input_system:
-		using_input_manager = true
-		InputManager.set_camera($SpringArm3D/Camera3D)
-		InputManager.mouse_look_input.connect(_on_mouse_look_input)
-		print("Camera: Using new input system")
-	else:
-		using_input_manager = false
-		# Use old system
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-		print("Camera: Using legacy input system")
+	# Start in mouse capture mode
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	print("Camera: Using simplified input system")
 	
 	# Set initial camera rotation
 	camera_rotation_x = deg_to_rad(-20.0)
@@ -54,37 +41,31 @@ func _ready():
 		global_position = character.global_position + Vector3(0, camera_height, 0)
 
 func _input(event):
-	# Only handle input if using legacy system
-	if using_input_manager:
-		return
-		
-	# Legacy mouse capture toggle
+	# Mouse capture toggle
 	if event.is_action_pressed("toggle_mouse_look"):
 		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+			is_mouse_captured = false
 		else:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+			is_mouse_captured = true
+		
+		# Notify InputComponent about mode change
+		if character:
+			var input_component = character.get_node("InputComponent")
+			if input_component:
+				input_component.on_mouse_mode_changed(is_mouse_captured)
 	
-	# Legacy mouse movement
-	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and event is InputEventMouseMotion:
+	# Mouse movement for camera
+	if is_mouse_captured and event is InputEventMouseMotion:
 		mouse_delta = event.relative
-
-func _on_mouse_look_input(delta: Vector2):
-	# New system mouse input
-	mouse_delta = delta / mouse_sensitivity  # Convert back to pixel delta for compatibility
 
 func _physics_process(delta):
 	if not character:
 		return
 	
-	# Handle mouse look rotation (works with both systems)
-	var should_rotate = false
-	if using_input_manager:
-		should_rotate = InputManager.current_mode == InputManager.InputMode.CAMERA_LOOK
-	else:
-		should_rotate = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
-	
-	if should_rotate and mouse_delta.length() > 0:
+	# Handle mouse look rotation only when captured
+	if is_mouse_captured and mouse_delta.length() > 0:
 		# Horizontal rotation (Y-axis)
 		if enable_mouse_yaw:
 			rotation.y -= mouse_delta.x * mouse_sensitivity
@@ -104,3 +85,6 @@ func _physics_process(delta):
 	
 	# Apply vertical rotation to SpringArm
 	spring_arm.rotation.x = camera_rotation_x
+
+func get_camera() -> Camera3D:
+	return $SpringArm3D/Camera3D

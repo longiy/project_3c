@@ -10,7 +10,6 @@ extends CharacterBody3D
 # COMPONENTS
 # ═══════════════════════════════════════════════════════════════════════════════════════════════
 @export_group("Components")
-@export var navigation_component: NavigationComponent
 @export var animation_controller: AnimationController
 
 # ═══════════════════════════════════════════════════════════════════════════════════════════════
@@ -71,17 +70,17 @@ var is_walking = false
 var last_input_dir = Vector2.ZERO  # Track previous input for snapping
 var current_input_dir = Vector2.ZERO  # Current input from InputComponent
 
+# Component references
+var input_component: InputComponent
+
 func _ready():
-	# Connect to new navigation component if assigned
-	if navigation_component:
-		print("Character: Connected to NavigationComponent")
+	# Connect to InputComponent
+	input_component = get_node("InputComponent")
+	if input_component:
+		input_component.movement_input_changed.connect(_on_movement_input_changed)
+		print("Character: Connected to InputComponent")
 	else:
-		print("Character: No NavigationComponent assigned")
-	
-	# NEW: Connect to InputManager for WASD input
-	if InputManager:
-		InputManager.movement_input.connect(_on_movement_input_changed)
-		print("Character: Connected to InputManager for WASD input")
+		push_error("InputComponent not found!")
 	
 	# Animation controller will handle its own connections
 	if not animation_controller:
@@ -137,22 +136,8 @@ func _physics_process(delta):
 	else:
 		coyote_timer -= delta
 	
-	# Get input direction - NEW: Check navigation component first, then fallback to old system
-	var input_dir = Vector2.ZERO
-	
-	# Priority 1: New navigation system (if active)
-	if navigation_component and navigation_component.is_navigation_active():
-		input_dir = navigation_component.get_navigation_direction()
-		print("Character: Using navigation input: ", input_dir.length())
-	# Priority 2: Current WASD input (from old InputComponent)
-	elif current_input_dir.length() > 0.1:
-		input_dir = current_input_dir
-	# Priority 3: Fallback to direct input if no InputComponent assigned
-	else:
-		# This covers the case where there's no navigation active and no WASD input
-		var direct_input = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
-		if direct_input.length() > 0.1:
-			input_dir = direct_input
+	# Get input direction from InputComponent (handles both WASD and click navigation)
+	var input_dir = current_input_dir
 	
 	# Handle movement mode inputs (walk overrides sprint)
 	is_walking = Input.is_action_pressed("walk")
@@ -340,8 +325,8 @@ func reset_character_transform():
 	coyote_timer = 0.0
 	jump_forward_direction = Vector3.ZERO
 	
-	# Cancel any click navigation - NEW: use NavigationComponent
-	if navigation_component:
-		navigation_component.cancel_navigation()
+	# Cancel any click navigation
+	if input_component:
+		input_component.cancel_click_destination()
 	
 	print("Character reset to: ", reset_position)

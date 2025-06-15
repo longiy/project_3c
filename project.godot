@@ -15,10 +15,6 @@ run/main_scene="uid://dngafe0y2nx5b"
 config/features=PackedStringArray("4.4", "Forward Plus")
 config/icon="res://icon.svg"
 
-[autoload]
-
-InputManager="*res://InputManager.gd"
-
 [input]
 
 move_left={

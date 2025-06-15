@@ -4,8 +4,8 @@
 [ext_resource type="Script" uid="uid://cms4l0nes10tn" path="res://Scripts/ControllerCamera.gd" id="2_caybs"]
 [ext_resource type="Script" uid="uid://cws7m480lxvaf" path="res://Scripts/DebugUI.gd" id="2_u4csh"]
 [ext_resource type="PackedScene" uid="uid://cbx0rhk665pls" path="res://Assets/ps_character_gurl.tscn" id="3_aeafk"]
+[ext_resource type="Script" uid="uid://c63imyupotuj1" path="res://Scripts/InputComponent.gd" id="4_0er5f"]
 [ext_resource type="Script" uid="uid://ceg85p1hqrfpk" path="res://AnimationController.gd" id="5_gbv5d"]
-[ext_resource type="Script" uid="uid://dexylko73t2u6" path="res://Scripts/NavigationComponent.gd" id="6_0er5f"]
 [ext_resource type="PackedScene" uid="uid://bsprrm672tx2s" path="res://MARKER.tscn" id="7_w862e"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_3a8dd"]
@@ -70,7 +70,6 @@ shape = SubResource("ConcavePolygonShape3D_caybs")
 [node name="CAMERARIG" type="Node3D" parent="." node_paths=PackedStringArray("target_character")]
 script = ExtResource("2_caybs")
 target_character = NodePath("../CHARACTER")
-use_new_input_system = true
 
 [node name="SpringArm3D" type="SpringArm3D" parent="CAMERARIG"]
 spring_length = 4.0
@@ -80,25 +79,24 @@ transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 
 
 [node name="CameraArm" type="Node3D" parent="CAMERARIG"]
 
-[node name="CHARACTER" type="CharacterBody3D" parent="." node_paths=PackedStringArray("navigation_component", "animation_controller", "camera")]
+[node name="CHARACTER" type="CharacterBody3D" parent="." node_paths=PackedStringArray("animation_controller", "camera")]
 collision_layer = 2
 slide_on_ceiling = false
 script = ExtResource("1_5si1x")
-navigation_component = NodePath("NavigationComponent")
 animation_controller = NodePath("AnimationController")
 camera = NodePath("../CAMERARIG/SpringArm3D/Camera3D")
 rotation_snapping = true
 enable_strafing = true
 
+[node name="InputComponent" type="Node" parent="CHARACTER" node_paths=PackedStringArray("destination_marker")]
+script = ExtResource("4_0er5f")
+destination_marker = NodePath("../../MARKER")
+arrival_threshold = 0.1
+
 [node name="AnimationController" type="Node" parent="CHARACTER" node_paths=PackedStringArray("animation_tree")]
 script = ExtResource("5_gbv5d")
 animation_tree = NodePath("../PS_Character_Gurl/AnimationTree")
 use_8_directional = false
-
-[node name="NavigationComponent" type="Node" parent="CHARACTER" node_paths=PackedStringArray("destination_marker")]
-script = ExtResource("6_0er5f")
-destination_marker = NodePath("../../MARKER")
-marker_disappear_delay = 0.2
 
 [node name="PS_Character_Gurl" parent="CHARACTER" instance=ExtResource("3_aeafk")]
 
