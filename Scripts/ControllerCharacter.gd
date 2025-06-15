@@ -15,7 +15,7 @@ extends CharacterBody3D
 @export var coyote_time = 0.1 ## Time after leaving ground you can still jump (seconds)
 @export var ground_check_distance = 0.2 ## Distance to check for ground (meters)
 @export var allow_rotation_while_jumping = true ## Enable/disable rotation during jump
-@export var maintain_forward_momentum_when_jumping = false ## Auto-forward while jumping vs manual control
+@export var maintain_forward_momentum_when_jumping = true ## Auto-forward while jumping vs manual control
 
 
 var base_gravity = ProjectSettings.get_setting("physics/3d/default_gravity")

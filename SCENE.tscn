@@ -45,9 +45,6 @@ script = ExtResource("2_caybs")
 target_character = NodePath("../CHARACTER")
 camera_height = 0.0
 camera_composition_offset = Vector3(0, 4, 0)
-follow_smoothing = 3.0
-offset_smoothing = 2.0
-enable_mouse_yaw = false
 
 [node name="SpringArm3D" type="SpringArm3D" parent="CAMERARIG"]
 spring_length = 8.0
@@ -62,9 +59,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.009758, 0.986442, 0.0618568
 slide_on_ceiling = false
 script = ExtResource("1_5si1x")
 camera = NodePath("../CAMERARIG/SpringArm3D/Camera3D")
-rotation_speed = 10
-rotation_snapping = true
-maintain_forward_momentum_when_jumping = true
 
 [node name="PlaceHolderMesh" type="MeshInstance3D" parent="CHARACTER"]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1.5, 0, -1, -6.55671e-08, 0, 0.25, 0)

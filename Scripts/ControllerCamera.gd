@@ -5,7 +5,10 @@ extends Node3D
 @export var camera_composition_offset = Vector3(0, 0.5, 0) ## Offset for composition (doesn't affect follow height)
 @export var mouse_sensitivity = 0.002 ## Mouse look sensitivity
 @export var vertical_limit_min = -80.0 ## Minimum vertical look angle (degrees)
-@export_range(-80, 80) var vertical_limit_max = 50.0 ## Maximum vertical look angle (degrees)
+@export var vertical_limit_max = 50.0 ## Maximum vertical look angle (degrees)
+@export var enable_horizontal_limits = false ## Enable/disable horizontal rotation limits
+@export var horizontal_limit_min = -90.0 ## Minimum horizontal look angle (degrees)
+@export var horizontal_limit_max = 90.0 ## Maximum horizontal look angle (degrees)
 @export var follow_smoothing = 8.0 ## How smoothly camera follows character position
 @export var offset_scale_with_collision = true ## Scale composition offset based on collision distance
 @export var offset_smoothing = 8.0 ## How smoothly offset scales with collision
@@ -57,6 +60,18 @@ func _physics_process(delta):
 		# Horizontal rotation (Y-axis) - rotate around character
 		if enable_mouse_yaw:
 			rotation.y -= mouse_delta.x * mouse_sensitivity
+			
+			# Apply horizontal limits if enabled
+			if enable_horizontal_limits:
+				var horizontal_angle = rad_to_deg(rotation.y)
+				# Normalize angle to -180 to 180 range
+				while horizontal_angle > 180:
+					horizontal_angle -= 360
+				while horizontal_angle < -180:
+					horizontal_angle += 360
+				
+				horizontal_angle = clamp(horizontal_angle, horizontal_limit_min, horizontal_limit_max)
+				rotation.y = deg_to_rad(horizontal_angle)
 		
 		# Vertical rotation (X-axis) - clamp to limits
 		if enable_mouse_pitch:
