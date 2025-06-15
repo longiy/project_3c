@@ -3,6 +3,8 @@
 [ext_resource type="Script" uid="uid://dt54n1ktg7wqr" path="res://Scripts/ControllerCharacter.gd" id="1_5si1x"]
 [ext_resource type="Script" uid="uid://cms4l0nes10tn" path="res://Scripts/ControllerCamera.gd" id="2_caybs"]
 [ext_resource type="Script" uid="uid://cws7m480lxvaf" path="res://Scripts/DebugUI.gd" id="2_u4csh"]
+[ext_resource type="PackedScene" uid="uid://cbx0rhk665pls" path="res://Assets/ps_character_gurl.tscn" id="3_aeafk"]
+[ext_resource type="Script" uid="uid://1ugljq3u0umu" path="res://animation_component.gd" id="4_udffu"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_3a8dd"]
 
@@ -12,11 +14,9 @@ albedo_color = Color(0.0421216, 0.0421216, 0.0421216, 1)
 [sub_resource type="ConcavePolygonShape3D" id="ConcavePolygonShape3D_5si1x"]
 data = PackedVector3Array(1, 0, 1, -1, 0, 1, 1, 0, -1, -1, 0, 1, -1, 0, -1, 1, 0, -1)
 
-[sub_resource type="PrismMesh" id="PrismMesh_u4csh"]
-
-[sub_resource type="SphereMesh" id="SphereMesh_u4csh"]
-
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_tcevt"]
+radius = 0.287885
+height = 1.70464
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_caybs"]
 
@@ -44,10 +44,10 @@ shape = SubResource("ConcavePolygonShape3D_5si1x")
 script = ExtResource("2_caybs")
 target_character = NodePath("../CHARACTER")
 camera_height = 0.0
-camera_composition_offset = Vector3(0, 4, 0)
+camera_composition_offset = Vector3(0, 2, 0)
 
 [node name="SpringArm3D" type="SpringArm3D" parent="CAMERARIG"]
-spring_length = 8.0
+spring_length = 4.0
 
 [node name="Camera3D" type="Camera3D" parent="CAMERARIG/SpringArm3D"]
 transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 0, 0, 0)
@@ -55,7 +55,6 @@ transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 
 [node name="CameraArm" type="Node3D" parent="CAMERARIG"]
 
 [node name="CHARACTER" type="CharacterBody3D" parent="." node_paths=PackedStringArray("camera")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.009758, 0.986442, 0.0618568)
 slide_on_ceiling = false
 script = ExtResource("1_5si1x")
 camera = NodePath("../CAMERARIG/SpringArm3D/Camera3D")
@@ -64,18 +63,16 @@ acceleration = 50.0
 sprint_acceleration = 50.0
 deceleration = 50.0
 
-[node name="PlaceHolderMesh" type="MeshInstance3D" parent="CHARACTER"]
-transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1.5, 0, -1, -6.55671e-08, 0, 0.25, 0)
-mesh = SubResource("PrismMesh_u4csh")
-skeleton = NodePath("../..")
-
-[node name="PlaceHolderMesh2" type="MeshInstance3D" parent="CHARACTER"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
-mesh = SubResource("SphereMesh_u4csh")
-skeleton = NodePath("../..")
+[node name="PS_Character_Gurl" parent="CHARACTER" instance=ExtResource("3_aeafk")]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="CHARACTER"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.853688, 0)
 shape = SubResource("CapsuleShape3D_tcevt")
+
+[node name="AnimationComponent" type="Node" parent="CHARACTER" node_paths=PackedStringArray("animation_tree", "character")]
+script = ExtResource("4_udffu")
+animation_tree = NodePath("../PS_Character_Gurl/AnimationTree")
+character = NodePath("..")
 
 [node name="DebugUI" type="Control" parent="." node_paths=PackedStringArray("debug_label", "character")]
 layout_mode = 3
@@ -101,3 +98,5 @@ mesh = SubResource("PlaneMesh_caybs")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D"]
 shape = SubResource("ConcavePolygonShape3D_caybs")
+
+[editable path="CHARACTER/PS_Character_Gurl"]

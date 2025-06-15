@@ -1,7 +1,9 @@
+Node
+Node3D
+AnimationTree
 SpringArm3D
 MeshInstance3D
 CSGBox3D
-Node3D
 Label
 Control
 StaticBody3D
