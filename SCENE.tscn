@@ -4,8 +4,8 @@
 [ext_resource type="Script" uid="uid://cms4l0nes10tn" path="res://Scripts/ControllerCamera.gd" id="2_caybs"]
 [ext_resource type="Script" uid="uid://cws7m480lxvaf" path="res://Scripts/DebugUI.gd" id="2_u4csh"]
 [ext_resource type="PackedScene" uid="uid://cbx0rhk665pls" path="res://Assets/ps_character_gurl.tscn" id="3_aeafk"]
-[ext_resource type="Script" uid="uid://ceg85p1hqrfpk" path="res://ControllerAnimation.gd" id="5_gbv5d"]
-[ext_resource type="Script" uid="uid://k3y65um7bbrj" path="res://ControllerInput.gd" id="6_w862e"]
+[ext_resource type="Script" uid="uid://ceg85p1hqrfpk" path="res://AnimationController.gd" id="5_gbv5d"]
+[ext_resource type="Script" uid="uid://k3y65um7bbrj" path="res://InputComponent.gd" id="6_w862e"]
 [ext_resource type="PackedScene" uid="uid://bsprrm672tx2s" path="res://MARKER.tscn" id="7_w862e"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_3a8dd"]
@@ -84,15 +84,15 @@ transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 
 [node name="CHARACTER" type="CharacterBody3D" parent="." node_paths=PackedStringArray("input_component", "animation_controller", "camera")]
 slide_on_ceiling = false
 script = ExtResource("1_5si1x")
-input_component = NodePath("ControllerInput")
-animation_controller = NodePath("ControllerAnimation")
+input_component = NodePath("InputComponent")
+animation_controller = NodePath("AnimationController")
 camera = NodePath("../CAMERARIG/SpringArm3D/Camera3D")
 
-[node name="ControllerAnimation" type="Node" parent="CHARACTER" node_paths=PackedStringArray("animation_tree")]
+[node name="AnimationController" type="Node" parent="CHARACTER" node_paths=PackedStringArray("animation_tree")]
 script = ExtResource("5_gbv5d")
 animation_tree = NodePath("../PS_Character_Gurl/AnimationTree")
 
-[node name="ControllerInput" type="Node" parent="CHARACTER" node_paths=PackedStringArray("destination_marker")]
+[node name="InputComponent" type="Node" parent="CHARACTER" node_paths=PackedStringArray("destination_marker")]
 script = ExtResource("6_w862e")
 destination_marker = NodePath("../../MARKER")
 
