@@ -1,21 +1,18 @@
-# InputComponent.gd - Consolidated input handling
+# InputComponent.gd - Only handles click navigation
 extends Node
 class_name InputComponent
 
 signal movement_input_changed(input_vector: Vector2)
 
-@export_group("Input Settings")
-@export var mouse_navigation_enabled = true
-@export var click_override_duration = 0.1 ## How long click input overrides WASD
-
 @export_group("Click Navigation")
-@export var destination_marker: Node3D ## Visual marker for click destination
-@export var arrival_threshold = 0.5 ## Distance to consider destination reached
-@export var show_cursor_preview = true ## Show marker at cursor position before clicking
-@export var marker_disappear_delay = 1.0 ## How long marker stays after arrival (seconds)
+@export var camera: Camera3D  # Assign in editor
+@export var destination_marker: Node3D  # Assign in editor
+@export var arrival_threshold = 0.5
+@export var show_cursor_preview = true
+@export var marker_disappear_delay = 1.0
+@export var click_override_duration = 0.1  # How long click overrides WASD
 
 var character: CharacterBody3D
-var camera: Camera3D
 var is_mouse_captured = true
 
 # Click navigation state
@@ -27,7 +24,7 @@ var click_override_timer = 0.0
 var is_showing_preview = false
 var preview_position = Vector3.ZERO
 
-# Arrival delay state
+# Arrival state
 var is_arrival_delay_active = false
 var arrival_timer = 0.0
 
@@ -37,47 +34,30 @@ func _ready():
 		push_error("InputComponent must be child of CharacterBody3D")
 		return
 	
-	# Get camera reference from scene
-	var camera_rig = get_node("../../CAMERARIG")
-	if camera_rig:
-		camera = camera_rig.get_node("SpringArm3D/Camera3D")
-		if camera:
-			print("InputComponent: Camera found")
-		else:
-			push_error("Camera not found in expected path")
+	if not camera:
+		push_error("Camera must be assigned to InputComponent")
+		return
 	
-	# Initialize mouse state
+	# Connect to camera's mouse mode signal
+	var camera_rig = camera.get_parent().get_parent()  # Camera3D -> SpringArm3D -> CameraRig
+	if camera_rig.has_signal("mouse_mode_changed"):
+		camera_rig.mouse_mode_changed.connect(_on_mouse_mode_changed)
+	
+	# Initialize state
 	is_mouse_captured = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
-	
-	# Start preview if mouse is visible
-	if not is_mouse_captured and show_cursor_preview and mouse_navigation_enabled:
-		is_showing_preview = true
 
-func on_mouse_mode_changed(captured: bool):
-	"""Called by camera when mouse mode changes"""
+func _on_mouse_mode_changed(captured: bool):
 	is_mouse_captured = captured
 	
 	if is_mouse_captured:
-		# Mouse captured - hide preview
 		hide_cursor_preview()
 	else:
-		# Mouse visible - start preview if enabled
-		if show_cursor_preview and mouse_navigation_enabled:
+		if show_cursor_preview:
 			is_showing_preview = true
-			# Update preview immediately
 			call_deferred("update_cursor_preview_current")
 
-func update_cursor_preview_current():
-	"""Update preview at current mouse position"""
-	if is_showing_preview:
-		var mouse_pos = get_viewport().get_mouse_position()
-		update_cursor_preview(mouse_pos)
-
 func _input(event):
-	if not camera or not mouse_navigation_enabled:
-		return
-		
-	# Handle click navigation when mouse is visible
+	# ONLY handle click navigation when mouse is visible
 	if not is_mouse_captured:
 		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 			commit_to_destination(event.position)
@@ -90,15 +70,17 @@ func _physics_process(delta):
 		arrival_timer -= delta
 		if arrival_timer <= 0:
 			complete_arrival()
-		return  # Don't process other input during arrival delay
+		return
 	
 	if click_override_timer > 0:
 		click_override_timer -= delta
 	
-	var input_vector = get_final_input_vector()
-	movement_input_changed.emit(input_vector)
+	# Calculate final input - blend WASD with click navigation
+	var final_input = get_final_input_vector()
+	movement_input_changed.emit(final_input)
 
 func get_final_input_vector() -> Vector2:
+	# Get WASD from character (not here)
 	var wasd_input = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
 	
 	# WASD input cancels click navigation
@@ -111,6 +93,7 @@ func get_final_input_vector() -> Vector2:
 	if has_click_destination and wasd_input.length() < 0.1:
 		return get_click_movement_vector()
 	
+	# Fall back to WASD
 	return wasd_input
 
 func update_cursor_preview(screen_pos: Vector2):
@@ -150,7 +133,6 @@ func set_click_destination(world_pos: Vector3):
 	has_click_destination = true
 	click_override_timer = click_override_duration
 	
-	# Update visual marker
 	if destination_marker:
 		destination_marker.global_position = world_pos
 		destination_marker.visible = true
@@ -158,7 +140,6 @@ func set_click_destination(world_pos: Vector3):
 func cancel_click_destination():
 	has_click_destination = false
 	
-	# Return to preview mode if mouse is visible
 	if not is_mouse_captured and show_cursor_preview and destination_marker:
 		is_showing_preview = true
 		update_cursor_preview_current()
@@ -196,24 +177,23 @@ func get_click_movement_vector() -> Vector2:
 		return Vector2(direction_3d.x, direction_3d.z)
 
 func start_arrival_delay():
-	"""Start the arrival delay - marker stays visible for a bit"""
 	has_click_destination = false
 	is_arrival_delay_active = true
 	arrival_timer = marker_disappear_delay
-	print("InputComponent: Arrived at destination, starting delay")
 
 func complete_arrival():
-	"""Complete the arrival process and clean up"""
 	is_arrival_delay_active = false
 	
-	# Return to preview mode if mouse is visible
 	if not is_mouse_captured and show_cursor_preview:
 		is_showing_preview = true
 		update_cursor_preview_current()
 	elif destination_marker:
 		destination_marker.visible = false
-	
-	print("InputComponent: Arrival delay complete")
 
-func is_click_navigation_active() -> bool:
-	return has_click_destination
+func update_cursor_preview_current():
+	if is_showing_preview:
+		var mouse_pos = get_viewport().get_mouse_position()
+		update_cursor_preview(mouse_pos)
+
+func is_active() -> bool:
+	return has_click_destination or is_arrival_delay_active

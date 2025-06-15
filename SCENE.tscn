@@ -77,8 +77,6 @@ script = ExtResource("2_caybs")
 target_character = NodePath("../CHARACTER")
 camera_height = 1.5
 follow_smoothing = 16.0
-camera_composition_offset = Vector3(0, 0, 0)
-wall_composition_offset = Vector3(0, -1.5, 0)
 
 [node name="SpringArm3D" type="SpringArm3D" parent="CAMERARIG"]
 
@@ -99,11 +97,10 @@ acceleration = 100.0
 sprint_acceleration = 100.0
 deceleration = 100.0
 rotation_speed = 10
-enable_strafing = true
-rotation_speed_threshold = 1.0
 
-[node name="InputComponent" type="Node" parent="CHARACTER" node_paths=PackedStringArray("destination_marker")]
+[node name="InputComponent" type="Node" parent="CHARACTER" node_paths=PackedStringArray("camera", "destination_marker")]
 script = ExtResource("4_0er5f")
+camera = NodePath("../../CAMERARIG/SpringArm3D/Camera3D")
 destination_marker = NodePath("../../MARKER")
 arrival_threshold = 0.1
 marker_disappear_delay = 0.2
