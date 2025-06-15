@@ -37,43 +37,41 @@ blend_point_4/node = SubResource("AnimationNodeAnimation_gjiua")
 blend_point_4/pos = Vector2(0, -1)
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_gjiua"]
-switch_mode = 2
 advance_mode = 2
-advance_expression = "is_moving = true"
+advance_expression = "is_moving"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_inuk7"]
 advance_mode = 2
 advance_expression = "is_grounded = false"
 
-[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_es8v1"]
-advance_mode = 2
-
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_ck7ep"]
 advance_mode = 2
-advance_expression = "is_moving = false"
+advance_expression = "is_moving == false"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_upni3"]
 advance_mode = 2
-advance_expression = "is_grounded = true"
+advance_expression = "is_grounded"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_njaff"]
-switch_mode = 2
 advance_mode = 2
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_qlhob"]
 advance_mode = 2
-advance_expression = "is_grounded = false"
+advance_expression = "is_grounded == false"
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_o8mde"]
+advance_mode = 2
 
 [resource]
 states/Airborne/node = SubResource("AnimationNodeAnimation_upni3")
 states/Airborne/position = Vector2(1084.4, 327.918)
-states/End/position = Vector2(1172, 84.704)
+states/End/position = Vector2(1285.6, 118.304)
 states/Idle/node = SubResource("AnimationNodeAnimation_ck7ep")
 states/Idle/position = Vector2(781.6, 327.798)
 states/Land/node = SubResource("AnimationNodeAnimation_njaff")
 states/Land/position = Vector2(924.807, 397.2)
 states/Move/node = SubResource("AnimationNodeBlendSpace2D_rjcvd")
 states/Move/position = Vector2(924.509, 219.6)
-states/Start/position = Vector2(628, 85.6)
-transitions = ["Idle", "Move", SubResource("AnimationNodeStateMachineTransition_gjiua"), "Move", "Airborne", SubResource("AnimationNodeStateMachineTransition_inuk7"), "Move", "Land", SubResource("AnimationNodeStateMachineTransition_es8v1"), "Move", "Idle", SubResource("AnimationNodeStateMachineTransition_ck7ep"), "Airborne", "Land", SubResource("AnimationNodeStateMachineTransition_upni3"), "Land", "Idle", SubResource("AnimationNodeStateMachineTransition_njaff"), "Idle", "Airborne", SubResource("AnimationNodeStateMachineTransition_qlhob")]
-graph_offset = Vector2(-84, 8)
+states/Start/position = Vector2(614.4, 322.4)
+transitions = ["Idle", "Move", SubResource("AnimationNodeStateMachineTransition_gjiua"), "Move", "Airborne", SubResource("AnimationNodeStateMachineTransition_inuk7"), "Move", "Idle", SubResource("AnimationNodeStateMachineTransition_ck7ep"), "Airborne", "Land", SubResource("AnimationNodeStateMachineTransition_upni3"), "Land", "Idle", SubResource("AnimationNodeStateMachineTransition_njaff"), "Idle", "Airborne", SubResource("AnimationNodeStateMachineTransition_qlhob"), "Start", "Idle", SubResource("AnimationNodeStateMachineTransition_o8mde")]
+graph_offset = Vector2(1, -48)
