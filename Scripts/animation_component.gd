@@ -27,23 +27,20 @@ func update_animation(delta: float):
 	var speed = horizontal_velocity.length()
 	var is_moving = speed > 0.5
 	var is_grounded = character.is_on_floor()
+	var current_state = state_machine.get_current_node()
+	
+	# Set the BlendSpace2D parameter
+	var normalized_speed = speed / character.speed
+	animation_tree.set("parameters/Move/blend_position", Vector2(0, normalized_speed))
 	
 	# DEBUG: Print current values
 	print("Speed: ", speed, " | Moving: ", is_moving, " | Grounded: ", is_grounded)
-	print("Current state: ", state_machine.get_current_node())
+	print("Current state: ", current_state)
 	
-	# Update AnimationTree parameters
-	animation_tree.set("parameters/is_moving", is_moving)
-	animation_tree.set("parameters/is_grounded", is_grounded)
-	animation_tree.set("parameters/movement_speed", speed / character.speed)
-	animation_tree.set("parameters/Move/blend_position", Vector2(0, speed / character.speed))
-	
-	# DEBUG: Check if parameters are being set
-	print("Blend position set to: ", Vector2(0, speed / character.speed))
-	
-	# Handle landing detection
-	var current_state = state_machine.get_current_node()
-	if current_state == "AIRBORNE" and is_grounded:
-		animation_tree.set("parameters/just_landed", true)
-		await get_tree().process_frame
-		animation_tree.set("parameters/just_landed", false)
+	# Handle state transitions manually (no landing state)
+	if not is_grounded and current_state != "Airborne":
+		state_machine.travel("Airborne")
+	elif is_grounded and is_moving and current_state != "Move":
+		state_machine.travel("Move")
+	elif is_grounded and not is_moving and current_state != "Idle":
+		state_machine.travel("Idle")

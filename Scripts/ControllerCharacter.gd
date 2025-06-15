@@ -57,6 +57,7 @@ extends CharacterBody3D
 @export var ground_check_distance = 0.2 ## Distance to check for ground (meters)
 @export var allow_rotation_while_jumping = true ## Enable/disable rotation during jump
 @export var maintain_forward_momentum_when_jumping = true ## Auto-forward while jumping vs manual control
+@export var air_control_strength = 0.3 ## How much control you have in the air (0.0 = none, 1.0 = full)
 
 var base_gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 var coyote_timer = 0.0
@@ -171,6 +172,7 @@ func _physics_process(delta):
 	if animation_component:
 		animation_component.update_animation(delta)
 
+# Replace your handle_rotation_and_movement function with this:
 func handle_rotation_and_movement(movement_vector: Vector3, delta: float, is_in_air: bool, walking: bool, sprinting: bool, input_dir: Vector2):
 	# Determine speed and acceleration based on movement mode
 	var current_speed: float
@@ -186,23 +188,37 @@ func handle_rotation_and_movement(movement_vector: Vector3, delta: float, is_in_
 		current_speed = speed
 		current_acceleration = acceleration
 	
-	# Handle movement - use stored direction in air if momentum enabled
+	# Handle movement direction
 	var movement_direction: Vector3
-	if is_in_air and maintain_forward_momentum_when_jumping:
-		movement_direction = jump_forward_direction.normalized()
+	if is_in_air and maintain_forward_momentum_when_jumping and jump_forward_direction.length() > 0.1:
+		# In air: blend between stored momentum and current input based on air_control_strength
+		var current_input = movement_vector.normalized()
+		movement_direction = jump_forward_direction.normalized().lerp(current_input, air_control_strength)
+		movement_direction = movement_direction.normalized()
 	else:
+		# On ground: use current input
 		movement_direction = movement_vector.normalized()
 	
-	# Handle rotation - always use current input for rotation (even in air)
+	# Handle rotation direction - always use current input for rotation
 	var rotation_direction = movement_vector.normalized()
 	
 	# Apply movement
 	if movement_direction.length() > 0.1:
-		velocity.x = move_toward(velocity.x, movement_direction.x * current_speed, current_acceleration * delta)
-		velocity.z = move_toward(velocity.z, movement_direction.z * current_speed, current_acceleration * delta)
+		# Reduce acceleration in air for more realistic physics
+		var effective_acceleration = current_acceleration
+		if is_in_air:
+			effective_acceleration *= air_control_strength
+		
+		velocity.x = move_toward(velocity.x, movement_direction.x * current_speed, effective_acceleration * delta)
+		velocity.z = move_toward(velocity.z, movement_direction.z * current_speed, effective_acceleration * delta)
 	else:
-		velocity.x = move_toward(velocity.x, 0, deceleration * delta)
-		velocity.z = move_toward(velocity.z, 0, deceleration * delta)
+		# Reduce deceleration in air
+		var effective_deceleration = deceleration
+		if is_in_air:
+			effective_deceleration *= air_control_strength
+			
+		velocity.x = move_toward(velocity.x, 0, effective_deceleration * delta)
+		velocity.z = move_toward(velocity.z, 0, effective_deceleration * delta)
 	
 	# Apply rotation based on current input (not stored direction)
 	if rotation_direction.length() > 0.1:
