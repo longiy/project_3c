@@ -1,14 +1,18 @@
-# InputComponent.gd - Polling version (no signals)
+# InputComponent.gd - Complete script with drag mode
 extends Node
 class_name InputComponent
 
 @export_group("Click Navigation")
-@export var camera: Camera3D
-@export var destination_marker: Node3D
+@export var camera: Camera3D  # Assign in editor
+@export var destination_marker: Node3D  # Assign in editor
 @export var arrival_threshold = 0.5
 @export var show_cursor_preview = true
 @export var marker_disappear_delay = 1.0
-@export var click_override_duration = 0.1
+@export var click_override_duration = 0.1  # How long click overrides WASD
+
+@export_group("Drag Mode")
+@export var enable_drag_mode = true  # Enable hold-and-drag navigation
+@export var drag_update_rate = 0.05  # How often to update destination while dragging (seconds)
 
 var character: CharacterBody3D
 var is_mouse_captured = true
@@ -25,6 +29,10 @@ var is_showing_preview = false
 var is_arrival_delay_active = false
 var arrival_timer = 0.0
 
+# Drag mode state
+var is_dragging = false
+var drag_timer = 0.0
+
 # Current input state - this is what gets polled
 var current_input_vector = Vector2.ZERO
 
@@ -39,10 +47,11 @@ func _ready():
 		return
 	
 	# Connect to camera's mouse mode signal
-	var camera_rig = camera.get_parent().get_parent()
+	var camera_rig = camera.get_parent().get_parent()  # Camera3D -> SpringArm3D -> CameraRig
 	if camera_rig.has_signal("mouse_mode_changed"):
 		camera_rig.mouse_mode_changed.connect(_on_mouse_mode_changed)
 	
+	# Initialize state
 	is_mouse_captured = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 
 func _on_mouse_mode_changed(captured: bool):
@@ -56,12 +65,26 @@ func _on_mouse_mode_changed(captured: bool):
 			call_deferred("update_cursor_preview_current")
 
 func _input(event):
-	# Only handle click navigation when mouse is visible
+	# ONLY handle click navigation when mouse is visible
 	if not is_mouse_captured:
-		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			commit_to_destination(event.position)
-		elif event is InputEventMouseMotion and show_cursor_preview:
-			update_cursor_preview(event.position)
+		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed:
+				# Start drag mode or single click
+				if enable_drag_mode:
+					start_drag_mode(event.position)
+				else:
+					commit_to_destination(event.position)
+			else:
+				# Stop drag mode when releasing mouse
+				if is_dragging:
+					stop_drag_mode()
+		elif event is InputEventMouseMotion:
+			if is_dragging and enable_drag_mode:
+				# Update destination while dragging
+				update_drag_destination(event.position)
+			elif show_cursor_preview and not is_dragging:
+				# Normal cursor preview (only when not dragging)
+				update_cursor_preview(event.position)
 
 func _physics_process(delta):
 	# Handle arrival delay timer
@@ -70,6 +93,10 @@ func _physics_process(delta):
 		if arrival_timer <= 0:
 			complete_arrival()
 		return
+	
+	# Handle drag timer
+	if is_dragging:
+		drag_timer -= delta
 	
 	if click_override_timer > 0:
 		click_override_timer -= delta
@@ -81,17 +108,17 @@ func calculate_current_input() -> Vector2:
 	"""Calculate current input - this gets polled by Character"""
 	var wasd_input = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
 	
-	# WASD input cancels click navigation
-	if wasd_input.length() > 0.1 and has_click_destination:
-		if click_override_timer <= 0:
-			cancel_click_destination()
+	# WASD input cancels click navigation and drag mode
+	if wasd_input.length() > 0.1:
+		if (has_click_destination or is_dragging) and click_override_timer <= 0:
+			cancel_all_navigation()
 		return wasd_input
 	
-	# Use click navigation if active and no WASD input
-	if has_click_destination and wasd_input.length() < 0.1:
+	# Use click/drag navigation if active
+	if has_click_destination or is_dragging:
 		return get_click_movement_vector()
 	
-	# Fall back to WASD
+	# Fall back to WASD (should be zero if no input)
 	return wasd_input
 
 # PUBLIC METHOD: This gets polled by Character
@@ -125,7 +152,7 @@ func raycast_to_world(screen_pos: Vector2) -> Vector3:
 	var to = from + camera.project_ray_normal(screen_pos) * 1000
 	
 	var query = PhysicsRayQueryParameters3D.create(from, to)
-	query.collision_mask = 1
+	query.collision_mask = 1  # Only hit ground/environment layer
 	
 	var result = space_state.intersect_ray(query)
 	return result.position if result else Vector3.ZERO
@@ -139,8 +166,10 @@ func set_click_destination(world_pos: Vector3):
 		destination_marker.global_position = world_pos
 		destination_marker.visible = true
 
-func cancel_click_destination():
+func cancel_all_navigation():
+	"""Cancel both click navigation and drag mode"""
 	has_click_destination = false
+	is_dragging = false
 	
 	if not is_mouse_captured and show_cursor_preview and destination_marker:
 		is_showing_preview = true
@@ -154,16 +183,21 @@ func hide_cursor_preview():
 		destination_marker.visible = false
 
 func get_click_movement_vector() -> Vector2:
-	if not has_click_destination or not character:
+	if not character:
+		return Vector2.ZERO
+	
+	# Make sure we have a valid destination
+	if not has_click_destination and not is_dragging:
 		return Vector2.ZERO
 	
 	var direction_3d = (click_destination - character.global_position).normalized()
 	
-	# Check arrival
-	var distance = character.global_position.distance_to(click_destination)
-	if distance < arrival_threshold:
-		start_arrival_delay()
-		return Vector2.ZERO
+	# Check arrival (only for single clicks, not drag mode)
+	if not is_dragging and has_click_destination:
+		var distance = character.global_position.distance_to(click_destination)
+		if distance < arrival_threshold:
+			start_arrival_delay()
+			return Vector2.ZERO
 	
 	# Convert to camera-relative movement
 	if camera:
@@ -178,12 +212,36 @@ func get_click_movement_vector() -> Vector2:
 	else:
 		return Vector2(direction_3d.x, direction_3d.z)
 
+func start_drag_mode(screen_pos: Vector2):
+	"""Start drag mode - continuous destination updates"""
+	var world_pos = raycast_to_world(screen_pos)
+	if world_pos != Vector3.ZERO:
+		is_dragging = true
+		drag_timer = 0.0
+		set_click_destination(world_pos)
+		print("InputComponent: Started drag mode")
+
+func update_drag_destination(screen_pos: Vector2):
+	"""Update destination while dragging (with rate limiting)"""
+	if drag_timer <= 0:
+		var world_pos = raycast_to_world(screen_pos)
+		if world_pos != Vector3.ZERO:
+			set_click_destination(world_pos)
+			drag_timer = drag_update_rate  # Rate limit updates
+
+func stop_drag_mode():
+	"""Stop drag mode"""
+	is_dragging = false
+	print("InputComponent: Stopped drag mode")
+
 func start_arrival_delay():
+	"""Start the arrival delay - marker stays visible for a bit"""
 	has_click_destination = false
 	is_arrival_delay_active = true
 	arrival_timer = marker_disappear_delay
 
 func complete_arrival():
+	"""Complete the arrival process and clean up"""
 	is_arrival_delay_active = false
 	
 	if not is_mouse_captured and show_cursor_preview:
@@ -199,4 +257,9 @@ func update_cursor_preview_current():
 
 func is_active() -> bool:
 	"""Check if this component is actively controlling input"""
-	return has_click_destination or is_arrival_delay_active
+	return has_click_destination or is_arrival_delay_active or is_dragging
+
+# Legacy function for compatibility
+func cancel_click_destination():
+	"""Legacy function - now calls cancel_all_navigation"""
+	cancel_all_navigation()
