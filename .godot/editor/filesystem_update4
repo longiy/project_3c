@@ -4,3 +4,7 @@ res://Assets/ps_character_gurl.tscn
 res://MARKER.tscn
 res://Scripts/ControllerCharacter.gd
 res://InputComponent.gd
+res://Scripts/InputManager.gd
+res://Scripts/NavigationComponent.gd
+res://Scripts/ControllerCamera.gd
+res://InputManager.gd
