@@ -31,22 +31,6 @@ height = 1.70464
 transform = Transform3D(0.707107, 0.5, -0.5, 0, 0.707107, 0.707107, 0.707107, -0.5, 0.5, 0, 0, 0)
 shadow_enabled = true
 
-[node name="DebugUI" type="Control" parent="." node_paths=PackedStringArray("debug_label", "character")]
-layout_mode = 3
-anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
-script = ExtResource("2_u4csh")
-debug_label = NodePath("DebugLabel")
-character = NodePath("../CHARACTER")
-
-[node name="DebugLabel" type="Label" parent="DebugUI"]
-layout_mode = 0
-offset_left = 10.0
-offset_top = 10.0
-offset_right = 50.0
-offset_bottom = 33.0
-
 [node name="GROUND" type="MeshInstance3D" parent="."]
 transform = Transform3D(10, 0, 0, 0, 10, 0, 0, 0, 10, 0, 0, 0)
 mesh = SubResource("PlaneMesh_3a8dd")
@@ -67,6 +51,22 @@ mesh = SubResource("PlaneMesh_caybs")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D"]
 shape = SubResource("ConcavePolygonShape3D_caybs")
 
+[node name="DebugUI" type="Control" parent="." node_paths=PackedStringArray("debug_label", "character")]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("2_u4csh")
+debug_label = NodePath("DebugLabel")
+character = NodePath("../CHARACTER")
+
+[node name="DebugLabel" type="Label" parent="DebugUI"]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 50.0
+offset_bottom = 33.0
+
 [node name="CAMERARIG" type="Node3D" parent="." node_paths=PackedStringArray("target_character")]
 script = ExtResource("2_caybs")
 target_character = NodePath("../CHARACTER")
@@ -77,21 +77,27 @@ spring_length = 4.0
 [node name="Camera3D" type="Camera3D" parent="CAMERARIG/SpringArm3D"]
 transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 0, 0, 0)
 
-[node name="CameraArm" type="Node3D" parent="CAMERARIG"]
-
 [node name="CHARACTER" type="CharacterBody3D" parent="." node_paths=PackedStringArray("animation_controller", "camera")]
 collision_layer = 2
 slide_on_ceiling = false
 script = ExtResource("1_5si1x")
 animation_controller = NodePath("AnimationController")
 camera = NodePath("../CAMERARIG/SpringArm3D/Camera3D")
-rotation_snapping = true
+walk_speed = 2.5
+speed = 5.0
+sprint_speed = 7.0
+walk_acceleration = 100.0
+acceleration = 100.0
+sprint_acceleration = 100.0
+deceleration = 100.0
 enable_strafing = true
+rotation_speed_threshold = 1.0
 
 [node name="InputComponent" type="Node" parent="CHARACTER" node_paths=PackedStringArray("destination_marker")]
 script = ExtResource("4_0er5f")
 destination_marker = NodePath("../../MARKER")
 arrival_threshold = 0.1
+marker_disappear_delay = 0.2
 
 [node name="AnimationController" type="Node" parent="CHARACTER" node_paths=PackedStringArray("animation_tree")]
 script = ExtResource("5_gbv5d")
