@@ -2,3 +2,4 @@ res://Assets/ps_character_gurl.tscn
 res://SCENE.tscn
 res://animation_component.gd
 res://Scripts/ControllerCharacter.gd
+res://Scripts/animation_component.gd

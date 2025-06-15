@@ -1,84 +1,7 @@
-[gd_scene load_steps=19 format=3 uid="uid://cbx0rhk665pls"]
+[gd_scene load_steps=3 format=3 uid="uid://cbx0rhk665pls"]
 
 [ext_resource type="PackedScene" uid="uid://dj17vrtc3b8u2" path="res://Assets/PS_Character_Gurl.glb" id="1_ck7ep"]
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_upni3"]
-animation = &"Airborne"
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_ck7ep"]
-animation = &"Idle"
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_njaff"]
-animation = &"Land"
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_es8v1"]
-animation = &"Walk"
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_qlhob"]
-animation = &"Walk"
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_inuk7"]
-animation = &"Idle"
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_rjcvd"]
-animation = &"Walk"
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_gjiua"]
-animation = &"Walk"
-
-[sub_resource type="AnimationNodeBlendSpace2D" id="AnimationNodeBlendSpace2D_rjcvd"]
-blend_point_0/node = SubResource("AnimationNodeAnimation_es8v1")
-blend_point_0/pos = Vector2(-1, 0)
-blend_point_1/node = SubResource("AnimationNodeAnimation_qlhob")
-blend_point_1/pos = Vector2(1, 0)
-blend_point_2/node = SubResource("AnimationNodeAnimation_inuk7")
-blend_point_2/pos = Vector2(0, 0)
-blend_point_3/node = SubResource("AnimationNodeAnimation_rjcvd")
-blend_point_3/pos = Vector2(0, 1)
-blend_point_4/node = SubResource("AnimationNodeAnimation_gjiua")
-blend_point_4/pos = Vector2(0, -1)
-
-[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_gjiua"]
-switch_mode = 2
-advance_mode = 2
-advance_expression = "is_moving = true"
-
-[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_inuk7"]
-advance_mode = 2
-advance_expression = "is_grounded = false"
-
-[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_es8v1"]
-advance_mode = 2
-
-[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_ck7ep"]
-advance_mode = 2
-advance_expression = "is_moving = false"
-
-[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_upni3"]
-advance_mode = 2
-advance_expression = "is_grounded = true"
-
-[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_njaff"]
-switch_mode = 2
-advance_mode = 2
-
-[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_qlhob"]
-advance_mode = 2
-advance_expression = "is_grounded = false"
-
-[sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_ck7ep"]
-states/Airborne/node = SubResource("AnimationNodeAnimation_upni3")
-states/Airborne/position = Vector2(1084.4, 327.918)
-states/End/position = Vector2(1172, 84.704)
-states/Idle/node = SubResource("AnimationNodeAnimation_ck7ep")
-states/Idle/position = Vector2(781.6, 327.798)
-states/Land/node = SubResource("AnimationNodeAnimation_njaff")
-states/Land/position = Vector2(924.807, 397.2)
-states/Move/node = SubResource("AnimationNodeBlendSpace2D_rjcvd")
-states/Move/position = Vector2(924.509, 219.6)
-states/Start/position = Vector2(628, 85.6)
-transitions = ["Idle", "Move", SubResource("AnimationNodeStateMachineTransition_gjiua"), "Move", "Airborne", SubResource("AnimationNodeStateMachineTransition_inuk7"), "Move", "Land", SubResource("AnimationNodeStateMachineTransition_es8v1"), "Move", "Idle", SubResource("AnimationNodeStateMachineTransition_ck7ep"), "Airborne", "Land", SubResource("AnimationNodeStateMachineTransition_upni3"), "Land", "Idle", SubResource("AnimationNodeStateMachineTransition_njaff"), "Idle", "Airborne", SubResource("AnimationNodeStateMachineTransition_qlhob")]
-graph_offset = Vector2(-84, 8)
+[ext_resource type="AnimationNodeStateMachine" uid="uid://8royyaebkf6u" path="res://Assets/ps_character_gurl.tres" id="2_upni3"]
 
 [node name="PS_Character_Gurl" instance=ExtResource("1_ck7ep")]
 
@@ -151,7 +74,7 @@ bones/41/rotation = Quaternion(0.400112, 0.662977, -0.116899, 0.621857)
 bones/41/scale = Vector3(0.992879, 1.00437, 1.0038)
 
 [node name="AnimationTree" type="AnimationTree" parent="." index="2"]
-tree_root = SubResource("AnimationNodeStateMachine_ck7ep")
+tree_root = ExtResource("2_upni3")
 anim_player = NodePath("../AnimationPlayer")
 parameters/Move/blend_position = Vector2(-0.000724614, 0)
 metadata/is_moving = false

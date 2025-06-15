@@ -26,6 +26,9 @@ func update_animation(delta: float):
 	animation_tree.set("parameters/is_grounded", is_grounded)
 	animation_tree.set("parameters/movement_speed", speed / character.speed) # normalized 0-1
 	
+	# ADD THIS LINE:
+	animation_tree.set("parameters/Move/blend_position", Vector2(0, speed / character.speed))
+	
 	# Handle landing detection
 	var current_state = state_machine.get_current_node()
 	if current_state == "AIRBORNE" and is_grounded:
