@@ -87,14 +87,18 @@ script = ExtResource("1_5si1x")
 input_component = NodePath("InputComponent")
 animation_controller = NodePath("AnimationController")
 camera = NodePath("../CAMERARIG/SpringArm3D/Camera3D")
+rotation_snapping = true
+enable_strafing = true
 
 [node name="AnimationController" type="Node" parent="CHARACTER" node_paths=PackedStringArray("animation_tree")]
 script = ExtResource("5_gbv5d")
 animation_tree = NodePath("../PS_Character_Gurl/AnimationTree")
+use_8_directional = false
 
 [node name="InputComponent" type="Node" parent="CHARACTER" node_paths=PackedStringArray("destination_marker")]
 script = ExtResource("6_w862e")
 destination_marker = NodePath("../../MARKER")
+pathfinding_enabled = true
 
 [node name="PS_Character_Gurl" parent="CHARACTER" instance=ExtResource("3_aeafk")]
 

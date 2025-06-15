@@ -24,22 +24,22 @@ extends CharacterBody3D
 # MOVEMENT SETTINGS
 # ═══════════════════════════════════════════════════════════════════════════════════════════════
 @export_group("Movement Speeds")
-@export var walk_speed = 4.0 ## Walk speed (m/s) - slower than normal speed
-@export var speed = 8.0 ## Normal movement speed (m/s)
-@export var sprint_speed = 12.0 ## Sprint speed (m/s)
+@export var walk_speed = 3.0 ## Walk speed (m/s) - slower than normal speed
+@export var speed = 6.0 ## Normal movement speed (m/s)
+@export var sprint_speed = 9.0 ## Sprint speed (m/s)
 
 @export_group("Movement Physics")
-@export var walk_acceleration = 100.0 ## Walk acceleration rate (m/s²)
-@export var acceleration = 150.0 ## Normal acceleration rate (m/s²)
-@export var sprint_acceleration = 200.0 ## Sprint acceleration rate (m/s²)
-@export var deceleration = 200.0 ## Deceleration rate (m/s²)
+@export var walk_acceleration = 50.0 ## Walk acceleration rate (m/s²)
+@export var acceleration = 50.0 ## Normal acceleration rate (m/s²)
+@export var sprint_acceleration = 50.0 ## Sprint acceleration rate (m/s²)
+@export var deceleration = 50.0 ## Deceleration rate (m/s²)
 @export var gravity_multiplier = 1 ## Gravity multiplier (1 = normal gravity)
 
 # ═══════════════════════════════════════════════════════════════════════════════════════════════
 # ROTATION SETTINGS
 # ═══════════════════════════════════════════════════════════════════════════════════════════════
 @export_group("Rotation")
-@export var rotation_speed = 8 ## How fast character rotates to face movement direction
+@export var rotation_speed = 6 ## How fast character rotates to face movement direction
 @export var rotation_snapping = false ## Enable snapping to fixed angles
 @export var snap_angle = 45.0 ## Snap angle in degrees (45 = 8 directions, 90 = 4 directions, etc.)
 
