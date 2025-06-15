@@ -8,6 +8,7 @@ signal navigation_cancelled()
 @export var destination_marker: Node3D
 @export var arrival_threshold = 0.5
 @export var show_cursor_preview = true
+@export var marker_disappear_delay = 1.0 ## How long marker stays after arrival (seconds)
 
 var character: CharacterBody3D
 var current_destination = Vector3.ZERO
@@ -16,6 +17,10 @@ var has_destination = false
 # Preview state
 var is_showing_preview = false
 var preview_position = Vector3.ZERO
+
+# Arrival delay
+var arrival_timer = 0.0
+var is_arrival_delay_active = false
 
 func _ready():
 	character = get_parent() as CharacterBody3D
@@ -98,6 +103,13 @@ func update_preview_marker():
 		destination_marker.visible = true
 
 func _physics_process(_delta):
+	# Handle arrival delay timer
+	if is_arrival_delay_active:
+		arrival_timer -= _delta
+		if arrival_timer <= 0:
+			complete_arrival()
+		return  # Don't update preview during arrival delay
+	
 	# Only update preview when in preview mode (not when walking to destination)
 	if is_showing_preview and not has_destination:
 		update_preview_marker()
@@ -107,7 +119,24 @@ func _physics_process(_delta):
 		var distance = character.global_position.distance_to(current_destination)
 		if distance < arrival_threshold:
 			print("Navigation: Arrived at destination")
-			cancel_navigation()
+			start_arrival_delay()
+
+func start_arrival_delay():
+	has_destination = false
+	is_arrival_delay_active = true
+	arrival_timer = marker_disappear_delay
+	navigation_cancelled.emit()
+	print("Navigation: Starting arrival delay")
+
+func complete_arrival():
+	is_arrival_delay_active = false
+	
+	# Return to preview mode if in cursor navigation
+	if InputManager and InputManager.current_mode == InputManager.InputMode.CURSOR_NAVIGATION:
+		start_preview()
+	else:
+		hide_preview()
+	print("Navigation: Arrival delay complete")
 
 func get_navigation_direction() -> Vector2:
 	if not has_destination:

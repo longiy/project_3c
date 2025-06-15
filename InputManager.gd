@@ -83,6 +83,11 @@ func raycast_to_world(screen_pos: Vector2) -> Vector3:
 	var to = from + camera.project_ray_normal(screen_pos) * 1000
 	
 	var query = PhysicsRayQueryParameters3D.create(from, to)
+	
+	# Exclude character from raycast
+	query.collision_mask = 1  # Only hit layer 1 (ground/environment)
+	# Alternative: query.exclude = [character_body]  # If you want to exclude specific objects
+	
 	var result = space_state.intersect_ray(query)
 	
 	if result:

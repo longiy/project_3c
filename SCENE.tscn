@@ -82,6 +82,7 @@ transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 
 [node name="CameraArm" type="Node3D" parent="CAMERARIG"]
 
 [node name="CHARACTER" type="CharacterBody3D" parent="." node_paths=PackedStringArray("navigation_component", "animation_controller", "camera")]
+collision_layer = 2
 slide_on_ceiling = false
 script = ExtResource("1_5si1x")
 navigation_component = NodePath("NavigationComponent")
@@ -103,6 +104,7 @@ use_8_directional = false
 [node name="NavigationComponent" type="Node" parent="CHARACTER" node_paths=PackedStringArray("destination_marker")]
 script = ExtResource("6_0er5f")
 destination_marker = NodePath("../../MARKER")
+marker_disappear_delay = 0.2
 
 [node name="PS_Character_Gurl" parent="CHARACTER" instance=ExtResource("3_aeafk")]
 
