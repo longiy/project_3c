@@ -41,7 +41,7 @@ blend_point_4/pos = Vector2(0, -1)
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_gjiua"]
 switch_mode = 2
 advance_mode = 2
-advance_expression = "is_movinng = true"
+advance_expression = "is_moving = true"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_inuk7"]
 advance_mode = 2

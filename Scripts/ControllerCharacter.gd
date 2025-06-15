@@ -116,10 +116,6 @@ func _physics_process(delta):
 	# Get input direction for both movement and animation
 	var input_dir = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
 	
-	# Update animation blend position for 2D blend space
-	if animation_tree:
-		animation_tree.set("parameters/MOVE/blend_position", Vector2(input_dir.x, -input_dir.y))
-	
 	# Handle movement mode inputs (walk overrides sprint)
 	is_walking = Input.is_action_pressed("walk")
 	is_sprinting = Input.is_action_pressed("sprint") and not is_walking
