@@ -15,7 +15,6 @@ class_name AnimationController
 
 var state_machine: AnimationNodeStateMachinePlayback
 var character: CharacterBody3D
-var input_component: InputComponent
 
 # Animation state
 var current_blend_position = Vector2.ZERO
@@ -27,7 +26,7 @@ var input_direction = Vector2.ZERO
 
 func _ready():
 	character = get_parent() as CharacterBody3D
-	input_component = character.get_node("InputComponent") as InputComponent
+
 	
 	if not character:
 		push_error("AnimationController must be child of CharacterBody3D")
@@ -36,14 +35,7 @@ func _ready():
 	if not animation_tree:
 		push_error("AnimationTree not assigned to AnimationController")
 		return
-		
-	if not input_component:
-		push_error("InputComponent not found - required for animation direction")
-		return
-	
-	# Connect to input changes
-	input_component.movement_input_changed.connect(_on_movement_input_changed)
-	
+
 	# Setup animation tree
 	animation_tree.active = true
 	state_machine = animation_tree.get("parameters/playback")
