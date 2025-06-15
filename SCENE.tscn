@@ -1,10 +1,12 @@
-[gd_scene load_steps=12 format=3 uid="uid://dngafe0y2nx5b"]
+[gd_scene load_steps=14 format=3 uid="uid://dngafe0y2nx5b"]
 
 [ext_resource type="Script" uid="uid://dt54n1ktg7wqr" path="res://Scripts/ControllerCharacter.gd" id="1_5si1x"]
 [ext_resource type="Script" uid="uid://cms4l0nes10tn" path="res://Scripts/ControllerCamera.gd" id="2_caybs"]
 [ext_resource type="Script" uid="uid://cws7m480lxvaf" path="res://Scripts/DebugUI.gd" id="2_u4csh"]
 [ext_resource type="PackedScene" uid="uid://cbx0rhk665pls" path="res://Assets/ps_character_gurl.tscn" id="3_aeafk"]
-[ext_resource type="Script" uid="uid://1ugljq3u0umu" path="res://Scripts/animation_component.gd" id="4_udffu"]
+[ext_resource type="Script" uid="uid://ceg85p1hqrfpk" path="res://ControllerAnimation.gd" id="5_gbv5d"]
+[ext_resource type="Script" uid="uid://k3y65um7bbrj" path="res://ControllerInput.gd" id="6_w862e"]
+[ext_resource type="PackedScene" uid="uid://bsprrm672tx2s" path="res://MARKER.tscn" id="7_w862e"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_3a8dd"]
 
@@ -14,20 +16,36 @@ albedo_color = Color(0.0421216, 0.0421216, 0.0421216, 1)
 [sub_resource type="ConcavePolygonShape3D" id="ConcavePolygonShape3D_5si1x"]
 data = PackedVector3Array(1, 0, 1, -1, 0, 1, 1, 0, -1, -1, 0, 1, -1, 0, -1, 1, 0, -1)
 
-[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_tcevt"]
-radius = 0.287885
-height = 1.70464
-
 [sub_resource type="PlaneMesh" id="PlaneMesh_caybs"]
 
 [sub_resource type="ConcavePolygonShape3D" id="ConcavePolygonShape3D_caybs"]
 data = PackedVector3Array(1, 0, 1, -1, 0, 1, 1, 0, -1, -1, 0, 1, -1, 0, -1, 1, 0, -1)
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_tcevt"]
+radius = 0.287885
+height = 1.70464
 
 [node name="Scene" type="Node3D"]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.707107, 0.5, -0.5, 0, 0.707107, 0.707107, 0.707107, -0.5, 0.5, 0, 0, 0)
 shadow_enabled = true
+
+[node name="DebugUI" type="Control" parent="." node_paths=PackedStringArray("debug_label", "character")]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("2_u4csh")
+debug_label = NodePath("DebugLabel")
+character = NodePath("../CHARACTER")
+
+[node name="DebugLabel" type="Label" parent="DebugUI"]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 50.0
+offset_bottom = 33.0
 
 [node name="GROUND" type="MeshInstance3D" parent="."]
 transform = Transform3D(10, 0, 0, 0, 10, 0, 0, 0, 10, 0, 0, 0)
@@ -39,6 +57,15 @@ surface_material_override/0 = SubResource("StandardMaterial3D_u4csh")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="GROUND/StaticBody3D"]
 shape = SubResource("ConcavePolygonShape3D_5si1x")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(-4.37114e-07, -10, 0, 10, -4.37114e-07, 0, 0, 0, 10, 10, 0, 0)
+mesh = SubResource("PlaneMesh_caybs")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D"]
+shape = SubResource("ConcavePolygonShape3D_caybs")
 
 [node name="CAMERARIG" type="Node3D" parent="." node_paths=PackedStringArray("target_character")]
 script = ExtResource("2_caybs")
@@ -54,17 +81,20 @@ transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 
 
 [node name="CameraArm" type="Node3D" parent="CAMERARIG"]
 
-[node name="CHARACTER" type="CharacterBody3D" parent="." node_paths=PackedStringArray("animation_component", "animation_tree", "camera")]
+[node name="CHARACTER" type="CharacterBody3D" parent="." node_paths=PackedStringArray("input_component", "animation_controller", "camera")]
 slide_on_ceiling = false
 script = ExtResource("1_5si1x")
-animation_component = NodePath("AnimationComponent")
-animation_tree = NodePath("PS_Character_Gurl/AnimationTree")
+input_component = NodePath("ControllerInput")
+animation_controller = NodePath("ControllerAnimation")
 camera = NodePath("../CAMERARIG/SpringArm3D/Camera3D")
-walk_acceleration = 50.0
-acceleration = 50.0
-sprint_acceleration = 50.0
-deceleration = 50.0
-maintain_forward_momentum_when_jumping = false
+
+[node name="ControllerAnimation" type="Node" parent="CHARACTER" node_paths=PackedStringArray("animation_tree")]
+script = ExtResource("5_gbv5d")
+animation_tree = NodePath("../PS_Character_Gurl/AnimationTree")
+
+[node name="ControllerInput" type="Node" parent="CHARACTER" node_paths=PackedStringArray("destination_marker")]
+script = ExtResource("6_w862e")
+destination_marker = NodePath("../../MARKER")
 
 [node name="PS_Character_Gurl" parent="CHARACTER" instance=ExtResource("3_aeafk")]
 
@@ -74,8 +104,10 @@ bones/0/rotation = Quaternion(-0.606445, 0.0691453, -0.0530571, 0.790334)
 bones/0/scale = Vector3(1, 1, 1)
 bones/1/position = Vector3(0.05, 0.996233, -0.0996851)
 bones/1/rotation = Quaternion(-0.606445, -0.0691453, 0.0530571, 0.790334)
+bones/1/scale = Vector3(1, 1, 1)
 bones/2/position = Vector3(7.10543e-15, 0.989111, -0.135376)
 bones/2/rotation = Quaternion(0.111619, 0.754407, 0.133022, 0.633022)
+bones/2/scale = Vector3(1, 1, 1)
 bones/3/position = Vector3(-2.02098e-15, 0.815885, -0.0500533)
 bones/3/rotation = Quaternion(0.266729, 2.29781e-07, 6.35931e-08, 0.963772)
 bones/4/rotation = Quaternion(-0.243905, -3.76217e-14, -1.16303e-07, 0.969799)
@@ -87,7 +119,9 @@ bones/7/rotation = Quaternion(0.139212, 3.46999e-14, 3.31908e-08, 0.990263)
 bones/8/rotation = Quaternion(-0.0309852, -1.19152e-07, -3.69372e-09, 0.99952)
 bones/9/rotation = Quaternion(-0.00263135, 1.19209e-07, -3.13672e-10, 0.999997)
 bones/14/position = Vector3(8.54825e-09, 0.815885, -0.0500533)
+bones/14/rotation = Quaternion(-0.181037, -0.709154, -0.416857, 0.539033)
 bones/15/position = Vector3(-1.84128e-08, 0.815885, -0.0500533)
+bones/15/rotation = Quaternion(-0.181037, 0.709154, 0.416857, 0.539033)
 bones/16/position = Vector3(0.0842699, 0.859279, -0.00993945)
 bones/16/rotation = Quaternion(0.994384, 0.0468583, -0.094841, 0.00307039)
 bones/16/scale = Vector3(1, 1, 1)
@@ -138,34 +172,6 @@ bones/41/scale = Vector3(1, 1, 1)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.853688, 0)
 shape = SubResource("CapsuleShape3D_tcevt")
 
-[node name="AnimationComponent" type="Node" parent="CHARACTER" node_paths=PackedStringArray("animation_tree", "character")]
-script = ExtResource("4_udffu")
-animation_tree = NodePath("../PS_Character_Gurl/AnimationTree")
-character = NodePath("..")
-
-[node name="DebugUI" type="Control" parent="." node_paths=PackedStringArray("debug_label", "character")]
-layout_mode = 3
-anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
-script = ExtResource("2_u4csh")
-debug_label = NodePath("DebugLabel")
-character = NodePath("../CHARACTER")
-
-[node name="DebugLabel" type="Label" parent="DebugUI"]
-layout_mode = 0
-offset_left = 10.0
-offset_top = 10.0
-offset_right = 50.0
-offset_bottom = 33.0
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-transform = Transform3D(-4.37114e-07, -10, 0, 10, -4.37114e-07, 0, 0, 0, 10, 10, 0, 0)
-mesh = SubResource("PlaneMesh_caybs")
-
-[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D"]
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D"]
-shape = SubResource("ConcavePolygonShape3D_caybs")
+[node name="MARKER" parent="." instance=ExtResource("7_w862e")]
 
 [editable path="CHARACTER/PS_Character_Gurl"]

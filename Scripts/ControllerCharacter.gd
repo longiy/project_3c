@@ -7,11 +7,11 @@ extends CharacterBody3D
 @export var reset_rotation = Vector3(0, 0, 0) ## Rotation to reset to (in degrees)
 
 # ═══════════════════════════════════════════════════════════════════════════════════════════════
-# RUNTIME VARIABLES
+# COMPONENTS
 # ═══════════════════════════════════════════════════════════════════════════════════════════════
-@export_group("Character")
-@export var animation_component: AnimationComponent
-@export var animation_tree: AnimationTree
+@export_group("Components")
+@export var input_component: InputComponent
+@export var animation_controller: AnimationController
 
 # ═══════════════════════════════════════════════════════════════════════════════════════════════
 # CAMERA SETTINGS
@@ -59,13 +59,32 @@ extends CharacterBody3D
 @export var maintain_forward_momentum_when_jumping = true ## Auto-forward while jumping vs manual control
 @export var air_control_strength = 0.3 ## How much control you have in the air (0.0 = none, 1.0 = full)
 
+# ═══════════════════════════════════════════════════════════════════════════════════════════════
+# RUNTIME VARIABLES
+# ═══════════════════════════════════════════════════════════════════════════════════════════════
 var base_gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 var coyote_timer = 0.0
 var jumps_remaining = 0
 var jump_forward_direction = Vector3.ZERO
 var is_sprinting = false
 var is_walking = false
-var last_input_dir = Vector2.ZERO  # Track previous WASD input for snapping
+var last_input_dir = Vector2.ZERO  # Track previous input for snapping
+var current_input_dir = Vector2.ZERO  # Current input from InputComponent
+
+func _ready():
+	# Connect input component
+	if input_component:
+		input_component.movement_input_changed.connect(_on_movement_input_changed)
+		input_component.set_camera(camera)
+	else:
+		push_warning("No InputComponent assigned - using fallback direct input")
+	
+	# Animation controller will handle its own connections
+	if not animation_controller:
+		push_warning("No AnimationController assigned - animations will not work")
+
+func _on_movement_input_changed(input_vector: Vector2):
+	current_input_dir = input_vector
 
 func is_near_ground() -> bool:
 	var space_state = get_world_3d().direct_space_state
@@ -114,8 +133,10 @@ func _physics_process(delta):
 	else:
 		coyote_timer -= delta
 	
-	# Get input direction for both movement and animation
-	var input_dir = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
+	# Get input direction - from component or fallback to direct input
+	var input_dir = current_input_dir
+	if input_component == null:
+		input_dir = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
 	
 	# Handle movement mode inputs (walk overrides sprint)
 	is_walking = Input.is_action_pressed("walk")
@@ -125,7 +146,40 @@ func _physics_process(delta):
 	if Input.is_action_just_pressed("reset"):
 		reset_character_transform()
 	
-	# Calculate 8-directional movement
+	# Calculate movement vector based on input
+	var movement_vector = calculate_movement_vector(input_dir)
+	
+	# Handle jumping
+	if Input.is_action_just_pressed("jump"):
+		if (coyote_timer > 0 and jumps_remaining > 0) or (jumps_remaining > 0 and not is_on_floor()):
+			velocity.y = jump_velocity
+			jumps_remaining -= 1
+			coyote_timer = 0
+			
+			if maintain_forward_momentum_when_jumping:
+				jump_forward_direction = movement_vector.normalized()
+	
+	# Handle movement and rotation
+	var is_moving = movement_vector.length() > 0.1
+	var is_in_air = not is_on_floor()
+	var can_rotate = true
+	
+	if is_in_air and not allow_rotation_while_jumping:
+		can_rotate = false
+	
+	# Check if we should rotate based on speed threshold (for strafing)
+	if can_rotate and enable_strafing:
+		can_rotate = should_allow_rotation(movement_vector, is_walking, is_sprinting)
+	
+	# Apply movement and rotation
+	if can_rotate and is_moving:
+		handle_rotation_and_movement(movement_vector, delta, is_in_air, is_walking, is_sprinting, input_dir)
+	else:
+		handle_movement_only(movement_vector, delta, is_in_air, is_walking, is_sprinting)
+	
+	move_and_slide()
+
+func calculate_movement_vector(input_dir: Vector2) -> Vector3:
 	var movement_vector = Vector3.ZERO
 	
 	if camera_relative_movement and camera:
@@ -140,39 +194,8 @@ func _physics_process(delta):
 		movement_vector.x = input_dir.x   # A/D input: A = left (-X), D = right (+X)  
 		movement_vector.z = input_dir.y   # W/S input: W = forward (-Z), S = backward (+Z)
 	
-	if Input.is_action_just_pressed("jump"):
-		if (coyote_timer > 0 and jumps_remaining > 0) or (jumps_remaining > 0 and not is_on_floor()):
-			velocity.y = jump_velocity
-			jumps_remaining -= 1
-			coyote_timer = 0
-			
-			if maintain_forward_momentum_when_jumping:
-				jump_forward_direction = movement_vector.normalized()
-	
-	var is_moving = movement_vector.length() > 0.1
-	var is_in_air = not is_on_floor()
-	var can_rotate = true
-	
-	if is_in_air and not allow_rotation_while_jumping:
-		can_rotate = false
-	
-	# Check if we should rotate based on speed threshold (for strafing)
-	if can_rotate and enable_strafing:
-		can_rotate = should_allow_rotation(movement_vector, is_walking, is_sprinting)
-	
-	# Handle rotation and movement
-	if can_rotate and is_moving:
-		handle_rotation_and_movement(movement_vector, delta, is_in_air, is_walking, is_sprinting, input_dir)
-	else:
-		handle_movement_only(movement_vector, delta, is_in_air, is_walking, is_sprinting)
-	
-	move_and_slide()
-	
-	# Update animations after physics
-	if animation_component:
-		animation_component.update_animation(delta)
+	return movement_vector
 
-# Replace your handle_rotation_and_movement function with this:
 func handle_rotation_and_movement(movement_vector: Vector3, delta: float, is_in_air: bool, walking: bool, sprinting: bool, input_dir: Vector2):
 	# Determine speed and acceleration based on movement mode
 	var current_speed: float
@@ -225,12 +248,12 @@ func handle_rotation_and_movement(movement_vector: Vector3, delta: float, is_in_
 		var target_rotation = atan2(rotation_direction.x, rotation_direction.z)
 		target_rotation = snap_rotation_if_enabled(target_rotation)
 		
-		# Check if WASD input changed (for snapping logic)
+		# Check if input changed (for snapping logic)
 		var input_changed = input_dir.distance_to(last_input_dir) > 0.1
 		last_input_dir = input_dir
 		
 		if rotation_snapping and input_changed:
-			# Snap only when WASD input changes
+			# Snap only when input changes
 			rotation.y = target_rotation
 		else:
 			# Smooth rotation when camera moves or snapping disabled
@@ -301,5 +324,8 @@ func reset_character_transform():
 	coyote_timer = 0.0
 	jump_forward_direction = Vector3.ZERO
 	
-	# Print confirmation (optional - can remove later)
+	# Cancel any click navigation
+	if input_component:
+		input_component.cancel_click_destination()
+	
 	print("Character reset to: ", reset_position)
