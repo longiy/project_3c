@@ -8,7 +8,10 @@ extends CharacterBody3D
 
 # ═══════════════════════════════════════════════════════════════════════════════════════════════
 # RUNTIME VARIABLES
-# ═══════════════════════════════════════════════════════════════════════════════════════════════extends CharacterBody3D
+# ═══════════════════════════════════════════════════════════════════════════════════════════════
+@export_group("Character")
+@export var animation_component: AnimationComponent
+@export var animation_tree: AnimationTree
 
 # ═══════════════════════════════════════════════════════════════════════════════════════════════
 # CAMERA SETTINGS
@@ -55,7 +58,6 @@ extends CharacterBody3D
 @export var allow_rotation_while_jumping = true ## Enable/disable rotation during jump
 @export var maintain_forward_momentum_when_jumping = true ## Auto-forward while jumping vs manual control
 
-
 var base_gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 var coyote_timer = 0.0
 var jumps_remaining = 0
@@ -73,7 +75,7 @@ func is_near_ground() -> bool:
 	var result = space_state.intersect_ray(query)
 	return result.size() > 0
 
-func should_allow_rotation(movement_vector: Vector3, is_walking: bool, is_sprinting: bool) -> bool:
+func should_allow_rotation(movement_vector: Vector3, walking: bool, sprinting: bool) -> bool:
 	# Always allow rotation if strafing is disabled
 	if not enable_strafing:
 		return true
@@ -84,9 +86,9 @@ func should_allow_rotation(movement_vector: Vector3, is_walking: bool, is_sprint
 	
 	# Calculate current target speed and threshold based on movement mode
 	var target_speed: float
-	if is_walking:
+	if walking:
 		target_speed = walk_speed
-	elif is_sprinting:
+	elif sprinting:
 		target_speed = sprint_speed
 	else:
 		target_speed = speed
@@ -111,7 +113,12 @@ func _physics_process(delta):
 	else:
 		coyote_timer -= delta
 	
+	# Get input direction for both movement and animation
 	var input_dir = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
+	
+	# Update animation blend position for 2D blend space
+	if animation_tree:
+		animation_tree.set("parameters/MOVE/blend_position", Vector2(input_dir.x, -input_dir.y))
 	
 	# Handle movement mode inputs (walk overrides sprint)
 	is_walking = Input.is_action_pressed("walk")
@@ -163,16 +170,20 @@ func _physics_process(delta):
 		handle_movement_only(movement_vector, delta, is_in_air, is_walking, is_sprinting)
 	
 	move_and_slide()
+	
+	# Update animations after physics
+	if animation_component:
+		animation_component.update_animation(delta)
 
-func handle_rotation_and_movement(movement_vector: Vector3, delta: float, is_in_air: bool, is_walking: bool, is_sprinting: bool, input_dir: Vector2):
+func handle_rotation_and_movement(movement_vector: Vector3, delta: float, is_in_air: bool, walking: bool, sprinting: bool, input_dir: Vector2):
 	# Determine speed and acceleration based on movement mode
 	var current_speed: float
 	var current_acceleration: float
 	
-	if is_walking:
+	if walking:
 		current_speed = walk_speed
 		current_acceleration = walk_acceleration
-	elif is_sprinting:
+	elif sprinting:
 		current_speed = sprint_speed
 		current_acceleration = sprint_acceleration
 	else:
@@ -213,15 +224,15 @@ func handle_rotation_and_movement(movement_vector: Vector3, delta: float, is_in_
 			# Smooth rotation when camera moves or snapping disabled
 			rotation.y = lerp_angle(rotation.y, target_rotation, rotation_speed * delta)
 
-func handle_movement_only(movement_vector: Vector3, delta: float, is_in_air: bool, is_walking: bool, is_sprinting: bool):
+func handle_movement_only(movement_vector: Vector3, delta: float, is_in_air: bool, walking: bool, sprinting: bool):
 	# Determine speed and acceleration based on movement mode
 	var current_speed: float
 	var current_acceleration: float
 	
-	if is_walking:
+	if walking:
 		current_speed = walk_speed
 		current_acceleration = walk_acceleration
-	elif is_sprinting:
+	elif sprinting:
 		current_speed = sprint_speed
 		current_acceleration = sprint_acceleration
 	else:
