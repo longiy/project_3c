@@ -79,6 +79,7 @@ camera_height = 1.5
 follow_smoothing = 16.0
 
 [node name="SpringArm3D" type="SpringArm3D" parent="CAMERARIG"]
+spring_length = 2.0
 
 [node name="Camera3D" type="Camera3D" parent="CAMERARIG/SpringArm3D"]
 transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 0, 0, 0)
@@ -89,14 +90,6 @@ slide_on_ceiling = false
 script = ExtResource("1_5si1x")
 animation_controller = NodePath("AnimationController")
 camera = NodePath("../CAMERARIG/SpringArm3D/Camera3D")
-walk_speed = 2.5
-speed = 5.0
-sprint_speed = 7.0
-walk_acceleration = 100.0
-acceleration = 100.0
-sprint_acceleration = 100.0
-deceleration = 100.0
-rotation_speed = 10
 
 [node name="InputComponent" type="Node" parent="CHARACTER" node_paths=PackedStringArray("camera", "destination_marker")]
 script = ExtResource("4_0er5f")
@@ -178,6 +171,9 @@ bones/39/scale = Vector3(1, 1, 1)
 bones/40/rotation = Quaternion(-7.45063e-09, -3.16649e-08, 2.79402e-09, 1)
 bones/41/rotation = Quaternion(-0.0564029, -0.00203213, -0.0359329, 0.997759)
 bones/41/scale = Vector3(1, 1, 1)
+
+[node name="AnimationTree" parent="CHARACTER/PS_Character_Gurl" index="2"]
+parameters/Move/blend_position = Vector2(-0.499275, 0.00847459)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="CHARACTER"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.853688, 0)

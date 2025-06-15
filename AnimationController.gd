@@ -66,7 +66,7 @@ func poll_current_state():
 func update_blend_space(delta):
 	if not use_8_directional:
 		# Simple forward/back blending
-		var speed_normalized = movement_speed / character.speed
+		var speed_normalized = movement_speed / character.walk_speed
 		target_blend_position = Vector2(0, speed_normalized)
 	else:
 		# 8-directional blending based on input direction
@@ -82,13 +82,17 @@ func update_blend_space(delta):
 	animation_tree.set(blend_space_param, current_blend_position)
 
 func get_speed_multiplier() -> float:
-	# Determine if we're walking, running, or sprinting
-	if character.is_walking:
-		return movement_speed / character.walk_speed
-	elif character.is_sprinting:
-		return movement_speed / character.sprint_speed  
-	else:
-		return movement_speed / character.speed
+	# Map actual movement speed to blend space positions
+	var base_speed = character.walk_speed  # Normal walk (3.0) = baseline
+	var speed_ratio = movement_speed / base_speed
+	
+	# Clamp to reasonable range for blend space
+	return clamp(speed_ratio, 0.0, 2.0)
+	
+	# Results:
+	# Slow walk (2.0 speed): 2.0/3.0 = 0.67 → Slow walk animations at position ±0.67
+	# Walk (3.0 speed):      3.0/3.0 = 1.0  → Walk animations at position ±1.0
+	# Run (6.0 speed):       6.0/3.0 = 2.0  → Run animations at position ±2.0
 
 func update_state_machine():
 	var current_state = state_machine.get_current_node()

@@ -10,14 +10,14 @@ extends CharacterBody3D
 @export var camera: Camera3D
 
 @export_group("Movement Speeds")
+@export var slow_walk_speed = 2.0
 @export var walk_speed = 3.0
-@export var speed = 6.0
-@export var sprint_speed = 9.0
+@export var run_speed = 6.0
 
 @export_group("Movement Physics")
+@export var slow_walk_acceleration = 50.0
 @export var walk_acceleration = 50.0
-@export var acceleration = 50.0
-@export var sprint_acceleration = 50.0
+@export var run_acceleration = 50.0
 @export var deceleration = 50.0
 @export var gravity_multiplier = 1
 
@@ -35,8 +35,8 @@ extends CharacterBody3D
 var base_gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 var coyote_timer = 0.0
 var jumps_remaining = 0
-var is_sprinting = false
-var is_walking = false
+var is_running = false
+var is_slow_walking = false
 
 # Component references
 var input_component: InputComponent
@@ -66,8 +66,8 @@ func _physics_process(delta):
 	var input_dir = get_current_input()
 	
 	# Handle movement mode inputs
-	is_walking = Input.is_action_pressed("walk")
-	is_sprinting = Input.is_action_pressed("sprint") and not is_walking
+	is_slow_walking = Input.is_action_pressed("walk")
+	is_running = Input.is_action_pressed("sprint") and not is_slow_walking
 	
 	# Handle reset
 	if Input.is_action_just_pressed("reset"):
@@ -117,15 +117,15 @@ func handle_movement_and_rotation(movement_vector: Vector3, delta: float):
 	var current_speed: float
 	var current_acceleration: float
 	
-	if is_walking:
+	if is_slow_walking:
+		current_speed = slow_walk_speed
+		current_acceleration = slow_walk_acceleration
+	elif is_running:
+		current_speed = run_speed
+		current_acceleration = run_acceleration
+	else:
 		current_speed = walk_speed
 		current_acceleration = walk_acceleration
-	elif is_sprinting:
-		current_speed = sprint_speed
-		current_acceleration = sprint_acceleration
-	else:
-		current_speed = speed
-		current_acceleration = acceleration
 	
 	# Apply movement
 	var is_moving = movement_vector.length() > 0.1
