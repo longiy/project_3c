@@ -1,19 +1,27 @@
 extends Node3D
 
+@export_group("Target & Following")
 @export var target_character: CharacterBody3D ## Drag your character here
 @export var camera_height = 2.0 ## Height offset above character
-@export var camera_composition_offset = Vector3(0, 0.5, 0) ## Offset for composition (doesn't affect follow height)
+@export var follow_smoothing = 8.0 ## How smoothly camera follows character position
+
+@export_group("Mouse Controls")
 @export var mouse_sensitivity = 0.002 ## Mouse look sensitivity
+@export var enable_mouse_yaw = true ## Enable/disable horizontal mouse rotation
+@export var enable_mouse_pitch = true ## Enable/disable vertical mouse rotation
+@export var allow_mouse_toggle = true ## Allow Mouse2 to toggle mouse capture
+
+@export_group("Rotation Limits")
 @export var vertical_limit_min = -80.0 ## Minimum vertical look angle (degrees)
 @export var vertical_limit_max = 50.0 ## Maximum vertical look angle (degrees)
 @export var enable_horizontal_limits = false ## Enable/disable horizontal rotation limits
 @export var horizontal_limit_min = -90.0 ## Minimum horizontal look angle (degrees)
 @export var horizontal_limit_max = 90.0 ## Maximum horizontal look angle (degrees)
-@export var follow_smoothing = 8.0 ## How smoothly camera follows character position
+
+@export_group("Composition & Framing")
+@export var camera_composition_offset = Vector3(0, 0.5, 0) ## Offset for composition (doesn't affect follow height)
 @export var offset_scale_with_collision = true ## Scale composition offset based on collision distance
 @export var offset_smoothing = 8.0 ## How smoothly offset scales with collision
-@export var enable_mouse_yaw = true ## Enable/disable horizontal mouse rotation
-@export var enable_mouse_pitch = true ## Enable/disable vertical mouse rotation
 
 @onready var spring_arm = $SpringArm3D
 
