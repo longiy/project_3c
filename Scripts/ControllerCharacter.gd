@@ -1,4 +1,4 @@
-# ControllerCharacter.gd - Pure movement logic, input from components
+# ControllerCharacter.gd - Polling version (no signals)
 extends CharacterBody3D
 
 @export_group("Debug")
@@ -37,25 +37,18 @@ var coyote_timer = 0.0
 var jumps_remaining = 0
 var is_sprinting = false
 var is_walking = false
-var current_input_dir = Vector2.ZERO
 
 # Component references
 var input_component: InputComponent
 
 func _ready():
-	# Connect to InputComponent if it exists
+	# Get InputComponent reference (no signal connection needed)
 	input_component = get_node_or_null("InputComponent")
 	if input_component:
-		input_component.movement_input_changed.connect(_on_movement_input_changed)
-		print("Character: Connected to InputComponent for click navigation")
+		print("Character: Found InputComponent for click navigation")
 	
-	# Animation controller will handle its own connections
 	if not animation_controller:
 		push_warning("No AnimationController assigned - animations will not work")
-
-func _on_movement_input_changed(input_vector: Vector2):
-	"""Receive processed input from InputComponent"""
-	current_input_dir = input_vector
 
 func _physics_process(delta):
 	# Apply gravity
@@ -69,8 +62,8 @@ func _physics_process(delta):
 	else:
 		coyote_timer -= delta
 	
-	# Get input - prioritize InputComponent, fall back to WASD
-	var input_dir = get_final_input()
+	# POLL input state from InputComponent
+	var input_dir = get_current_input()
 	
 	# Handle movement mode inputs
 	is_walking = Input.is_action_pressed("walk")
@@ -93,10 +86,11 @@ func _physics_process(delta):
 	
 	move_and_slide()
 
-func get_final_input() -> Vector2:
-	"""Get input from InputComponent if active, otherwise use WASD"""
+func get_current_input() -> Vector2:
+	"""POLL current input state - no signals needed"""
 	if input_component and input_component.is_active():
-		return current_input_dir
+		# InputComponent is handling input (click navigation active)
+		return input_component.get_current_input()
 	else:
 		# Fall back to direct WASD input
 		return Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
@@ -163,3 +157,12 @@ func reset_character_transform():
 		input_component.cancel_click_destination()
 	
 	print("Character reset to: ", reset_position)
+
+# PUBLIC METHODS for AnimationController to poll
+func get_movement_speed() -> float:
+	"""Get current horizontal movement speed"""
+	return Vector3(velocity.x, 0, velocity.z).length()
+
+func get_current_input_direction() -> Vector2:
+	"""Get current input direction for animation blending"""
+	return get_current_input()

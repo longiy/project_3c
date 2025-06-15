@@ -1,4 +1,4 @@
-# AnimationController.gd
+# AnimationController.gd - Polling version (no signals)
 extends Node
 class_name AnimationController
 
@@ -6,12 +6,12 @@ class_name AnimationController
 @export var blend_space_param = "parameters/Move/blend_position"
 
 @export_group("Animation Thresholds")
-@export var movement_threshold = 0.3 ## Minimum speed to trigger movement animation
-@export var run_threshold = 6.0 ## Speed threshold for run vs walk animations
+@export var movement_threshold = 0.3
+@export var run_threshold = 6.0
 
 @export_group("Blend Space Setup")
-@export var use_8_directional = true ## Enable 8-directional movement blending
-@export var strafe_blend_speed = 8.0 ## How fast to blend strafe animations
+@export var use_8_directional = true
+@export var strafe_blend_speed = 8.0
 
 var state_machine: AnimationNodeStateMachinePlayback
 var character: CharacterBody3D
@@ -27,7 +27,7 @@ var input_direction = Vector2.ZERO
 
 func _ready():
 	character = get_parent() as CharacterBody3D
-	input_component = character.get_node("InputComponent") as InputComponent
+	input_component = character.get_node_or_null("InputComponent") as InputComponent
 	
 	if not character:
 		push_error("AnimationController must be child of CharacterBody3D")
@@ -36,13 +36,6 @@ func _ready():
 	if not animation_tree:
 		push_error("AnimationTree not assigned to AnimationController")
 		return
-		
-	if not input_component:
-		push_error("InputComponent not found - required for animation direction")
-		return
-	
-	# Connect to input changes
-	input_component.movement_input_changed.connect(_on_movement_input_changed)
 	
 	# Setup animation tree
 	animation_tree.active = true
@@ -51,23 +44,24 @@ func _ready():
 	if not state_machine:
 		push_error("StateMachine not found in AnimationTree")
 
-func _on_movement_input_changed(input_vector: Vector2):
-	input_direction = input_vector
-
 func _physics_process(delta):
 	if not state_machine or not character:
 		return
 	
-	update_movement_data()
+	# POLL current state instead of relying on signals
+	poll_current_state()
 	update_blend_space(delta)
 	update_state_machine()
 
-func update_movement_data():
+func poll_current_state():
+	"""POLL current movement and input state - no signals needed"""
 	# Get movement data from character
-	var horizontal_velocity = Vector3(character.velocity.x, 0, character.velocity.z)
-	movement_speed = horizontal_velocity.length()
+	movement_speed = character.get_movement_speed()
 	is_moving = movement_speed > movement_threshold
 	is_grounded = character.is_on_floor()
+	
+	# Get input direction - poll from character
+	input_direction = character.get_current_input_direction()
 
 func update_blend_space(delta):
 	if not use_8_directional:

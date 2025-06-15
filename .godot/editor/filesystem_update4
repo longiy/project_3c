@@ -3,3 +3,4 @@ res://Assets/ps_character_gurl.tres
 res://Scripts/ControllerCamera.gd
 res://Scripts/InputComponent.gd
 res://Scripts/ControllerCharacter.gd
+res://AnimationController.gd

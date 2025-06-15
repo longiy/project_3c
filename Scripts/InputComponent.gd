@@ -1,16 +1,14 @@
-# InputComponent.gd - Only handles click navigation
+# InputComponent.gd - Polling version (no signals)
 extends Node
 class_name InputComponent
 
-signal movement_input_changed(input_vector: Vector2)
-
 @export_group("Click Navigation")
-@export var camera: Camera3D  # Assign in editor
-@export var destination_marker: Node3D  # Assign in editor
+@export var camera: Camera3D
+@export var destination_marker: Node3D
 @export var arrival_threshold = 0.5
 @export var show_cursor_preview = true
 @export var marker_disappear_delay = 1.0
-@export var click_override_duration = 0.1  # How long click overrides WASD
+@export var click_override_duration = 0.1
 
 var character: CharacterBody3D
 var is_mouse_captured = true
@@ -22,11 +20,13 @@ var click_override_timer = 0.0
 
 # Preview state
 var is_showing_preview = false
-var preview_position = Vector3.ZERO
 
 # Arrival state
 var is_arrival_delay_active = false
 var arrival_timer = 0.0
+
+# Current input state - this is what gets polled
+var current_input_vector = Vector2.ZERO
 
 func _ready():
 	character = get_parent() as CharacterBody3D
@@ -39,11 +39,10 @@ func _ready():
 		return
 	
 	# Connect to camera's mouse mode signal
-	var camera_rig = camera.get_parent().get_parent()  # Camera3D -> SpringArm3D -> CameraRig
+	var camera_rig = camera.get_parent().get_parent()
 	if camera_rig.has_signal("mouse_mode_changed"):
 		camera_rig.mouse_mode_changed.connect(_on_mouse_mode_changed)
 	
-	# Initialize state
 	is_mouse_captured = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 
 func _on_mouse_mode_changed(captured: bool):
@@ -57,7 +56,7 @@ func _on_mouse_mode_changed(captured: bool):
 			call_deferred("update_cursor_preview_current")
 
 func _input(event):
-	# ONLY handle click navigation when mouse is visible
+	# Only handle click navigation when mouse is visible
 	if not is_mouse_captured:
 		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 			commit_to_destination(event.position)
@@ -75,12 +74,11 @@ func _physics_process(delta):
 	if click_override_timer > 0:
 		click_override_timer -= delta
 	
-	# Calculate final input - blend WASD with click navigation
-	var final_input = get_final_input_vector()
-	movement_input_changed.emit(final_input)
+	# Update current input state (for polling)
+	current_input_vector = calculate_current_input()
 
-func get_final_input_vector() -> Vector2:
-	# Get WASD from character (not here)
+func calculate_current_input() -> Vector2:
+	"""Calculate current input - this gets polled by Character"""
 	var wasd_input = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
 	
 	# WASD input cancels click navigation
@@ -96,13 +94,17 @@ func get_final_input_vector() -> Vector2:
 	# Fall back to WASD
 	return wasd_input
 
+# PUBLIC METHOD: This gets polled by Character
+func get_current_input() -> Vector2:
+	"""Public method for Character to poll current input state"""
+	return current_input_vector
+
 func update_cursor_preview(screen_pos: Vector2):
 	if not camera or not character or not destination_marker or not is_showing_preview:
 		return
 		
 	var world_pos = raycast_to_world(screen_pos)
 	if world_pos != Vector3.ZERO:
-		preview_position = world_pos
 		destination_marker.global_position = world_pos
 		destination_marker.visible = true
 
@@ -123,7 +125,7 @@ func raycast_to_world(screen_pos: Vector2) -> Vector3:
 	var to = from + camera.project_ray_normal(screen_pos) * 1000
 	
 	var query = PhysicsRayQueryParameters3D.create(from, to)
-	query.collision_mask = 1  # Only hit ground/environment layer
+	query.collision_mask = 1
 	
 	var result = space_state.intersect_ray(query)
 	return result.position if result else Vector3.ZERO
@@ -196,4 +198,5 @@ func update_cursor_preview_current():
 		update_cursor_preview(mouse_pos)
 
 func is_active() -> bool:
+	"""Check if this component is actively controlling input"""
 	return has_click_destination or is_arrival_delay_active
