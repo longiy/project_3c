@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3 uid="uid://dngafe0y2nx5b"]
+[gd_scene load_steps=15 format=3 uid="uid://dngafe0y2nx5b"]
 
 [ext_resource type="Script" uid="uid://dt54n1ktg7wqr" path="res://Scripts/ControllerCharacter.gd" id="1_5si1x"]
 [ext_resource type="Script" uid="uid://cms4l0nes10tn" path="res://Scripts/ControllerCamera.gd" id="2_caybs"]
@@ -11,7 +11,7 @@
 [sub_resource type="PlaneMesh" id="PlaneMesh_3a8dd"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_u4csh"]
-albedo_color = Color(0.0421216, 0.0421216, 0.0421216, 1)
+albedo_color = Color(0.916289, 0.871104, 0.746817, 1)
 
 [sub_resource type="ConcavePolygonShape3D" id="ConcavePolygonShape3D_5si1x"]
 data = PackedVector3Array(1, 0, 1, -1, 0, 1, 1, 0, -1, -1, 0, 1, -1, 0, -1, 1, 0, -1)
@@ -24,6 +24,11 @@ data = PackedVector3Array(1, 0, 1, -1, 0, 1, 1, 0, -1, -1, 0, 1, -1, 0, -1, 1, 0
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_tcevt"]
 radius = 0.287885
 height = 1.70464
+
+[sub_resource type="Environment" id="Environment_w862e"]
+background_mode = 1
+background_color = Color(0.457197, 0.769688, 0.831253, 1)
+ambient_light_source = 1
 
 [node name="Scene" type="Node3D"]
 
@@ -70,9 +75,12 @@ offset_bottom = 33.0
 [node name="CAMERARIG" type="Node3D" parent="." node_paths=PackedStringArray("target_character")]
 script = ExtResource("2_caybs")
 target_character = NodePath("../CHARACTER")
+camera_height = 1.5
+follow_smoothing = 16.0
+camera_composition_offset = Vector3(0, 0, 0)
+wall_composition_offset = Vector3(0, -1.5, 0)
 
 [node name="SpringArm3D" type="SpringArm3D" parent="CAMERARIG"]
-spring_length = 4.0
 
 [node name="Camera3D" type="Camera3D" parent="CAMERARIG/SpringArm3D"]
 transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 0, 0, 0)
@@ -90,6 +98,7 @@ walk_acceleration = 100.0
 acceleration = 100.0
 sprint_acceleration = 100.0
 deceleration = 100.0
+rotation_speed = 10
 enable_strafing = true
 rotation_speed_threshold = 1.0
 
@@ -178,5 +187,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.853688, 0)
 shape = SubResource("CapsuleShape3D_tcevt")
 
 [node name="MARKER" parent="." instance=ExtResource("7_w862e")]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_w862e")
 
 [editable path="CHARACTER/PS_Character_Gurl"]
