@@ -11,6 +11,7 @@ signal movement_input_changed(input_vector: Vector2)
 @export_group("Click Navigation")
 @export var destination_marker: Node3D ## Visual marker for click destination
 @export var pathfinding_enabled = false ## Enable when you add NavMesh
+@export var show_cursor_preview = true ## Show marker at cursor position before clicking
 
 var character: CharacterBody3D
 var camera: Camera3D
@@ -19,11 +20,23 @@ var click_destination = Vector3.ZERO
 var has_click_destination = false
 var click_override_timer = 0.0
 
+# New preview variables
+var is_showing_preview = false
+var preview_position = Vector3.ZERO
+
 func _ready():
 	character = get_parent() as CharacterBody3D
 	if not character:
 		push_error("InputComponent must be child of CharacterBody3D")
 		return
+	
+	# Initialize mouse state properly
+	is_mouse_captured = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+	
+	# If starting with visible mouse, enable preview immediately
+	if not is_mouse_captured and show_cursor_preview and mouse_navigation_enabled:
+		is_showing_preview = true
+		print("Initial preview mode enabled")
 
 func set_camera(cam: Camera3D):
 	camera = cam
@@ -32,14 +45,45 @@ func _input(event):
 	if not camera:
 		return
 		
-	# Track mouse capture state
+	# Track mouse capture state (but don't change it - ControllerCamera.gd handles that)
 	if event.is_action_pressed("toggle_mouse_look"):
-		is_mouse_captured = !is_mouse_captured
+		# Wait for the camera script to process first, then check state
+		call_deferred("check_mouse_state_change")
 		
-	# Handle click navigation when mouse is not captured
-	if not is_mouse_captured and mouse_navigation_enabled:
+	# Handle click navigation when mouse is visible
+	if Input.mouse_mode == Input.MOUSE_MODE_VISIBLE and mouse_navigation_enabled:
 		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			handle_click_navigation(event.position)
+			commit_to_destination(event.position)
+		elif event is InputEventMouseMotion and show_cursor_preview:
+			# Always try to update preview when mouse moves and cursor is visible
+			update_cursor_preview(event.position)
+
+func check_mouse_state_change():
+	var was_captured = is_mouse_captured
+	is_mouse_captured = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+	
+	# Debug prints
+	print("Mouse state changed - Captured: ", is_mouse_captured, " Was: ", was_captured)
+	
+	if is_mouse_captured and was_captured != is_mouse_captured:
+		# Just became captured
+		hide_cursor_preview()
+		print("Hiding preview - mouse captured")
+	elif not is_mouse_captured and was_captured != is_mouse_captured:
+		# Just became visible
+		if show_cursor_preview and mouse_navigation_enabled:
+			is_showing_preview = true
+			print("Starting preview - mouse visible, is_showing_preview: ", is_showing_preview)
+			# Get current mouse position and start preview immediately
+			var mouse_pos = get_viewport().get_mouse_position()
+			print("Immediate preview at mouse position: ", mouse_pos)
+			update_cursor_preview(mouse_pos)
+
+func delayed_preview_start():
+	if Input.mouse_mode == Input.MOUSE_MODE_VISIBLE and is_showing_preview:
+		var mouse_pos = get_viewport().get_mouse_position()
+		print("Starting preview at mouse position: ", mouse_pos)
+		update_cursor_preview(mouse_pos)
 
 func _physics_process(delta):
 	if click_override_timer > 0:
@@ -62,9 +106,15 @@ func get_final_input_vector() -> Vector2:
 	
 	return wasd_input
 
-func handle_click_navigation(screen_pos: Vector2):
-	if not camera or not character:
+func update_cursor_preview(screen_pos: Vector2):
+	if not camera or not character or not destination_marker:
+		print("Missing components for preview")
 		return
+		
+	# Debug the inputs
+	print("Updating preview at screen pos: ", screen_pos)
+	print("Mouse mode: ", Input.mouse_mode)
+	print("Is showing preview: ", is_showing_preview)
 		
 	# Raycast from camera to world
 	var space_state = character.get_world_3d().direct_space_state
@@ -75,7 +125,28 @@ func handle_click_navigation(screen_pos: Vector2):
 	var result = space_state.intersect_ray(query)
 	
 	if result:
-		set_click_destination(result.position)
+		preview_position = result.position
+		destination_marker.global_position = preview_position
+		destination_marker.visible = true
+		print("Preview updated to world pos: ", preview_position)
+	else:
+		print("No raycast hit found")
+
+func commit_to_destination(screen_pos: Vector2):
+	if is_showing_preview:
+		# Use the current preview position as destination
+		set_click_destination(preview_position)
+		# DON'T disable preview mode - keep it active for next click
+		# is_showing_preview = false  # <-- This was the problem!
+		
+		print("Committed to destination: ", preview_position)
+		# Optional: Change marker appearance to show it's now a committed destination
+		# You could add visual feedback here (different color, etc.)
+
+func hide_cursor_preview():
+	is_showing_preview = false
+	if destination_marker and not has_click_destination:
+		destination_marker.visible = false
 
 func set_click_destination(world_pos: Vector3):
 	click_destination = world_pos
@@ -89,8 +160,17 @@ func set_click_destination(world_pos: Vector3):
 
 func cancel_click_destination():
 	has_click_destination = false
-	if destination_marker:
+	print("Cancelled click destination")
+	
+	# If we're in preview mode and mouse is visible, continue showing preview
+	if is_showing_preview and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE and destination_marker:
+		# Keep marker visible and update to current cursor position
+		var current_mouse_pos = get_viewport().get_mouse_position()
+		update_cursor_preview(current_mouse_pos)
+		print("Restored preview mode after cancelling destination")
+	elif destination_marker:
 		destination_marker.visible = false
+		print("Hidden marker - not in preview mode")
 
 func get_click_movement_vector() -> Vector2:
 	if not has_click_destination or not character:

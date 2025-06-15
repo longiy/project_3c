@@ -3,3 +3,4 @@ res://Assets/ps_character_gurl.tres
 res://Assets/ps_character_gurl.tscn
 res://MARKER.tscn
 res://Scripts/ControllerCharacter.gd
+res://InputComponent.gd

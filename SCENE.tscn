@@ -98,7 +98,6 @@ use_8_directional = false
 [node name="InputComponent" type="Node" parent="CHARACTER" node_paths=PackedStringArray("destination_marker")]
 script = ExtResource("6_w862e")
 destination_marker = NodePath("../../MARKER")
-pathfinding_enabled = true
 
 [node name="PS_Character_Gurl" parent="CHARACTER" instance=ExtResource("3_aeafk")]
 

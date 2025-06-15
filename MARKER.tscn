@@ -1,15 +1,9 @@
-[gd_scene load_steps=3 format=3 uid="uid://bsprrm672tx2s"]
+[gd_scene load_steps=2 format=3 uid="uid://bsprrm672tx2s"]
 
 [ext_resource type="Texture2D" uid="uid://cc7t3a5ncyf1y" path="res://Assets/grid-cursor.png" id="1_006f4"]
-
-[sub_resource type="SphereMesh" id="SphereMesh_006f4"]
 
 [node name="MARKER" type="Node3D"]
 
 [node name="Sprite3D" type="Sprite3D" parent="."]
-transform = Transform3D(0.5, 0, 0, 0, -2.18557e-08, -0.5, 0, 0.5, -2.18557e-08, 0, 0, 0)
+transform = Transform3D(0.5, 0, 0, 0, -2.18557e-08, -0.5, 0, 0.5, -2.18557e-08, 0, 0.01, 0)
 texture = ExtResource("1_006f4")
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-transform = Transform3D(0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2, 0, 0, 0)
-mesh = SubResource("SphereMesh_006f4")
