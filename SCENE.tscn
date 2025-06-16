@@ -76,7 +76,6 @@ offset_bottom = 33.0
 [node name="CAMERARIG" type="Node3D" parent="." node_paths=PackedStringArray("target_character")]
 script = ExtResource("2_caybs")
 target_character = NodePath("../CHARACTER")
-camera_height = 1.5
 follow_smoothing = 16.0
 
 [node name="SpringArm3D" type="SpringArm3D" parent="CAMERARIG"]
@@ -84,6 +83,9 @@ spring_length = 2.0
 
 [node name="Camera3D" type="Camera3D" parent="CAMERARIG/SpringArm3D"]
 transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 0, 0, 0)
+
+[node name="CameraFocusPoint" type="Node3D" parent="CAMERARIG"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.874218, 0.960729, 0)
 
 [node name="CHARACTER" type="CharacterBody3D" parent="." node_paths=PackedStringArray("animation_controller", "camera")]
 collision_layer = 2
