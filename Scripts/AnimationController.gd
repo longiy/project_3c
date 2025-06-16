@@ -1,4 +1,4 @@
-# AnimationController.gd - Polling version (no signals)
+# AnimationController.gd - Decoupled from specific input components
 extends Node
 class_name AnimationController
 
@@ -15,7 +15,6 @@ class_name AnimationController
 
 var state_machine: AnimationNodeStateMachinePlayback
 var character: CharacterBody3D
-var input_component: InputComponent
 
 # Animation state
 var current_blend_position = Vector2.ZERO
@@ -24,10 +23,10 @@ var is_moving = false
 var is_grounded = false
 var movement_speed = 0.0
 var input_direction = Vector2.ZERO
+var landing_timer = 0.0
 
 func _ready():
 	character = get_parent() as CharacterBody3D
-	input_component = character.get_node_or_null("InputComponent") as InputComponent
 	
 	if not character:
 		push_error("AnimationController must be child of CharacterBody3D")
@@ -48,19 +47,19 @@ func _physics_process(delta):
 	if not state_machine or not character:
 		return
 	
-	# POLL current state instead of relying on signals
+	# POLL current state from character only
 	poll_current_state()
 	update_blend_space(delta)
-	update_state_machine()
+	update_state_machine(delta)
 
 func poll_current_state():
-	"""POLL current movement and input state - no signals needed"""
+	"""POLL current movement and input state - only talks to character"""
 	# Get movement data from character
 	movement_speed = character.get_movement_speed()
 	is_moving = movement_speed > movement_threshold
 	is_grounded = character.is_on_floor()
 	
-	# Get input direction - poll from character
+	# Get input direction from character (character handles input arbitration)
 	input_direction = character.get_current_input_direction()
 
 func update_blend_space(delta):
@@ -94,12 +93,21 @@ func get_speed_multiplier() -> float:
 	# Walk (3.0 speed):      3.0/3.0 = 1.0  → Walk animations at position ±1.0
 	# Run (6.0 speed):       6.0/3.0 = 2.0  → Run animations at position ±2.0
 
-func update_state_machine():
+func update_state_machine(delta):
 	var current_state = state_machine.get_current_node()
-	
-	# Handle state transitions
+
 	if not is_grounded and current_state != "Airborne":
 		state_machine.travel("Airborne")
+	elif is_grounded and current_state == "Airborne":
+		state_machine.travel("Land")
+		landing_timer = 2.0  # Duration of your landing animation
+	elif current_state == "Land":
+		if is_moving:
+			state_machine.travel("Move")  # Quick blend to movement
+		else:
+			landing_timer -= delta
+			if landing_timer <= 0.1:  # Transition slightly before animation ends
+				state_machine.travel("Idle")  # Smooth blend to idle
 	elif is_grounded and is_moving and current_state != "Move":
 		state_machine.travel("Move")
 	elif is_grounded and not is_moving and current_state != "Idle":

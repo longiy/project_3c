@@ -1,11 +1,12 @@
-[gd_scene load_steps=15 format=3 uid="uid://dngafe0y2nx5b"]
+[gd_scene load_steps=16 format=3 uid="uid://dngafe0y2nx5b"]
 
 [ext_resource type="Script" uid="uid://dt54n1ktg7wqr" path="res://Scripts/ControllerCharacter.gd" id="1_5si1x"]
 [ext_resource type="Script" uid="uid://cms4l0nes10tn" path="res://Scripts/ControllerCamera.gd" id="2_caybs"]
 [ext_resource type="Script" uid="uid://cws7m480lxvaf" path="res://Scripts/DebugUI.gd" id="2_u4csh"]
 [ext_resource type="PackedScene" uid="uid://cbx0rhk665pls" path="res://Assets/ps_character_gurl.tscn" id="3_aeafk"]
-[ext_resource type="Script" uid="uid://c63imyupotuj1" path="res://Scripts/InputComponent.gd" id="4_0er5f"]
-[ext_resource type="Script" uid="uid://ceg85p1hqrfpk" path="res://AnimationController.gd" id="5_gbv5d"]
+[ext_resource type="Script" uid="uid://c63imyupotuj1" path="res://Scripts/ClickNavigationComponent.gd" id="4_0er5f"]
+[ext_resource type="Script" uid="uid://csay0tqtwpcea" path="res://Scripts/GamepadComponent.gd" id="4_wiekx"]
+[ext_resource type="Script" uid="uid://ceg85p1hqrfpk" path="res://Scripts/AnimationController.gd" id="5_gbv5d"]
 [ext_resource type="PackedScene" uid="uid://bsprrm672tx2s" path="res://MARKER.tscn" id="7_w862e"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_3a8dd"]
@@ -91,7 +92,10 @@ script = ExtResource("1_5si1x")
 animation_controller = NodePath("AnimationController")
 camera = NodePath("../CAMERARIG/SpringArm3D/Camera3D")
 
-[node name="InputComponent" type="Node" parent="CHARACTER" node_paths=PackedStringArray("camera", "destination_marker")]
+[node name="GamepadComponent" type="Node" parent="CHARACTER"]
+script = ExtResource("4_wiekx")
+
+[node name="ClickNavigationComponent" type="Node" parent="CHARACTER" node_paths=PackedStringArray("camera", "destination_marker")]
 script = ExtResource("4_0er5f")
 camera = NodePath("../../CAMERARIG/SpringArm3D/Camera3D")
 destination_marker = NodePath("../../MARKER")

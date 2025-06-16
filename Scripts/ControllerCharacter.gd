@@ -1,4 +1,4 @@
-# ControllerCharacter.gd - Polling version (no signals)
+# ControllerCharacter.gd - Refactored with proper input arbitration
 extends CharacterBody3D
 
 @export_group("Debug")
@@ -38,14 +38,19 @@ var jumps_remaining = 0
 var is_running = false
 var is_slow_walking = false
 
-# Component references
-var input_component: InputComponent
+# Input components - found automatically
+var click_navigation_component: ClickNavigationComponent
+var input_components: Array[Node] = []
 
 func _ready():
-	# Get InputComponent reference (no signal connection needed)
-	input_component = get_node_or_null("InputComponent")
-	if input_component:
-		print("Character: Found InputComponent for click navigation")
+	# Find input components automatically
+	click_navigation_component = get_node_or_null("ClickNavigationComponent") as ClickNavigationComponent
+	
+	# Collect all input components for future extensibility
+	for child in get_children():
+		if child.has_method("get_movement_input"):
+			input_components.append(child)
+			print("Character: Found input component: ", child.name)
 	
 	if not animation_controller:
 		push_warning("No AnimationController assigned - animations will not work")
@@ -62,7 +67,7 @@ func _physics_process(delta):
 	else:
 		coyote_timer -= delta
 	
-	# POLL input state from InputComponent
+	# Get input with proper arbitration
 	var input_dir = get_current_input()
 	
 	# Handle movement mode inputs
@@ -87,13 +92,30 @@ func _physics_process(delta):
 	move_and_slide()
 
 func get_current_input() -> Vector2:
-	"""POLL current input state - no signals needed"""
-	if input_component and input_component.is_active():
-		# InputComponent is handling input (click navigation active)
-		return input_component.get_current_input()
-	else:
-		# Fall back to direct WASD input
-		return Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
+	"""Input arbitration - WASD always wins, then check input components"""
+	
+	# 1. WASD input has highest priority (immediate override)
+	var wasd_input = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
+	
+	if wasd_input.length() > 0.1:
+		# WASD overrides everything - tell all input components to cancel
+		cancel_all_input_components()
+		return wasd_input
+	
+	# 2. Check input components in order (click nav, gamepad, AI, etc.)
+	for component in input_components:
+		if component.has_method("is_active") and component.is_active():
+			if component.has_method("get_movement_input"):
+				return component.get_movement_input()
+	
+	# 3. No input
+	return Vector2.ZERO
+
+func cancel_all_input_components():
+	"""Tell all input components to cancel their current actions"""
+	for component in input_components:
+		if component.has_method("cancel_input"):
+			component.cancel_input()
 
 func calculate_movement_vector(input_dir: Vector2) -> Vector3:
 	var movement_vector = Vector3.ZERO
@@ -152,9 +174,8 @@ func reset_character_transform():
 	jumps_remaining = max_jumps
 	coyote_timer = 0.0
 	
-	# Cancel any click navigation
-	if input_component:
-		input_component.cancel_click_destination()
+	# Cancel all input components
+	cancel_all_input_components()
 	
 	print("Character reset to: ", reset_position)
 

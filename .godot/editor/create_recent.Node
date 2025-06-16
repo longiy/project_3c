@@ -1,6 +1,6 @@
+Node
 WorldEnvironment
 Node3D
-Node
 MeshInstance3D
 Sprite3D
 AnimationTree
@@ -12,4 +12,3 @@ StaticBody3D
 Camera3D
 DirectionalLight3D
 CollisionShape3D
-CharacterBody3D
