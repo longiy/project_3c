@@ -106,10 +106,14 @@ func get_movement_input() -> Vector2:
 	
 	var direction_3d = (click_destination - character.global_position).normalized()
 	
-	# Check arrival (only for single clicks, not drag mode)
-	if not is_dragging and has_click_destination:
-		var distance = character.global_position.distance_to(click_destination)
-		if distance < arrival_threshold:
+	# Check arrival for BOTH single clicks and drag mode
+	var distance = character.global_position.distance_to(click_destination)
+	if distance < arrival_threshold:
+		if is_dragging:
+			# In drag mode: just stop moving until mouse moves again
+			return Vector2.ZERO
+		else:
+			# Single click: start the arrival delay sequence
 			start_arrival_delay()
 			return Vector2.ZERO
 	
