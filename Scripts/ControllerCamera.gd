@@ -1,4 +1,4 @@
-# ControllerCamera.gd - Only handles camera-specific inputs
+# ControllerCamera.gd - Camera with offset system
 extends Node3D
 
 signal mouse_mode_changed(is_captured: bool)
@@ -7,6 +7,11 @@ signal mouse_mode_changed(is_captured: bool)
 @export var target_character: CharacterBody3D
 @export var camera_height = 2.0
 @export var follow_smoothing = 8.0
+
+@export_group("Camera Offset")
+@export var camera_offset = Vector3.ZERO  # NEW: Offset camera within SpringArm
+@export var offset_smoothing = 8.0
+@export var enable_dynamic_offset = false  # Adjust offset based on movement
 
 @export_group("Mouse Controls")
 @export var mouse_sensitivity = 0.002
@@ -25,6 +30,7 @@ signal mouse_mode_changed(is_captured: bool)
 @export var vertical_limit_max = 50.0
 
 @onready var spring_arm = $SpringArm3D
+@onready var camera = $SpringArm3D/Camera3D
 
 var character: CharacterBody3D
 var mouse_delta = Vector2.ZERO
@@ -32,6 +38,7 @@ var camera_rotation_x = 0.0
 var is_mouse_captured = true
 var target_distance = 4.0
 var current_distance = 4.0
+var current_offset = Vector3.ZERO
 
 func _ready():
 	character = target_character
@@ -47,12 +54,13 @@ func _ready():
 	camera_rotation_x = deg_to_rad(-20.0)
 	target_distance = spring_arm.spring_length
 	current_distance = target_distance
+	current_offset = camera_offset
 	
 	if character:
 		global_position = character.global_position + Vector3(0, camera_height, 0)
 
 func _input(event):
-	# ONLY handle camera-specific inputs
+	# Camera-specific inputs
 	if event.is_action_pressed("toggle_mouse_look"):
 		toggle_mouse_mode()
 	
@@ -89,14 +97,56 @@ func _physics_process(delta):
 		
 		mouse_delta = Vector2.ZERO
 	
-	# Follow character
+	# Follow character (SpringArm pivot stays at character center)
 	var target_position = character.global_position + Vector3(0, camera_height, 0)
 	global_position = global_position.lerp(target_position, follow_smoothing * delta)
 	
-	# Update distance and rotation
+	# Update SpringArm distance and rotation
 	current_distance = lerp(current_distance, target_distance, distance_smoothing * delta)
 	spring_arm.spring_length = current_distance
 	spring_arm.rotation.x = camera_rotation_x
+	
+	# NEW: Apply camera offset by offsetting the SpringArm itself
+	var target_offset = camera_offset
+	
+	# Optional: Dynamic offset based on character movement
+	if enable_dynamic_offset and character.velocity.length() > 0.1:
+		var movement_dir = Vector2(character.velocity.x, character.velocity.z).normalized()
+		# Slightly offset camera opposite to movement direction
+		target_offset += Vector3(movement_dir.x * 0.3, 0, movement_dir.y * 0.3)
+	
+	# Smoothly apply offset
+	current_offset = current_offset.lerp(target_offset, offset_smoothing * delta)
+	
+	# Apply offset to SpringArm (not camera directly)
+	if spring_arm:
+		spring_arm.position = current_offset
 
 func get_camera() -> Camera3D:
-	return $SpringArm3D/Camera3D
+	return camera
+
+# === PUBLIC API FOR OFFSET CONTROL ===
+
+func set_camera_offset(new_offset: Vector3, transition_time: float = 1.0):
+	"""Change camera offset smoothly"""
+	camera_offset = new_offset
+	print("Camera: Setting offset to ", new_offset)
+
+func set_over_shoulder_left(strength: float = 1.0):
+	"""Quick setup for left shoulder view"""
+	set_camera_offset(Vector3(-0.8 * strength, 0.2 * strength, 0.3 * strength))
+
+func set_over_shoulder_right(strength: float = 1.0):
+	"""Quick setup for right shoulder view"""
+	set_camera_offset(Vector3(0.8 * strength, 0.2 * strength, 0.3 * strength))
+
+func set_centered_view():
+	"""Return to centered view"""
+	set_camera_offset(Vector3.ZERO)
+
+func set_combat_offset(target_enemy: Node3D):
+	"""Adjust offset to better frame character and enemy"""
+	if target_enemy and character:
+		var to_enemy = (target_enemy.global_position - character.global_position).normalized()
+		var side_offset = Vector3(to_enemy.z, 0, -to_enemy.x) * 0.6  # Perpendicular to enemy direction
+		set_camera_offset(side_offset + Vector3(0, 0.3, 0.2))
