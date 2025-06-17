@@ -100,8 +100,8 @@ func is_active() -> bool:
 	return has_click_destination or is_arrival_delay_active or is_dragging
 
 func get_movement_input() -> Vector2:
-	"""Get movement input vector for character controller"""
-	if not is_active():
+	# Don't provide input during arrival delay
+	if is_arrival_delay_active or not has_click_destination:
 		return Vector2.ZERO
 	
 	var direction_3d = (click_destination - character.global_position).normalized()

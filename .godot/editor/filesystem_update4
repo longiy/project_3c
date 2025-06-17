@@ -7,3 +7,4 @@ res://Assets/ps_character_gurl.tscn
 res://Scripts/AnimationController.gd
 res://CameraFocusPoint.gd
 res://Scripts/ControllerCamera.gd
+res://Scripts/ClickNavigationComponent.gd
