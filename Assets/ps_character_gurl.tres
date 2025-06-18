@@ -62,34 +62,38 @@ max_space = Vector2(2, 2)
 advance_mode = 2
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_xyta0"]
-xfade_time = 0.5
+xfade_time = 0.1
 advance_mode = 2
 advance_expression = "is_grounded"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_ly3n2"]
-xfade_time = 0.5
+xfade_time = 0.2
 advance_mode = 2
-advance_expression = "!is_moving AND landing_complete"
+advance_expression = "!is_moving && landing_complete"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_f3nvh"]
+xfade_time = 0.1
 advance_mode = 2
 advance_expression = "!is_grounded"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_wv4at"]
+xfade_time = 0.2
 advance_mode = 2
 advance_expression = "is_moving"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_4tnsy"]
+xfade_time = 0.2
 advance_mode = 2
 advance_expression = "!is_moving"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_8iigs"]
+xfade_time = 0.1
 advance_mode = 2
-advance_expression = "is_airborne"
+advance_expression = "!is_grounded"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_qppn5"]
 advance_mode = 2
-advance_expression = "is_moving AND landing_complete"
+advance_expression = "is_moving && landing_complete"
 
 [resource]
 states/Airborne/node = SubResource("AnimationNodeAnimation_upni3")
