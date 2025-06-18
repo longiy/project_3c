@@ -1,23 +1,24 @@
-# AnimationController.gd - Simplified for direct expression usage
+# AnimationController.gd - BlendSpace1D version for speed-based blending
 extends Node
 class_name AnimationController
 
 @export var animation_tree: AnimationTree
-@export var blend_space_param = "parameters/Move/blend_position"
+@export var blend_space_param = "parameters/Move/blend_amount"
 
 @export_group("Animation Thresholds")
 @export var movement_threshold = 0.3
-@export var run_threshold = 6.0
+@export var walk_speed_reference = 3.0
+@export var run_speed_reference = 6.0
 
-@export_group("Blend Space Setup")
-@export var strafe_blend_speed = 8.0
+@export_group("Blend Settings")
+@export var blend_smoothing = 8.0
 
 var state_machine: AnimationNodeStateMachinePlayback
 var character: CharacterBody3D
 
-# Animation state (only for blend space)
-var current_blend_position = Vector2.ZERO
-var target_blend_position = Vector2.ZERO
+# Animation state (single float for 1D blending)
+var current_blend_amount = 0.0
+var target_blend_amount = 0.0
 
 # State tracking for debug
 var previous_state = ""
@@ -41,7 +42,7 @@ func _ready():
 		push_error("StateMachine not found in AnimationTree")
 		return
 	
-	print("✅ AnimationController initialized - using direct expressions")
+	print("✅ AnimationController initialized - using BlendSpace1D")
 
 func _physics_process(delta):
 	if not state_machine or not character:
@@ -53,33 +54,38 @@ func _physics_process(delta):
 		print("🎭 State changed: ", previous_state, " → ", current_state)
 		previous_state = current_state
 	
-	# Only handle blend space - expressions handle state transitions
-	update_blend_space(delta)
+	# Update blend space
+	update_blend_space_1d(delta)
 
-func update_blend_space(delta):
-	# Get current data from character
+func update_blend_space_1d(delta):
+	# Get current movement speed from character
 	var movement_speed = character.get_movement_speed()
 	var is_moving = movement_speed > movement_threshold
 	
-	# Simple forward/back blending based on actual speed
 	if is_moving:
-		var speed_multiplier = get_speed_multiplier()
-		target_blend_position = Vector2(0, speed_multiplier)
+		# Map speed to blend space positions
+		# 0.0 = Idle, 1.0 = Walk, 2.0 = Run
+		target_blend_amount = calculate_blend_amount(movement_speed)
 	else:
-		target_blend_position = Vector2.ZERO
+		target_blend_amount = 0.0  # Idle
 	
-	# Smooth blend position changes
-	current_blend_position = current_blend_position.lerp(target_blend_position, strafe_blend_speed * delta)
-	animation_tree.set(blend_space_param, current_blend_position)
+	# Smooth blend changes
+	current_blend_amount = lerp(current_blend_amount, target_blend_amount, blend_smoothing * delta)
+	animation_tree.set(blend_space_param, current_blend_amount)
 
-func get_speed_multiplier() -> float:
-	# Map actual movement speed to blend space positions
-	var movement_speed = character.get_movement_speed()
-	var base_speed = character.walk_speed  # Normal walk (3.0) = baseline
-	var speed_ratio = movement_speed / base_speed
+func calculate_blend_amount(speed: float) -> float:
+	"""Convert movement speed to BlendSpace1D position"""
 	
-	# Clamp to reasonable range for blend space
-	return clamp(speed_ratio, 0.0, 2.0)
+	if speed <= movement_threshold:
+		return 0.0  # Idle
+	elif speed <= walk_speed_reference:
+		# Between Idle (0.0) and Walk (1.0)
+		var ratio = (speed - movement_threshold) / (walk_speed_reference - movement_threshold)
+		return lerp(0.0, 1.0, ratio)
+	else:
+		# Between Walk (1.0) and Run (2.0)
+		var ratio = (speed - walk_speed_reference) / (run_speed_reference - walk_speed_reference)
+		return lerp(1.0, 2.0, clamp(ratio, 0.0, 1.0))
 
 # Debug info for testing
 func get_debug_info() -> Dictionary:
@@ -87,6 +93,7 @@ func get_debug_info() -> Dictionary:
 	
 	return {
 		"movement_speed": movement_speed,
-		"blend_position": current_blend_position,
+		"blend_amount": current_blend_amount,
+		"target_blend": target_blend_amount,
 		"current_state": state_machine.get_current_node() if state_machine else "None"
 	}
