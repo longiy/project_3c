@@ -1,3 +1,4 @@
 res://SCENE.tscn
 res://Assets/ps_character_gurl.tres
 res://Assets/ps_character_gurl.tscn
+res://Scripts/AnimationController.gd
