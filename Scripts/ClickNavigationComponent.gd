@@ -12,6 +12,7 @@ class_name ClickNavigationComponent
 @export_group("Drag Mode")
 @export var enable_drag_mode = true
 @export var drag_update_rate = 0.05  # Seconds between updates while dragging
+@export var continuous_cursor_follow = false  # True = Diablo style, False = Click-to-position
 
 var character: CharacterBody3D
 var is_mouse_captured = true
@@ -92,6 +93,15 @@ func _physics_process(delta):
 	# Handle drag timer
 	if is_dragging:
 		drag_timer -= delta
+		
+		# Continuous cursor follow (Diablo style)
+		if continuous_cursor_follow:
+			var current_mouse_pos = get_viewport().get_mouse_position()
+			var world_pos = raycast_to_world(current_mouse_pos)
+			if world_pos != Vector3.ZERO:
+				click_destination = world_pos
+				if destination_marker:
+					destination_marker.global_position = world_pos
 
 # === PUBLIC INTERFACE FOR CHARACTER CONTROLLER ===
 
@@ -100,6 +110,7 @@ func is_active() -> bool:
 	return has_click_destination or is_arrival_delay_active or is_dragging
 
 func get_movement_input() -> Vector2:
+	"""Get movement input vector for character controller"""
 	# Don't provide input during arrival delay
 	if is_arrival_delay_active or not has_click_destination:
 		return Vector2.ZERO
@@ -110,26 +121,20 @@ func get_movement_input() -> Vector2:
 	var distance = character.global_position.distance_to(click_destination)
 	if distance < arrival_threshold:
 		if is_dragging:
-			# In drag mode: just stop moving until mouse moves again
-			return Vector2.ZERO
+			# In drag mode: behavior depends on continuous follow setting
+			if continuous_cursor_follow:
+				# Diablo style: never stop, always try to reach cursor
+				return convert_to_camera_relative(direction_3d)
+			else:
+				# Click-to-position: stop moving until mouse moves again
+				return Vector2.ZERO
 		else:
 			# Single click: start the arrival delay sequence
 			start_arrival_delay()
 			return Vector2.ZERO
 	
-	# Convert to camera-relative movement if camera available
-	if camera:
-		var cam_transform = camera.global_transform.basis
-		var cam_forward = Vector3(-cam_transform.z.x, 0, -cam_transform.z.z).normalized()
-		var cam_right = Vector3(cam_transform.x.x, 0, cam_transform.x.z).normalized()
-		
-		var forward_dot = direction_3d.dot(cam_forward)
-		var right_dot = direction_3d.dot(cam_right)
-		
-		return Vector2(right_dot, -forward_dot)
-	else:
-		# Fallback to world coordinates
-		return Vector2(direction_3d.x, direction_3d.z)
+	# Convert to camera-relative movement
+	return convert_to_camera_relative(direction_3d)
 
 func cancel_input():
 	"""Cancel all navigation - called by character controller when WASD pressed"""
@@ -231,3 +236,18 @@ func update_cursor_preview_current():
 	if is_showing_preview:
 		var mouse_pos = get_viewport().get_mouse_position()
 		update_cursor_preview(mouse_pos)
+
+func convert_to_camera_relative(direction_3d: Vector3) -> Vector2:
+	"""Convert 3D world direction to camera-relative 2D input"""
+	if camera:
+		var cam_transform = camera.global_transform.basis
+		var cam_forward = Vector3(-cam_transform.z.x, 0, -cam_transform.z.z).normalized()
+		var cam_right = Vector3(cam_transform.x.x, 0, cam_transform.x.z).normalized()
+		
+		var forward_dot = direction_3d.dot(cam_forward)
+		var right_dot = direction_3d.dot(cam_right)
+		
+		return Vector2(right_dot, -forward_dot)
+	else:
+		# Fallback to world coordinates
+		return Vector2(direction_3d.x, direction_3d.z)

@@ -76,7 +76,6 @@ offset_bottom = 33.0
 [node name="CAMERARIG" type="Node3D" parent="." node_paths=PackedStringArray("target_character")]
 script = ExtResource("2_caybs")
 target_character = NodePath("../CHARACTER")
-follow_smoothing = 64.0
 enable_dynamic_offset = true
 
 [node name="SpringArm3D" type="SpringArm3D" parent="CAMERARIG"]
