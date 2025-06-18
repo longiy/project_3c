@@ -3,7 +3,7 @@ extends Node
 class_name AnimationController
 
 @export var animation_tree: AnimationTree
-@export var blend_space_param = "parameters/Move/blend_amount"
+@export var blend_space_param = "parameters/Move/blend_position"
 
 @export_group("Animation Thresholds")
 @export var movement_threshold = 0.3
