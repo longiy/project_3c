@@ -57,17 +57,20 @@ func _physics_process(delta):
 	var current_state = state_machine.get_current_node()
 	if current_state != previous_state:
 		print("State changed: ", previous_state, " -> ", current_state)
-		
-		# Reset landing timer when entering Land state
-		if current_state == "Land":
-			landing_timer = landing_animation_duration
-			
 		previous_state = current_state
+	
+
 	
 	# POLL current state from character only
 	poll_current_state()
 	update_blend_space(delta)
-	update_state_machine_parameters(delta)
+	
+	# Debug your values
+	print("is_grounded: ", is_grounded, " | is_moving: ", is_moving)
+	
+	# Try setting conditions that might actually exist
+	animation_tree.set("parameters/conditions/is_grounded", is_grounded)
+	animation_tree.set("parameters/conditions/is_moving", is_moving)
 
 func poll_current_state():
 	"""POLL current movement and input state - only talks to character"""
@@ -106,8 +109,6 @@ func get_speed_multiplier() -> float:
 	return clamp(speed_ratio, 0.0, 2.0)
 
 func update_state_machine_parameters(delta):
-	"""Set parameters for automatic state transitions - NO travel() calls"""
-	
 	# Update landing timer
 	var current_state = state_machine.get_current_node()
 	if current_state == "Land":
@@ -120,8 +121,10 @@ func update_state_machine_parameters(delta):
 	animation_tree.set("parameters/conditions/is_idle", not is_moving)
 	animation_tree.set("parameters/conditions/landing_complete", landing_timer <= 0.1)
 	
-	# Let the StateMachine arrows handle all transitions automatically
-	# No more travel() calls!
+	# DEBUG - print when airborne conditions change
+	if not is_grounded:
+		print("Setting is_airborne=true, is_grounded=false")
+		print("Current state: ", current_state)
 
 # Debug info for testing
 func get_debug_info() -> Dictionary:
