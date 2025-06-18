@@ -77,6 +77,7 @@ advance_expression = "!is_grounded"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_wv4at"]
 advance_mode = 2
+advance_expression = "is_moving"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_4tnsy"]
 advance_mode = 2

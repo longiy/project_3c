@@ -31,6 +31,14 @@ var landing_timer = 0.0
 # State tracking for debug
 var previous_state = ""
 
+# Debug tracking variables
+var prev_grounded = true
+var prev_moving = false
+var prev_airborne = false
+var prev_idle = true
+var prev_landing_complete = false
+var debug_counter = 0
+
 func _ready():
 	character = get_parent() as CharacterBody3D
 	
@@ -48,6 +56,14 @@ func _ready():
 	
 	if not state_machine:
 		push_error("StateMachine not found in AnimationTree")
+	
+	# Debug: Print all available parameters
+	if animation_tree:
+		print("🔍 Available AnimationTree parameters:")
+		var tree_dict = animation_tree.get_property_list()
+		for prop in tree_dict:
+			if prop.name.begins_with("parameters/"):
+				print("  - ", prop.name)
 
 func _physics_process(delta):
 	if not state_machine or not character:
@@ -57,20 +73,17 @@ func _physics_process(delta):
 	var current_state = state_machine.get_current_node()
 	if current_state != previous_state:
 		print("State changed: ", previous_state, " -> ", current_state)
+		
+		# Reset landing timer when entering Land state
+		if current_state == "Land":
+			landing_timer = landing_animation_duration
+			
 		previous_state = current_state
-	
-
 	
 	# POLL current state from character only
 	poll_current_state()
 	update_blend_space(delta)
-	
-	# Debug your values
-	print("is_grounded: ", is_grounded, " | is_moving: ", is_moving)
-	
-	# Try setting conditions that might actually exist
-	animation_tree.set("parameters/conditions/is_grounded", is_grounded)
-	animation_tree.set("parameters/conditions/is_moving", is_moving)
+	update_state_machine_parameters(delta)
 
 func poll_current_state():
 	"""POLL current movement and input state - only talks to character"""
@@ -109,22 +122,71 @@ func get_speed_multiplier() -> float:
 	return clamp(speed_ratio, 0.0, 2.0)
 
 func update_state_machine_parameters(delta):
+	"""Set parameters for automatic state transitions - NO travel() calls"""
+	
 	# Update landing timer
 	var current_state = state_machine.get_current_node()
 	if current_state == "Land":
 		landing_timer -= delta
 	
-	# Set all condition parameters for the state machine
-	animation_tree.set("parameters/conditions/is_grounded", is_grounded)
-	animation_tree.set("parameters/conditions/is_moving", is_moving)
-	animation_tree.set("parameters/conditions/is_airborne", not is_grounded)
-	animation_tree.set("parameters/conditions/is_idle", not is_moving)
-	animation_tree.set("parameters/conditions/landing_complete", landing_timer <= 0.1)
+	# Calculate current values
+	var curr_grounded = is_grounded
+	var curr_moving = is_moving
+	var curr_airborne = not is_grounded
+	var curr_idle = not is_moving
+	var curr_landing_complete = landing_timer <= 0.1
 	
-	# DEBUG - print when airborne conditions change
-	if not is_grounded:
-		print("Setting is_airborne=true, is_grounded=false")
-		print("Current state: ", current_state)
+	# Set all condition parameters for the state machine (try lowercase versions)
+	animation_tree.set("parameters/is_grounded", curr_grounded)
+	animation_tree.set("parameters/is_moving", curr_moving)
+	animation_tree.set("parameters/is_airborne", curr_airborne)
+	animation_tree.set("parameters/is_idle", curr_idle)
+	animation_tree.set("parameters/landing_complete", curr_landing_complete)
+	
+	# DEBUG: Print parameter changes only when they change
+	if curr_grounded != prev_grounded:
+		print("📍 Is Grounded changed: ", prev_grounded, " → ", curr_grounded)
+		print("   AnimationTree sees: ", animation_tree.get("parameters/is_grounded"))
+	
+	if curr_moving != prev_moving:
+		print("🏃 Is Moving changed: ", prev_moving, " → ", curr_moving)
+		print("   AnimationTree sees: ", animation_tree.get("parameters/is_moving"))
+	
+	if curr_airborne != prev_airborne:
+		print("✈️ Is Airborne changed: ", prev_airborne, " → ", curr_airborne)
+		print("   AnimationTree sees: ", animation_tree.get("parameters/is_airborne"))
+	
+	if curr_idle != prev_idle:
+		print("😴 Is Idle changed: ", prev_idle, " → ", curr_idle)
+		print("   AnimationTree sees: ", animation_tree.get("parameters/is_idle"))
+	
+	if curr_landing_complete != prev_landing_complete:
+		print("🛬 Landing Complete changed: ", prev_landing_complete, " → ", curr_landing_complete)
+		print("   AnimationTree sees: ", animation_tree.get("parameters/landing_complete"))
+	
+	# Update previous values
+	prev_grounded = curr_grounded
+	prev_moving = curr_moving
+	prev_airborne = curr_airborne
+	prev_idle = curr_idle
+	prev_landing_complete = curr_landing_complete
+	
+	# DEBUG: Print current state and all parameter values every 60 frames
+	debug_counter += 1
+	if debug_counter % 60 == 0:  # Print every second at 60fps
+		print("\n🎭 ANIMATION DEBUG STATUS:")
+		print("Current State: ", current_state)
+		print("Landing Timer: ", landing_timer)
+		print("\n📊 All Parameters:")
+		print("  is_grounded: ", animation_tree.get("parameters/is_grounded"))
+		print("  is_moving: ", animation_tree.get("parameters/is_moving"))
+		print("  is_airborne: ", animation_tree.get("parameters/is_airborne"))
+		print("  is_idle: ", animation_tree.get("parameters/is_idle"))
+		print("  landing_complete: ", animation_tree.get("parameters/landing_complete"))
+		print("----------------------------------------\n")
+	
+	# Let the StateMachine arrows handle all transitions automatically
+	# No more travel() calls!
 
 # Debug info for testing
 func get_debug_info() -> Dictionary:
