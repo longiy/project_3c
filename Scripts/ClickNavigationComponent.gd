@@ -5,14 +5,14 @@ class_name ClickNavigationComponent
 @export_group("Click Navigation")
 @export var camera: Camera3D  # Assign in editor
 @export var destination_marker: Node3D  # Assign in editor
-@export var arrival_threshold = 0.5
+@export var arrival_threshold = 0.1
 @export var show_cursor_preview = true
-@export var marker_disappear_delay = 1.0
+@export var marker_disappear_delay = 0.2
 
 @export_group("Drag Mode")
 @export var enable_drag_mode = true
-@export var drag_update_rate = 0.05  # Seconds between updates while dragging
-@export var continuous_cursor_follow = false  # True = Diablo style, False = Click-to-position
+@export var drag_update_rate = 0.01  # Seconds between updates while dragging
+@export var continuous_cursor_follow = true  # True = Diablo style, False = Click-to-position
 
 var character: CharacterBody3D
 var is_mouse_captured = true

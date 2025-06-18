@@ -4,3 +4,4 @@ res://Assets/ps_character_gurl.tscn
 res://Scripts/AnimationController.gd
 res://AnimationTreeMove1d.tres
 res://AnimationTreeMove2d.tres
+res://Scripts/ClickNavigationComponent.gd
