@@ -5,8 +5,8 @@
 [ext_resource type="Script" uid="uid://cws7m480lxvaf" path="res://Scripts/DebugUI.gd" id="2_u4csh"]
 [ext_resource type="PackedScene" uid="uid://cbx0rhk665pls" path="res://Assets/ps_character_gurl.tscn" id="3_aeafk"]
 [ext_resource type="Script" uid="uid://c63imyupotuj1" path="res://Scripts/ClickNavigationComponent.gd" id="4_0er5f"]
-[ext_resource type="Script" path="res://Scripts/GamepadComponent.gd" id="4_wiekx"]
-[ext_resource type="Script" path="res://Scripts/AnimationController.gd" id="5_gbv5d"]
+[ext_resource type="Script" uid="uid://csay0tqtwpcea" path="res://Scripts/GamepadComponent.gd" id="4_wiekx"]
+[ext_resource type="Script" uid="uid://ceg85p1hqrfpk" path="res://Scripts/AnimationController.gd" id="5_gbv5d"]
 [ext_resource type="PackedScene" uid="uid://bsprrm672tx2s" path="res://MARKER.tscn" id="7_w862e"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_3a8dd"]
@@ -76,7 +76,9 @@ offset_bottom = 33.0
 [node name="CAMERARIG" type="Node3D" parent="." node_paths=PackedStringArray("target_character")]
 script = ExtResource("2_caybs")
 target_character = NodePath("../CHARACTER")
+camera_height = 1.5
 enable_dynamic_offset = true
+min_distance = 2.0
 
 [node name="SpringArm3D" type="SpringArm3D" parent="CAMERARIG"]
 spring_length = 2.0

@@ -1,4 +1,4 @@
-# AnimationController.gd - Decoupled from specific input components
+# AnimationController.gd - Parameter-based state machine (no travel() calls)
 extends Node
 class_name AnimationController
 
@@ -13,6 +13,9 @@ class_name AnimationController
 @export var use_8_directional = true
 @export var strafe_blend_speed = 8.0
 
+@export_group("Landing Settings")
+@export var landing_animation_duration = 2.0
+
 var state_machine: AnimationNodeStateMachinePlayback
 var character: CharacterBody3D
 
@@ -24,6 +27,9 @@ var is_grounded = false
 var movement_speed = 0.0
 var input_direction = Vector2.ZERO
 var landing_timer = 0.0
+
+# State tracking for debug
+var previous_state = ""
 
 func _ready():
 	character = get_parent() as CharacterBody3D
@@ -47,10 +53,21 @@ func _physics_process(delta):
 	if not state_machine or not character:
 		return
 	
+	# Debug state changes
+	var current_state = state_machine.get_current_node()
+	if current_state != previous_state:
+		print("State changed: ", previous_state, " -> ", current_state)
+		
+		# Reset landing timer when entering Land state
+		if current_state == "Land":
+			landing_timer = landing_animation_duration
+			
+		previous_state = current_state
+	
 	# POLL current state from character only
 	poll_current_state()
 	update_blend_space(delta)
-	update_state_machine(delta)
+	update_state_machine_parameters(delta)
 
 func poll_current_state():
 	"""POLL current movement and input state - only talks to character"""
@@ -87,31 +104,24 @@ func get_speed_multiplier() -> float:
 	
 	# Clamp to reasonable range for blend space
 	return clamp(speed_ratio, 0.0, 2.0)
+
+func update_state_machine_parameters(delta):
+	"""Set parameters for automatic state transitions - NO travel() calls"""
 	
-	# Results:
-	# Slow walk (2.0 speed): 2.0/3.0 = 0.67 → Slow walk animations at position ±0.67
-	# Walk (3.0 speed):      3.0/3.0 = 1.0  → Walk animations at position ±1.0
-	# Run (6.0 speed):       6.0/3.0 = 2.0  → Run animations at position ±2.0
-
-func update_state_machine(delta):
+	# Update landing timer
 	var current_state = state_machine.get_current_node()
-
-	if not is_grounded and current_state != "Airborne":
-		state_machine.travel("Airborne")
-	elif is_grounded and current_state == "Airborne":
-		state_machine.travel("Land")
-		landing_timer = 2.0  # Duration of your landing animation
-	elif current_state == "Land":
-		if is_moving:
-			state_machine.travel("Move")  # Quick blend to movement
-		else:
-			landing_timer -= delta
-			if landing_timer <= 0.1:  # Transition slightly before animation ends
-				state_machine.travel("Idle")  # Smooth blend to idle
-	elif is_grounded and is_moving and current_state != "Move":
-		state_machine.travel("Move")
-	elif is_grounded and not is_moving and current_state != "Idle":
-		state_machine.travel("Idle")
+	if current_state == "Land":
+		landing_timer -= delta
+	
+	# Set all condition parameters for the state machine
+	animation_tree.set("parameters/conditions/is_grounded", is_grounded)
+	animation_tree.set("parameters/conditions/is_moving", is_moving)
+	animation_tree.set("parameters/conditions/is_airborne", not is_grounded)
+	animation_tree.set("parameters/conditions/is_idle", not is_moving)
+	animation_tree.set("parameters/conditions/landing_complete", landing_timer <= 0.1)
+	
+	# Let the StateMachine arrows handle all transitions automatically
+	# No more travel() calls!
 
 # Debug info for testing
 func get_debug_info() -> Dictionary:
@@ -121,5 +131,6 @@ func get_debug_info() -> Dictionary:
 		"is_grounded": is_grounded,
 		"input_direction": input_direction,
 		"blend_position": current_blend_position,
-		"current_state": state_machine.get_current_node() if state_machine else "None"
+		"current_state": state_machine.get_current_node() if state_machine else "None",
+		"landing_timer": landing_timer
 	}
