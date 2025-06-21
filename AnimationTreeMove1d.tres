@@ -27,37 +27,37 @@ advance_mode = 2
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_xyta0"]
 xfade_time = 0.1
 advance_mode = 2
-advance_expression = "get_node(\"../..\").is_on_floor()"
+advance_expression = "get_node(\"../../AnimationController\").is_on_floor()"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_ly3n2"]
 xfade_time = 0.2
 advance_mode = 2
-advance_expression = "get_node(\"../..\").get_movement_speed() <= 0.3"
+advance_expression = "get_node(\"../../AnimationController\").get_movement_speed() <= 0.3"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_f3nvh"]
 xfade_time = 0.1
 advance_mode = 2
-advance_expression = "!get_node(\"../..\").is_on_floor()"
+advance_expression = "!get_node(\"../../AnimationController\").is_on_floor()"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_ivj5s"]
 xfade_time = 0.2
 advance_mode = 2
-advance_expression = "get_node(\"../..\").get_movement_speed() > 0.3"
+advance_expression = "get_node(\"../../AnimationController\").get_movement_speed() > 0.3"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_uvmue"]
 xfade_time = 0.2
 advance_mode = 2
-advance_expression = "get_node(\"../..\").get_movement_speed() <= 0.3"
+advance_expression = "get_node(\"../../AnimationController\").get_movement_speed() <= 0.3"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_3ii0w"]
 xfade_time = 0.2
 advance_mode = 2
-advance_expression = "!get_node(\"../..\").is_on_floor()"
+advance_expression = "!get_node(\"../../AnimationController\").is_on_floor()"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_bfelf"]
 xfade_time = 0.2
 advance_mode = 2
-advance_expression = "get_node(\"../..\").get_movement_speed() > 0.3"
+advance_expression = "get_node(\"../../AnimationController\").get_movement_speed() > 0.3"
 
 [resource]
 states/Airborne/node = SubResource("AnimationNodeAnimation_upni3")
