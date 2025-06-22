@@ -29,8 +29,13 @@ signal mouse_mode_changed(is_captured: bool)
 @export var vertical_limit_min = -80.0
 @export var vertical_limit_max = 50.0
 
+@export_group("State Integration") 
+@export var enable_state_overrides = true
+@export var state_override_smoothing = 6.0
+
 @onready var spring_arm = $SpringArm3D
 @onready var camera = $SpringArm3D/Camera3D
+
 
 var character: CharacterBody3D
 var mouse_delta = Vector2.ZERO
@@ -39,6 +44,9 @@ var is_mouse_captured = true
 var target_distance = 4.0
 var current_distance = 4.0
 var current_offset = Vector3.ZERO
+
+var base_target_distance = 4.0  # Store original distance
+var is_state_controlled = false
 
 func _ready():
 	character = target_character
@@ -58,7 +66,11 @@ func _ready():
 	
 	if character:
 		global_position = character.global_position + Vector3(0, camera_height, 0)
-
+	
+	# Store base values for state system
+	base_target_distance = target_distance
+	
+	
 func _input(event):
 	# Camera-specific inputs
 	if event.is_action_pressed("toggle_mouse_look"):
@@ -121,6 +133,10 @@ func _physics_process(delta):
 	# Apply offset to SpringArm (not camera directly)
 	if spring_arm:
 		spring_arm.position = current_offset
+		
+	# NEW: Handle state-based overrides (if enabled)
+	if enable_state_overrides:
+		handle_state_overrides(delta)
 
 func get_camera() -> Camera3D:
 	return camera
@@ -150,3 +166,50 @@ func set_combat_offset(target_enemy: Node3D):
 		var to_enemy = (target_enemy.global_position - character.global_position).normalized()
 		var side_offset = Vector3(to_enemy.z, 0, -to_enemy.x) * 0.6  # Perpendicular to enemy direction
 		set_camera_offset(side_offset + Vector3(0, 0.3, 0.2))
+		
+		
+# === ADD THESE NEW METHODS ===
+
+func handle_state_overrides(delta):
+	"""Handle camera property overrides from state system"""
+	# This will be called by CameraStateComponent or can check for it
+	pass  # CameraStateComponent handles transitions directly
+
+func set_state_fov(new_fov: float, transition_speed: float = 2.0):
+	"""Set FOV from state system"""
+	if camera and enable_state_overrides:
+		# CameraStateComponent handles the smooth transition
+		is_state_controlled = true
+
+func set_state_distance(new_distance: float, transition_speed: float = 2.0):
+	"""Set camera distance from state system"""
+	if enable_state_overrides:
+		target_distance = new_distance
+		is_state_controlled = true
+
+func reset_to_base_values():
+	"""Reset camera to base values (exit state control)"""
+	if is_state_controlled:
+		target_distance = base_target_distance
+		if camera:
+			camera.fov = 75.0  # Default FOV
+		is_state_controlled = false
+
+# === ADD THESE PROPERTIES FOR STATE SYSTEM ACCESS ===
+func get_current_distance() -> float:
+	"""Get current camera distance for state transitions"""
+	return current_distance
+
+func get_current_fov() -> float:
+	"""Get current FOV for state transitions"""
+	return camera.fov if camera else 75.0
+
+# === DEBUG INFO UPDATE - ADD TO EXISTING OR CREATE NEW ===
+func get_camera_debug_info() -> Dictionary:
+	return {
+		"target_distance": target_distance,
+		"current_distance": current_distance,
+		"is_state_controlled": is_state_controlled,
+		"current_fov": camera.fov if camera else 0.0,
+		"mouse_captured": is_mouse_captured
+	}

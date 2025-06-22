@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="CameraState" load_steps=2 format=3 uid="uid://djaibnhwg08cc"]
+
+[ext_resource type="Script" uid="uid://cpmh0aclu0piq" path="res://Scripts/CameraState.gd" id="1_j2w4l"]
+
+[resource]
+script = ExtResource("1_j2w4l")
+animation_state_name = "Airborne"
+blend_position_min = 0.0
+blend_position_max = 999.0
+blend_parameter_path = ""
+camera_fov = 90.0
+camera_distance = 4.0
+camera_height_offset = 0.0
+camera_smoothing = 8.0
+camera_offset = Vector3(0, 0, 0)
+transition_speed = 0.2
+metadata/_custom_type_script = "uid://cpmh0aclu0piq"

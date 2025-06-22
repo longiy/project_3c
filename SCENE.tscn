@@ -1,13 +1,19 @@
-[gd_scene load_steps=17 format=3 uid="uid://dngafe0y2nx5b"]
+[gd_scene load_steps=23 format=3 uid="uid://dngafe0y2nx5b"]
 
 [ext_resource type="Script" uid="uid://dt54n1ktg7wqr" path="res://Scripts/ControllerCharacter.gd" id="1_5si1x"]
 [ext_resource type="Script" uid="uid://cms4l0nes10tn" path="res://Scripts/ControllerCamera.gd" id="2_caybs"]
 [ext_resource type="Script" uid="uid://cws7m480lxvaf" path="res://Scripts/DebugUI.gd" id="2_u4csh"]
 [ext_resource type="PackedScene" uid="uid://cbx0rhk665pls" path="res://Assets/ps_character_gurl.tscn" id="3_aeafk"]
+[ext_resource type="Script" uid="uid://cr5gmknbsuosj" path="res://Scripts/CameraStateComponent.gd" id="3_wiekx"]
 [ext_resource type="Script" uid="uid://c63imyupotuj1" path="res://Scripts/ClickNavigationComponent.gd" id="4_0er5f"]
+[ext_resource type="Script" uid="uid://cpmh0aclu0piq" path="res://Scripts/CameraState.gd" id="4_3ag1n"]
 [ext_resource type="Script" uid="uid://csay0tqtwpcea" path="res://Scripts/GamepadComponent.gd" id="4_wiekx"]
 [ext_resource type="Script" uid="uid://ceg85p1hqrfpk" path="res://Scripts/AnimationController.gd" id="5_gbv5d"]
+[ext_resource type="Resource" uid="uid://bgrd8y74mu11g" path="res://Scripts/MovementStates/Run.tres" id="5_t5ir1"]
+[ext_resource type="Resource" uid="uid://dw5sev7cychcc" path="res://Scripts/MovementStates/Walk.tres" id="6_eyrhl"]
+[ext_resource type="Resource" uid="uid://djaibnhwg08cc" path="res://Scripts/MovementStates/Airborne.tres" id="7_t5ir1"]
 [ext_resource type="PackedScene" uid="uid://bsprrm672tx2s" path="res://MARKER.tscn" id="7_w862e"]
+[ext_resource type="Resource" uid="uid://mvqgue1snc2x" path="res://Scripts/MovementStates/Idle.tres" id="8_eyrhl"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_3a8dd"]
 
@@ -91,6 +97,12 @@ transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 
 
 [node name="CameraFocusPoint" type="Node3D" parent="CAMERARIG"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.874218, 0.960729, 0)
+
+[node name="CameraStatesComponent" type="Node3D" parent="CAMERARIG" node_paths=PackedStringArray("target_character", "camera_controller")]
+script = ExtResource("3_wiekx")
+target_character = NodePath("../../CHARACTER")
+camera_controller = NodePath("..")
+camera_states = Array[ExtResource("4_3ag1n")]([ExtResource("8_eyrhl"), ExtResource("6_eyrhl"), ExtResource("5_t5ir1"), ExtResource("7_t5ir1")])
 
 [node name="CHARACTER" type="CharacterBody3D" parent="." node_paths=PackedStringArray("animation_controller", "camera")]
 collision_layer = 2
@@ -187,7 +199,7 @@ bones/41/rotation = Quaternion(0.483345, 0.647409, -0.148732, 0.570191)
 bones/41/scale = Vector3(0.994584, 0.99651, 1.01022)
 
 [node name="AnimationTree" parent="CHARACTER/PS_Character_Gurl" index="2"]
-parameters/Move/blend_position = Vector2(-0.993978, -0.0364656)
+parameters/Move/blend_position = -0.844419
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="CHARACTER"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.853688, 0)

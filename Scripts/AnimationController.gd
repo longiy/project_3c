@@ -59,13 +59,11 @@ func update_1d_blend_space(movement_speed: float, delta: float):
 	var target_blend: float
 	
 	if movement_speed <= idle_threshold:
-		target_blend = 0.0  # Walk animation
+		target_blend = 0.0
 	else:
-		# Map speed to 0.0 (walk) → 1.0 (run)
-		var speed_ratio = (movement_speed - walk_speed_reference) / (run_speed_reference - walk_speed_reference)
-		target_blend = clamp(speed_ratio, 0.0, 1.0)
+		# Map speed but DON'T clamp - allow values beyond 1.0
+		target_blend = (movement_speed - walk_speed_reference) / (run_speed_reference - walk_speed_reference)
 	
-	# Smooth the blend transition
 	current_blend_value = lerp(current_blend_value, target_blend, blend_smoothing * delta)
 	animation_tree.set(move_blend_param, current_blend_value)
 
