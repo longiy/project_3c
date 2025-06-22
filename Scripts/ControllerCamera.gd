@@ -1,4 +1,4 @@
-# ControllerCamera.gd - Add follow hysteresis
+# ControllerCamera.gd - Replace hysteresis with simple working delay
 extends Node3D
 
 signal mouse_mode_changed(is_captured: bool)
@@ -8,13 +8,13 @@ signal mouse_mode_changed(is_captured: bool)
 @export var camera_height = 2.0
 @export var follow_smoothing = 8.0
 
-@export_group("Follow Hysteresis")
-@export var enable_follow_hysteresis = true
-@export var direction_change_threshold = 0.3  # Minimum input change to trigger follow
-@export var follow_start_delay = 0.15  # Time before camera starts following new direction
-@export var rapid_change_deadzone = 0.1  # Ignore changes within this time window
+@export_group("Follow Delay")
+@export var enable_follow_delay = false
+@export var movement_start_delay = 0.3    # Delay before camera starts following
+@export var movement_stop_delay = 0.1     # Delay before camera stops following
+@export var movement_threshold = 0.2      # Speed threshold to detect movement
 
-# Existing groups...
+# Other export groups remain the same...
 @export_group("Camera Offset")
 @export var camera_offset = Vector3.ZERO
 @export var offset_smoothing = 8.0
@@ -54,12 +54,12 @@ var current_offset = Vector3.ZERO
 var base_target_distance = 4.0
 var is_state_controlled = false
 
-# Follow hysteresis variables
-var last_input_direction = Vector2.ZERO
-var input_direction_stable_time = 0.0
-var last_direction_change_time = 0.0
-var is_following_active = true
-var stable_target_position = Vector3.ZERO
+# Simple follow delay system
+var is_character_moving = false
+var was_character_moving = false
+var movement_change_time = 0.0
+var follow_target_position = Vector3.ZERO
+var is_following = true
 
 func _ready():
 	character = target_character
@@ -80,7 +80,7 @@ func _ready():
 	if character:
 		var initial_pos = character.global_position + Vector3(0, camera_height, 0)
 		global_position = initial_pos
-		stable_target_position = initial_pos
+		follow_target_position = initial_pos
 	
 	# Store base values for state system
 	base_target_distance = target_distance
@@ -123,13 +123,11 @@ func _physics_process(delta):
 		
 		mouse_delta = Vector2.ZERO
 	
-	# Handle follow hysteresis
-	if enable_follow_hysteresis:
-		update_follow_hysteresis(delta)
+	# Handle follow behavior
+	if enable_follow_delay:
+		update_follow_with_delay(delta)
 	else:
-		# Direct following (original behavior)
-		var target_position = character.global_position + Vector3(0, camera_height, 0)
-		global_position = global_position.lerp(target_position, follow_smoothing * delta)
+		update_immediate_follow(delta)
 	
 	# Update SpringArm distance and rotation
 	current_distance = lerp(current_distance, target_distance, distance_smoothing * delta)
@@ -154,51 +152,54 @@ func _physics_process(delta):
 	if enable_state_overrides:
 		handle_state_overrides(delta)
 
-func update_follow_hysteresis(delta):
-	"""Handle hysteresis for camera following to reduce jitter"""
+func update_immediate_follow(delta):
+	"""Original immediate follow behavior"""
+	var target_position = character.global_position + Vector3(0, camera_height, 0)
+	global_position = global_position.lerp(target_position, follow_smoothing * delta)
+
+func update_follow_with_delay(delta):
+	"""Simple working follow delay system"""
 	
-	# Get current input direction from character
-	var current_input = character.get_current_input_direction()
-	var current_time = Time.get_ticks_msec() / 1000.0
+	# Check if character is moving
+	var character_speed = character.get_movement_speed()
+	is_character_moving = character_speed > movement_threshold
 	
-	# Check if input direction has changed significantly
-	var direction_change = current_input.distance_to(last_input_direction)
-	var direction_changed = direction_change > direction_change_threshold
+	# Detect movement state changes
+	if is_character_moving != was_character_moving:
+		movement_change_time = 0.0
+		print("📹 Camera: Character movement changed - moving: ", is_character_moving)
+	else:
+		movement_change_time += delta
 	
-	# Check if this is a rapid change (ignore rapid tapping)
-	var time_since_last_change = current_time - last_direction_change_time
-	var is_rapid_change = time_since_last_change < rapid_change_deadzone
+	# Determine if we should follow
+	var should_follow = is_following
 	
-	if direction_changed and not is_rapid_change:
-		# Direction changed significantly and it's not rapid tapping
-		print("📹 Camera: Direction change detected (", direction_change, "), resetting follow timer")
-		input_direction_stable_time = 0.0
-		is_following_active = false
-		last_direction_change_time = current_time
-		last_input_direction = current_input
-	elif not direction_changed:
-		# Direction is stable, accumulate stable time
-		input_direction_stable_time += delta
-		
-		# Start following if direction has been stable long enough
-		if input_direction_stable_time >= follow_start_delay and not is_following_active:
-			print("📹 Camera: Direction stable for ", follow_start_delay, "s, starting follow")
-			is_following_active = true
+	if is_character_moving and not was_character_moving:
+		# Character started moving - check start delay
+		if movement_change_time >= movement_start_delay:
+			should_follow = true
+			print("📹 Camera: Starting to follow after ", movement_start_delay, "s delay")
+	elif not is_character_moving and was_character_moving:
+		# Character stopped moving - check stop delay  
+		if movement_change_time >= movement_stop_delay:
+			should_follow = false
+			print("📹 Camera: Stopping follow after ", movement_stop_delay, "s delay")
+	
+	is_following = should_follow
+	was_character_moving = is_character_moving
 	
 	# Update target position
 	var immediate_target = character.global_position + Vector3(0, camera_height, 0)
 	
-	if is_following_active:
+	if is_following:
 		# Normal following
-		stable_target_position = stable_target_position.lerp(immediate_target, follow_smoothing * delta)
-	else:
-		# Delayed following - move very slowly or not at all
-		stable_target_position = stable_target_position.lerp(immediate_target, follow_smoothing * 0.1 * delta)
+		follow_target_position = immediate_target
+	# else: keep old target position (don't follow)
 	
-	# Apply the position
-	global_position = global_position.lerp(stable_target_position, follow_smoothing * delta)
+	# Apply position smoothly
+	global_position = global_position.lerp(follow_target_position, follow_smoothing * delta)
 
-# === REST OF THE EXISTING METHODS UNCHANGED ===
+# === REST OF THE METHODS REMAIN THE SAME ===
 
 func get_camera() -> Camera3D:
 	return camera
@@ -254,7 +255,8 @@ func get_camera_debug_info() -> Dictionary:
 		"is_state_controlled": is_state_controlled,
 		"current_fov": camera.fov if camera else 0.0,
 		"mouse_captured": is_mouse_captured,
-		"follow_active": is_following_active,
-		"stable_time": input_direction_stable_time,
-		"hysteresis_enabled": enable_follow_hysteresis
+		"follow_delay_enabled": enable_follow_delay,
+		"is_following": is_following,
+		"character_moving": is_character_moving,
+		"movement_change_time": movement_change_time
 	}

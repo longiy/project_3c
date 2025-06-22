@@ -86,9 +86,10 @@ offset_bottom = 33.0
 script = ExtResource("2_caybs")
 target_character = NodePath("../CHARACTER")
 camera_height = 1.5
-direction_change_threshold = 10.0
-follow_start_delay = 0.0
-rapid_change_deadzone = 10.0
+follow_smoothing = 5.0
+enable_follow_delay = true
+movement_start_delay = 5.0
+movement_stop_delay = 5.0
 enable_dynamic_offset = true
 min_distance = 2.0
 
@@ -113,6 +114,8 @@ slide_on_ceiling = false
 script = ExtResource("1_5si1x")
 animation_controller = NodePath("AnimationController")
 camera = NodePath("../CAMERARIG/SpringArm3D/Camera3D")
+min_input_duration = 0.0
+input_smoothing = 40.0
 rotation_speed = 16
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="CHARACTER"]
