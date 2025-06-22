@@ -86,6 +86,8 @@ offset_bottom = 33.0
 script = ExtResource("2_caybs")
 target_character = NodePath("../CHARACTER")
 camera_height = 1.5
+follow_start_delay = 0.5
+rapid_change_deadzone = 0.3
 enable_dynamic_offset = true
 min_distance = 2.0
 

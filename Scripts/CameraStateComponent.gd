@@ -37,7 +37,7 @@ var target_offset = Vector3.ZERO
 # Hysteresis settings
 var blend_change_threshold = 0.15  # Minimum change to trigger state switch
 var state_switch_cooldown = 0.5    # Minimum time between state switches
-var last_state_switch_time = 0.5
+var last_state_switch_time = 1
 
 func _ready():
 	# Get references
