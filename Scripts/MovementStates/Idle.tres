@@ -13,5 +13,5 @@ camera_distance = 4.0
 camera_height_offset = 0.0
 camera_smoothing = 8.0
 camera_offset = Vector3(0, 0, 0)
-transition_speed = 0.5
+transition_speed = 1.0
 metadata/_custom_type_script = "uid://cpmh0aclu0piq"

@@ -34,6 +34,11 @@ var target_distance = 0.0
 var start_offset = Vector3.ZERO
 var target_offset = Vector3.ZERO
 
+# Hysteresis settings
+var blend_change_threshold = 0.15  # Minimum change to trigger state switch
+var state_switch_cooldown = 0.5    # Minimum time between state switches
+var last_state_switch_time = 0.5
+
 func _ready():
 	# Get references
 	if not camera_controller:
@@ -78,21 +83,27 @@ func _physics_process(delta):
 	var current_anim_state = state_machine.get_current_node()
 	var state_changed = current_anim_state != previous_animation_state
 	
-	# Also check for blend position changes that might affect state selection
+	# Check for significant blend position changes with hysteresis
 	var current_blend = animation_controller.animation_tree.get("parameters/Move/blend_position")
-	var blend_changed = abs(current_blend - previous_blend_position) > 0.1  # Threshold to avoid micro-changes
+	var blend_changed = abs(current_blend - previous_blend_position) > blend_change_threshold
 	
-	if state_changed or blend_changed:
+	# Add cooldown to prevent rapid switching
+	var current_time = Time.get_ticks_msec() / 1000.0  # Convert to seconds
+	var time_since_last_switch = current_time - last_state_switch_time
+	var cooldown_expired = time_since_last_switch > state_switch_cooldown
+	
+	if state_changed or (blend_changed and cooldown_expired):
 		if state_changed:
 			print("🎬 Animation state changed: ", previous_animation_state, " → ", current_anim_state)
-		if blend_changed:
+		if blend_changed and cooldown_expired:
 			print("🎚️ Blend position changed: ", previous_blend_position, " → ", current_blend)
 		
 		switch_to_state(current_anim_state)
 		previous_animation_state = current_anim_state
 		previous_blend_position = current_blend
-		
-			# Handle transitions
+		last_state_switch_time = Time.get_ticks_msec() / 1000.0
+	
+	# Handle transitions
 	if is_transitioning:
 		update_transition(delta)
 
