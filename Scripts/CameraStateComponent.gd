@@ -185,13 +185,19 @@ func start_transition_to_state(new_state: CameraState):
 	target_distance = new_state.camera_distance
 	target_offset = new_state.camera_offset
 	
-	# Start transition with custom speed from the state
-	transition_duration = new_state.transition_speed
+	# Use enter_transition_speed when entering this state
+	if new_state.has_method("get") and new_state.get("enter_transition_speed") != null:
+		transition_duration = new_state.enter_transition_speed
+	else:
+		transition_duration = new_state.transition_speed  # Fallback to old system
+	
 	transition_timer = 0.0
 	is_transitioning = true
+	print("🎬 Starting transition TO ", new_state.animation_state_name, " (speed: ", transition_duration, ")")
 
 func start_transition_to_defaults():
-	"""Transition back to default values when no state matches"""
+	"""Transition back to default values when leaving a state"""
+	var leaving_state = current_state
 	current_state = null
 	
 	# Store current values
@@ -204,10 +210,15 @@ func start_transition_to_defaults():
 	target_distance = default_distance
 	target_offset = Vector3.ZERO
 	
-	# Start transition
-	transition_duration = 2.0  # Default transition speed
+	# Use exit_transition_speed when leaving the previous state
+	if leaving_state and leaving_state.has_method("get") and leaving_state.get("exit_transition_speed") != null:
+		transition_duration = leaving_state.exit_transition_speed
+	else:
+		transition_duration = 2.0  # Default transition speed
+	
 	transition_timer = 0.0
 	is_transitioning = true
+	print("🎬 Starting transition FROM ", leaving_state.animation_state_name if leaving_state else "unknown", " (speed: ", transition_duration, ")")
 
 func update_transition(delta):
 	"""Handle smooth transitions between states"""
