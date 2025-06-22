@@ -6,7 +6,7 @@
 script = ExtResource("1_1qq58")
 animation_state_name = "Move"
 blend_position_min = 0.0
-blend_position_max = 1.0
+blend_position_max = 2.0
 blend_parameter_path = "parameters/Move/blend_position"
 camera_fov = 120.0
 camera_distance = 4.0

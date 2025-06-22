@@ -20,6 +20,7 @@ var camera: Camera3D
 # State tracking
 var current_state: CameraState
 var previous_animation_state = ""
+var previous_blend_position = 0.0  # ADD THIS
 var state_lookup: Dictionary = {}
 
 # Transition state
@@ -75,12 +76,23 @@ func _physics_process(delta):
 	
 	# Check for animation state changes
 	var current_anim_state = state_machine.get_current_node()
-	if current_anim_state != previous_animation_state:
-		print("🎬 Animation state changed: ", previous_animation_state, " → ", current_anim_state)
+	var state_changed = current_anim_state != previous_animation_state
+	
+	# Also check for blend position changes that might affect state selection
+	var current_blend = animation_controller.animation_tree.get("parameters/Move/blend_position")
+	var blend_changed = abs(current_blend - previous_blend_position) > 0.1  # Threshold to avoid micro-changes
+	
+	if state_changed or blend_changed:
+		if state_changed:
+			print("🎬 Animation state changed: ", previous_animation_state, " → ", current_anim_state)
+		if blend_changed:
+			print("🎚️ Blend position changed: ", previous_blend_position, " → ", current_blend)
+		
 		switch_to_state(current_anim_state)
 		previous_animation_state = current_anim_state
-	
-	# Handle transitions
+		previous_blend_position = current_blend
+		
+			# Handle transitions
 	if is_transitioning:
 		update_transition(delta)
 
@@ -107,7 +119,7 @@ func switch_to_state(animation_state_name: String):
 			# Check if this state uses blend position filtering
 			if state.blend_parameter_path != "":
 				var blend_value = animation_controller.animation_tree.get(state.blend_parameter_path)
-				if blend_value >= state.blend_position_min and blend_value < state.blend_position_max:
+				if blend_value >= state.blend_position_min and blend_value <= state.blend_position_max:
 					new_state = state
 					break
 			else:

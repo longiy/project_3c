@@ -61,11 +61,21 @@ func update_1d_blend_space(movement_speed: float, delta: float):
 	if movement_speed <= idle_threshold:
 		target_blend = 0.0
 	else:
-		# Map speed but DON'T clamp - allow values beyond 1.0
-		target_blend = (movement_speed - walk_speed_reference) / (run_speed_reference - walk_speed_reference)
+		# Map speeds to proper ranges for camera states
+		# Walk speed (3.0) should map to -0.5 for Walk state
+		# Run speed (6.0) should map to 0.5 for Run state
+		if movement_speed <= walk_speed_reference:
+			# Walking range: map 0.3 to 3.0 -> -0.8 to -0.1
+			target_blend = -0.8 + (movement_speed - idle_threshold) / (walk_speed_reference - idle_threshold) * 0.7
+		else:
+			# Running range: map 3.0 to 6.0+ -> 0.1 to 1.0+
+			target_blend = 0.1 + (movement_speed - walk_speed_reference) / (run_speed_reference - walk_speed_reference) * 0.9
 	
 	current_blend_value = lerp(current_blend_value, target_blend, blend_smoothing * delta)
 	animation_tree.set(move_blend_param, current_blend_value)
+	
+	# Debug output
+	print("Speed: ", movement_speed, " -> Blend: ", current_blend_value)
 
 func update_2d_blend_space(delta: float):
 	# Get input direction for 2D blending (strafe, forward/back)
