@@ -17,9 +17,9 @@ animation = &"Run"
 
 [sub_resource type="AnimationNodeBlendSpace1D" id="AnimationNodeBlendSpace1D_8iigs"]
 blend_point_0/node = SubResource("AnimationNodeAnimation_xyta0")
-blend_point_0/pos = -0.5
+blend_point_0/pos = -1.0
 blend_point_1/node = SubResource("AnimationNodeAnimation_ly3n2")
-blend_point_1/pos = 0.5
+blend_point_1/pos = 1.0
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_o8mde"]
 advance_mode = 2
