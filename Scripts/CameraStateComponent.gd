@@ -7,6 +7,12 @@ class_name CameraStateComponent
 @export var camera_controller: Node3D
 @export var camera_states: Array[CameraState] = []
 
+@export_group("Movement Delays")
+# Movement duration requirements - separate delays
+@export var enter_move_delay = 0.3    # Delay when starting to move  
+@export var exit_move_delay = 0.1     # Delay when stopping movement
+var last_state_switch_time = 0.0  # Track when last switch happened
+
 @export_group("Fallback Values")
 @export var default_fov = 75.0
 @export var default_distance = 4.0
@@ -20,7 +26,7 @@ var camera: Camera3D
 # State tracking
 var current_state: CameraState
 var previous_animation_state = ""
-var previous_blend_position = 0.0  # ADD THIS
+var previous_blend_position = 0.0
 var state_lookup: Dictionary = {}
 
 # Transition state
@@ -34,10 +40,6 @@ var target_distance = 0.0
 var start_offset = Vector3.ZERO
 var target_offset = Vector3.ZERO
 
-# Hysteresis settings
-var blend_change_threshold = 0.15  # Minimum change to trigger state switch
-var state_switch_cooldown = 0.5    # Minimum time between state switches
-var last_state_switch_time = 1
 
 func _ready():
 	# Get references
@@ -83,27 +85,45 @@ func _physics_process(delta):
 	var current_anim_state = state_machine.get_current_node()
 	var state_changed = current_anim_state != previous_animation_state
 	
-	# Check for significant blend position changes with hysteresis
+	# Check for blend position changes
 	var current_blend = animation_controller.animation_tree.get("parameters/Move/blend_position")
-	var blend_changed = abs(current_blend - previous_blend_position) > blend_change_threshold
+	var blend_changed = current_blend != previous_blend_position
 	
-	# Add cooldown to prevent rapid switching
-	var current_time = Time.get_ticks_msec() / 1000.0  # Convert to seconds
-	var time_since_last_switch = current_time - last_state_switch_time
-	var cooldown_expired = time_since_last_switch > state_switch_cooldown
+	# Get current time for duration tracking
+	var current_time = Time.get_ticks_msec() / 1000.0
 	
-	if state_changed or (blend_changed and cooldown_expired):
-		if state_changed:
-			print("🎬 Animation state changed: ", previous_animation_state, " → ", current_anim_state)
-		if blend_changed and cooldown_expired:
-			print("🎚️ Blend position changed: ", previous_blend_position, " → ", current_blend)
+	# Movement duration check - separate delays for entering vs leaving
+	var duration_ok = true
+	if current_anim_state == "Move" or previous_animation_state == "Move":
+		if current_anim_state == "Move":
+			# Entering Move state - check input duration
+			duration_ok = target_character.is_input_sustained(enter_move_delay)
+			var input_duration = target_character.get_input_duration()
+			print("🔒 Entering Move: input=", "%.3f" % input_duration, "s, required=", enter_move_delay, "s, ok=", duration_ok)
+		else:
+			# Leaving Move state - check time in Move state
+			var time_in_move = current_time - last_state_switch_time
+			duration_ok = time_in_move > exit_move_delay
+			print("🔒 Leaving Move: time_in_move=", "%.3f" % time_in_move, "s, required=", exit_move_delay, "s, ok=", duration_ok)
+	
+	# Switch if state/blend changed AND duration requirement met
+	var should_switch = (state_changed or blend_changed) and duration_ok
+	
+	if state_changed or blend_changed:
+		print("🎬 Change detected: state=", state_changed, ", blend=", blend_changed, ", duration_ok=", duration_ok, ", will_switch=", should_switch)
+	
+	if should_switch:
+		var input_duration = target_character.get_input_duration()
+		print("📹 Camera state switch: ", previous_animation_state, " → ", current_anim_state, 
+			  " | Blend: ", "%.2f" % current_blend, 
+			  " | Input duration: ", "%.2f" % input_duration, "s")
 		
 		switch_to_state(current_anim_state)
 		previous_animation_state = current_anim_state
 		previous_blend_position = current_blend
-		last_state_switch_time = Time.get_ticks_msec() / 1000.0
+		last_state_switch_time = current_time
 	
-	# Handle transitions
+	# Handle camera transitions
 	if is_transitioning:
 		update_transition(delta)
 
@@ -120,9 +140,7 @@ func switch_to_state(animation_state_name: String):
 	"""Switch to a new camera state based on animation state and blend position"""
 	if animation_state_name == "":
 		return
-	# DEBUG: Check current blend value
-	var current_blend_value = animation_controller.animation_tree.get("parameters/Move/blend_position")
-	print("🔍 Current blend value: ", current_blend_value)
+	
 	# Find matching state by animation name AND blend position range
 	var new_state: CameraState = null
 	for state in camera_states:
@@ -145,7 +163,7 @@ func switch_to_state(animation_state_name: String):
 		var blend_info = ""
 		if new_state.blend_parameter_path != "":
 			var blend_value = animation_controller.animation_tree.get(new_state.blend_parameter_path)
-			blend_info = " (blend: " + str(blend_value) + ")"
+			blend_info = " (blend: " + "%.2f" % blend_value + ")"
 		print("🔄 Switching to state: ", new_state.animation_state_name, blend_info)
 		start_transition_to_state(new_state)
 	else:

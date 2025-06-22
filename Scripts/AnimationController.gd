@@ -74,8 +74,8 @@ func update_1d_blend_space(movement_speed: float, delta: float):
 	current_blend_value = lerp(current_blend_value, target_blend, blend_smoothing * delta)
 	animation_tree.set(move_blend_param, current_blend_value)
 	
-	# Debug output
-	print("Speed: ", movement_speed, " -> Blend: ", current_blend_value)
+	## Debug output
+	#print("Speed: ", movement_speed, " -> Blend: ", current_blend_value)
 
 func update_2d_blend_space(delta: float):
 	# Get input direction for 2D blending (strafe, forward/back)

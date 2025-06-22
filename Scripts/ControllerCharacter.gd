@@ -31,6 +31,11 @@ extends CharacterBody3D
 @export var coyote_time = 0.1
 @export var ground_check_distance = 0.2
 
+# Movement duration tracking
+var input_start_time = 0.0
+var is_input_active = false
+var last_input_direction = Vector2.ZERO
+
 # Runtime variables
 var base_gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 var coyote_timer = 0.0
@@ -60,6 +65,7 @@ func _physics_process(delta):
 	if not is_on_floor():
 		velocity.y -= (base_gravity * gravity_multiplier) * delta
 	
+	
 	# Handle coyote time and jump reset
 	if is_on_floor():
 		coyote_timer = coyote_time
@@ -67,9 +73,21 @@ func _physics_process(delta):
 	else:
 		coyote_timer -= delta
 	
-	# Get input with proper arbitration
+# 	Get input with proper arbitration
 	var input_dir = get_current_input()
 	
+	# Track input duration
+	var has_input_now = input_dir.length() > 0.1
+	
+	if has_input_now and not is_input_active:
+		# Input just started
+		input_start_time = Time.get_ticks_msec() / 1000.0
+		is_input_active = true
+	elif not has_input_now and is_input_active:
+		# Input just stopped
+		is_input_active = false
+	
+	last_input_direction = input_dir
 	# Handle movement mode inputs
 	is_slow_walking = Input.is_action_pressed("walk")
 	is_running = Input.is_action_pressed("sprint") and not is_slow_walking
@@ -187,3 +205,16 @@ func get_movement_speed() -> float:
 func get_current_input_direction() -> Vector2:
 	"""Get current input direction for animation blending"""
 	return get_current_input()
+	
+	# Add public method for camera to check
+func get_input_duration() -> float:
+	"""Get how long current input has been active"""
+	if is_input_active:
+		var current_time = Time.get_ticks_msec() / 1000.0
+		return current_time - input_start_time
+	else:
+		return 0.0
+
+func is_input_sustained(min_duration: float = 0.3) -> bool:
+	"""Check if input has been active for minimum duration"""
+	return get_input_duration() >= min_duration

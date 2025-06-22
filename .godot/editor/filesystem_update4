@@ -14,3 +14,4 @@ res://Scripts/MovementStates/Walk.tres
 res://Scripts/MovementStates/Airborne.tres
 res://Scripts/CameraState.gd
 res://Scripts/MovementStates/Idle.tres
+res://Scripts/ControllerCharacter.gd
