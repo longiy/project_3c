@@ -1,4 +1,4 @@
-# GroundedState.gd - Handles all grounded movement
+# GroundedState.gd - Fixed to use unified movement handling
 extends BaseMovementState
 class_name GroundedState
 
@@ -16,7 +16,7 @@ func update(delta: float):
 	
 	# Handle all grounded logic
 	apply_gravity(delta)
-	handle_ground_movement(delta)
+	handle_ground_movement(delta)  # This now includes proper input arbitration
 	handle_jumping()
 	handle_reset_input()
 	
@@ -26,34 +26,6 @@ func update(delta: float):
 	# Check for state transitions
 	if check_for_airborne_transition():
 		return  # Already transitioned to airborne
-
-func handle_ground_movement(delta: float):
-	"""Handle movement while grounded"""
-	
-	# Get input with proper filtering
-	var raw_input = get_current_input()
-	var input_dir = apply_input_smoothing(raw_input, delta)
-	
-	# Check if we should move (respects minimum input duration)
-	if should_process_movement():
-		# Calculate movement
-		var movement_vector = calculate_movement_vector(input_dir)
-		var speed_data = get_target_speed_and_acceleration()
-		
-		# Apply movement with acceleration
-		apply_movement_with_acceleration(
-			movement_vector,
-			speed_data.speed,
-			speed_data.acceleration,
-			delta
-		)
-		
-		# Cancel input components if WASD is active
-		if raw_input.length() > character.input_deadzone:
-			cancel_all_input_components()
-	else:
-		# Apply deceleration when no valid input
-		apply_deceleration(delta)
 
 func handle_jumping():
 	"""Handle jump input while grounded"""

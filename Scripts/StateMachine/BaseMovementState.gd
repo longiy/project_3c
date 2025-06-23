@@ -1,4 +1,4 @@
-# BaseMovementState.gd - Shared functionality for all movement states
+# BaseMovementState.gd - Fixed input arbitration for state machine
 extends State
 class_name BaseMovementState
 
@@ -26,7 +26,9 @@ func handle_reset_input():
 # === SHARED INPUT METHODS ===
 
 func get_current_input() -> Vector2:
-	"""Get current movement input (delegates to character's arbitration system)"""
+	"""Get current movement input with proper arbitration"""
+	# CRITICAL: Use the character's input arbitration system
+	# This ensures WASD properly cancels click navigation
 	return character.get_current_input()
 
 func apply_input_smoothing(raw_input: Vector2, delta: float) -> Vector2:
@@ -97,8 +99,39 @@ func should_process_movement() -> bool:
 	)
 
 func cancel_all_input_components():
-	"""Cancel all input components"""
+	"""Cancel all input components - CRITICAL for click navigation"""
 	character.cancel_all_input_components()
+
+# === SHARED MOVEMENT HANDLING ===
+
+func handle_ground_movement(delta: float):
+	"""Unified ground movement handling with proper input arbitration"""
+	# Get input with proper arbitration
+	var raw_input = get_current_input()
+	var input_dir = apply_input_smoothing(raw_input, delta)
+	
+	# Check if we should move (respects minimum input duration)
+	if should_process_movement():
+		# Calculate movement
+		var movement_vector = calculate_movement_vector(input_dir)
+		var speed_data = get_target_speed_and_acceleration()
+		
+		# Apply movement with acceleration
+		apply_movement_with_acceleration(
+			movement_vector,
+			speed_data.speed,
+			speed_data.acceleration,
+			delta
+		)
+		
+		# CRITICAL: Cancel input components if WASD is active
+		# This is what was missing - ensures click nav gets cancelled
+		var wasd_input = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
+		if wasd_input.length() > character.input_deadzone:
+			cancel_all_input_components()
+	else:
+		# Apply deceleration when no valid input
+		apply_deceleration(delta)
 
 # === SHARED STATE TRANSITION HELPERS ===
 

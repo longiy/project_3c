@@ -4,15 +4,6 @@ res://Scripts/MovementStates/Run.tres
 res://Scripts/MovementStates/Walk.tres
 res://Scripts/MovementStates/Airborne.tres
 res://Scripts/MovementStates/Idle.tres
-res://Scripts/CameraState.gd
-res://Scripts/CameraStateComponent.gd
-res://Scripts/ControllerCharacter.gd
-res://Scripts/DebugUI.gd
-res://Scripts/StateMachine/StateMachine.gd
-res://Scripts/StateMachine/CharacterStateMachine.gd
-res://Scripts/StateMachine/State.gd
-res://Scripts/StateMachine/CombatStates/AttackinState.gd
-res://Scripts/StateMachine/CombatStates/BlockingState.gd
-res://Scripts/StateMachine/CombatStates/StunnedState.gd
-res://Scripts/StateMachine/CombatStates/ClimbingState.gd
 res://Assets/ps_character_gurl.tscn
+res://Scripts/StateMachine/BaseMovementState.gd
+res://Scripts/StateMachine/CharacterStates/GroundedState.gd
