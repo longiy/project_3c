@@ -1,4 +1,4 @@
-[gd_scene load_steps=27 format=3 uid="uid://dngafe0y2nx5b"]
+[gd_scene load_steps=26 format=3 uid="uid://dngafe0y2nx5b"]
 
 [ext_resource type="Script" uid="uid://dt54n1ktg7wqr" path="res://Scripts/Controllers/ControllerCharacter.gd" id="1_5si1x"]
 [ext_resource type="Script" uid="uid://cms4l0nes10tn" path="res://Scripts/Controllers/ControllerCamera.gd" id="2_caybs"]
@@ -14,7 +14,6 @@
 [ext_resource type="Resource" uid="uid://djaibnhwg08cc" path="res://Scripts/CameraStateMachine/CameraStates/Airborne.tres" id="7_t5ir1"]
 [ext_resource type="PackedScene" uid="uid://bsprrm672tx2s" path="res://MARKER.tscn" id="7_w862e"]
 [ext_resource type="Resource" uid="uid://mvqgue1snc2x" path="res://Scripts/CameraStateMachine/CameraStates/Idle.tres" id="8_eyrhl"]
-[ext_resource type="Script" uid="uid://dcn0kb30esop6" path="res://Scripts/CameraStateMachine/CameraFocusPoint.gd" id="9_lcrxd"]
 [ext_resource type="Script" uid="uid://do2lvkxccp61u" path="res://Scripts/CharacterStateMachine/Core/StateMachineCharacter.gd" id="13_patvt"]
 [ext_resource type="Resource" uid="uid://bjjnr8sj2pu70" path="res://Scripts/CharacterStateMachine/CharacterStates/Resources/tres/GroundedDefault.tres" id="14_lcrxd"]
 [ext_resource type="Resource" uid="uid://c5g4kl1ajwas6" path="res://Scripts/CharacterStateMachine/CharacterStates/Resources/tres/AirborneDefault.tres" id="15_ltj0m"]
@@ -110,9 +109,6 @@ script = ExtResource("3_wiekx")
 target_character = NodePath("../../CHARACTER")
 camera_controller = NodePath("..")
 camera_states = Array[ExtResource("4_3ag1n")]([ExtResource("8_eyrhl"), ExtResource("6_eyrhl"), ExtResource("5_t5ir1"), ExtResource("7_t5ir1")])
-
-[node name="CameraFocusPoint" type="Node3D" parent="CAMERARIG"]
-script = ExtResource("9_lcrxd")
 
 [node name="CHARACTER" type="CharacterBody3D" parent="." node_paths=PackedStringArray("animation_controller", "camera", "state_machine")]
 collision_layer = 2
