@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="GroundedStateResource" load_steps=2 format=3 uid="uid://bjjnr8sj2pu70"]
+[gd_resource type="Resource" script_class="CharacterStateGroundedResource" load_steps=2 format=3 uid="uid://bjjnr8sj2pu70"]
 
 [ext_resource type="Script" uid="uid://ctfi1nxwrgjpb" path="res://Scripts/CharacterStateMachine/CharacterStates/Resources/CharacterStateGroundedResource.gd" id="1_ijuci"]
 
@@ -14,7 +14,7 @@ run_speed = 6.0
 state_name = "grounded"
 display_name = "Default Grounded Movement"
 description = ""
-max_speed = 6.0
+max_speed = 12.0
 acceleration = 15.0
 deceleration = 18.0
 air_control_multiplier = 0.3
