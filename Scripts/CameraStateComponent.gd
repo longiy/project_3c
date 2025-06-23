@@ -171,8 +171,30 @@ func switch_to_state(animation_state_name: String):
 		print("⚠️ No state found for animation: ", animation_state_name)
 		start_transition_to_defaults()
 
+func apply_defaults_immediately():
+	"""Apply default values instantly"""
+	if camera:
+		camera.fov = default_fov
+	
+	if camera_controller:
+		camera_controller.target_distance = default_distance
+		camera_controller.camera_offset = Vector3.ZERO
+	
+	is_transitioning = false
+
+func apply_state_immediately(state: CameraState):
+	"""Apply state changes instantly without lerping"""
+	if camera:
+		camera.fov = state.camera_fov
+	
+	if camera_controller:
+		camera_controller.target_distance = state.camera_distance
+		camera_controller.camera_offset = state.camera_offset
+	
+	is_transitioning = false
+	
+# CameraStateComponent.gd - Modify start_transition_to_state method
 func start_transition_to_state(new_state: CameraState):
-	"""Start smooth transition to new state"""
 	current_state = new_state
 	
 	# Store current values as start points
@@ -185,18 +207,23 @@ func start_transition_to_state(new_state: CameraState):
 	target_distance = new_state.camera_distance
 	target_offset = new_state.camera_offset
 	
-	# Use enter_transition_speed when entering this state
-	if new_state.has_method("get") and new_state.get("enter_transition_speed") != null:
-		transition_duration = new_state.enter_transition_speed
-	else:
-		transition_duration = new_state.transition_speed  # Fallback to old system
-	
-	transition_timer = 0.0
-	is_transitioning = true
-	print("🎬 Starting transition TO ", new_state.animation_state_name, " (speed: ", transition_duration, ")")
+	# Handle transition type
+	match new_state.transition_type:
+		0: # Smooth
+			transition_duration = new_state.enter_transition_speed
+			transition_timer = 0.0
+			is_transitioning = true
+			print("🎬 Starting SMOOTH transition TO ", new_state.animation_state_name, " (speed: ", transition_duration, ")")
+		1: # Instant
+			apply_state_immediately(new_state)
+			print("⚡ INSTANT transition TO ", new_state.animation_state_name)
+		2: # Custom
+			transition_duration = new_state.enter_transition_speed
+			transition_timer = 0.0
+			is_transitioning = true
+			print("🎨 Starting CUSTOM transition TO ", new_state.animation_state_name, " (speed: ", transition_duration, ")")
 
 func start_transition_to_defaults():
-	"""Transition back to default values when leaving a state"""
 	var leaving_state = current_state
 	current_state = null
 	
@@ -210,15 +237,27 @@ func start_transition_to_defaults():
 	target_distance = default_distance
 	target_offset = Vector3.ZERO
 	
-	# Use exit_transition_speed when leaving the previous state
-	if leaving_state and leaving_state.has_method("get") and leaving_state.get("exit_transition_speed") != null:
-		transition_duration = leaving_state.exit_transition_speed
+	# Handle exit transition type
+	if leaving_state:
+		match leaving_state.transition_type:
+			0: # Smooth
+				transition_duration = leaving_state.exit_transition_speed
+				transition_timer = 0.0
+				is_transitioning = true
+				print("🎬 Starting SMOOTH transition FROM ", leaving_state.animation_state_name, " (speed: ", transition_duration, ")")
+			1: # Instant
+				apply_defaults_immediately()
+				print("⚡ INSTANT transition FROM ", leaving_state.animation_state_name)
+			2: # Custom
+				transition_duration = leaving_state.exit_transition_speed
+				transition_timer = 0.0
+				is_transitioning = true
+				print("🎨 Starting CUSTOM transition FROM ", leaving_state.animation_state_name, " (speed: ", transition_duration, ")")
 	else:
-		transition_duration = 2.0  # Default transition speed
-	
-	transition_timer = 0.0
-	is_transitioning = true
-	print("🎬 Starting transition FROM ", leaving_state.animation_state_name if leaving_state else "unknown", " (speed: ", transition_duration, ")")
+		# Fallback to smooth transition
+		transition_duration = 2.0
+		transition_timer = 0.0
+		is_transitioning = true
 
 func update_transition(delta):
 	"""Handle smooth transitions between states"""

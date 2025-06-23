@@ -1,4 +1,4 @@
-# CameraState.gd - Add separate transition speeds
+# CameraState.gd - Add transition type control
 extends Resource
 class_name CameraState
 
@@ -16,5 +16,7 @@ class_name CameraState
 @export var camera_offset: Vector3 = Vector3.ZERO
 
 @export_group("Transition Settings")
-@export var enter_transition_speed: float = 2.0  # Speed when entering this state
-@export var exit_transition_speed: float = 1.5   # Speed when leaving this state
+@export_enum("Smooth", "Instant", "Custom") var transition_type = 0
+@export var enter_transition_speed: float = 2.0
+@export var exit_transition_speed: float = 1.5
+@export var custom_transition_curve: Curve  # For future custom easing
