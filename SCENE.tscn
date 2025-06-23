@@ -91,7 +91,6 @@ follow_mode = 1
 movement_start_delay = 5.0
 movement_stop_delay = 5.0
 movement_threshold = 1.0
-enable_scroll_zoom = false
 min_distance = 2.0
 enable_dynamic_offset = true
 enable_state_overrides = false
@@ -106,7 +105,6 @@ transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.874218, 0.960729, 0)
 
 [node name="CameraStatesComponent" type="Node3D" parent="CAMERARIG" node_paths=PackedStringArray("target_character", "camera_controller")]
-process_mode = 4
 script = ExtResource("3_wiekx")
 target_character = NodePath("../../CHARACTER")
 camera_controller = NodePath("..")
