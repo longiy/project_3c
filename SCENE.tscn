@@ -87,13 +87,13 @@ script = ExtResource("2_caybs")
 target_character = NodePath("../CHARACTER")
 camera_height = 1.5
 follow_smoothing = 5.0
-enable_follow_delay = true
+follow_mode = 1
 movement_start_delay = 5.0
 movement_stop_delay = 5.0
 movement_threshold = 1.0
-enable_dynamic_offset = true
 enable_scroll_zoom = false
 min_distance = 2.0
+enable_dynamic_offset = true
 enable_state_overrides = false
 
 [node name="SpringArm3D" type="SpringArm3D" parent="CAMERARIG"]
