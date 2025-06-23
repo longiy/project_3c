@@ -90,8 +90,11 @@ follow_smoothing = 5.0
 enable_follow_delay = true
 movement_start_delay = 5.0
 movement_stop_delay = 5.0
+movement_threshold = 1.0
 enable_dynamic_offset = true
+enable_scroll_zoom = false
 min_distance = 2.0
+enable_state_overrides = false
 
 [node name="SpringArm3D" type="SpringArm3D" parent="CAMERARIG"]
 spring_length = 2.0
@@ -103,6 +106,7 @@ transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.874218, 0.960729, 0)
 
 [node name="CameraStatesComponent" type="Node3D" parent="CAMERARIG" node_paths=PackedStringArray("target_character", "camera_controller")]
+process_mode = 4
 script = ExtResource("3_wiekx")
 target_character = NodePath("../../CHARACTER")
 camera_controller = NodePath("..")
@@ -114,7 +118,6 @@ slide_on_ceiling = false
 script = ExtResource("1_5si1x")
 animation_controller = NodePath("AnimationController")
 camera = NodePath("../CAMERARIG/SpringArm3D/Camera3D")
-min_input_duration = 0.0
 input_smoothing = 40.0
 rotation_speed = 16
 

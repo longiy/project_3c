@@ -158,7 +158,7 @@ func update_immediate_follow(delta):
 	global_position = global_position.lerp(target_position, follow_smoothing * delta)
 
 func update_follow_with_delay(delta):
-	"""Simple working follow delay system"""
+	"""Fixed follow delay system - camera stops completely during delays"""
 	
 	# Check if character is moving
 	var character_speed = character.get_movement_speed()
@@ -171,32 +171,44 @@ func update_follow_with_delay(delta):
 	else:
 		movement_change_time += delta
 	
-	# Determine if we should follow
-	var should_follow = is_following
+	# Determine if we should follow based on current state and delays
+	var should_follow = false  # Default to not following
 	
-	if is_character_moving and not was_character_moving:
-		# Character started moving - check start delay
-		if movement_change_time >= movement_start_delay:
+	if is_character_moving:
+		# Character is moving - only follow if delay has expired
+		if was_character_moving:
+			# Was already moving - continue following
 			should_follow = true
-			print("📹 Camera: Starting to follow after ", movement_start_delay, "s delay")
-	elif not is_character_moving and was_character_moving:
-		# Character stopped moving - check stop delay  
-		if movement_change_time >= movement_stop_delay:
+		else:
+			# Just started moving - check start delay
+			should_follow = movement_change_time >= movement_start_delay
+			if should_follow:
+				print("📹 Camera: Starting to follow after ", movement_start_delay, "s delay")
+	else:
+		# Character is not moving - only stop following if delay has expired
+		if not was_character_moving:
+			# Was already stopped - don't follow
 			should_follow = false
-			print("📹 Camera: Stopping follow after ", movement_stop_delay, "s delay")
+		else:
+			# Just stopped moving - check stop delay
+			should_follow = movement_change_time < movement_stop_delay
+			if not should_follow:
+				print("📹 Camera: Stopping follow after ", movement_stop_delay, "s delay")
 	
 	is_following = should_follow
 	was_character_moving = is_character_moving
 	
-	# Update target position
+	# Update target position ONLY when following
 	var immediate_target = character.global_position + Vector3(0, camera_height, 0)
 	
 	if is_following:
-		# Normal following
+		# Normal following - update target
 		follow_target_position = immediate_target
-	# else: keep old target position (don't follow)
+	else:
+		# Not following - keep old target (camera stays put)
+		pass
 	
-	# Apply position smoothly
+	# Apply position smoothly to the target (which doesn't update during delays)
 	global_position = global_position.lerp(follow_target_position, follow_smoothing * delta)
 
 # === REST OF THE METHODS REMAIN THE SAME ===
