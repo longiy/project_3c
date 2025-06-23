@@ -1,6 +1,6 @@
 # BaseMovementState.gd - ADD THESE LINES to existing script
 extends State
-class_name BaseMovementState
+class_name StateBaseMovement
 
 # ADD THIS: Resource support
 var state_resource: CharacterStateResource

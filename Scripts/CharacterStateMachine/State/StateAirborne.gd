@@ -1,6 +1,6 @@
 # AirborneState.gd - CLEANED UP VERSION
-extends BaseMovementState
-class_name AirborneState
+extends StateBaseMovement
+class_name StateAirborne
 
 # Resource-driven parameters
 var air_jump_velocity: float
@@ -13,7 +13,7 @@ func enter():
 
 func load_parameters_from_resource():
 	"""Load movement parameters from resource"""
-	var airborne_resource = state_resource as AirborneStateResource
+	var airborne_resource = state_resource as CharacterStateAirborneResource
 	
 	if airborne_resource:
 		air_jump_velocity = airborne_resource.air_jump_velocity

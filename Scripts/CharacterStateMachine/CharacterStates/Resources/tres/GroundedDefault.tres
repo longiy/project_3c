@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="GroundedStateResource" load_steps=2 format=3 uid="uid://bjjnr8sj2pu70"]
 
-[ext_resource type="Script" uid="uid://ctfi1nxwrgjpb" path="res://Scripts/StateMachine/CharacterStates/GroundedStateResource.gd" id="1_dh1tx"]
+[ext_resource type="Script" uid="uid://ctfi1nxwrgjpb" path="res://Scripts/CharacterStateMachine/CharacterStates/Resources/CharacterStateGroundedResource.gd" id="1_ijuci"]
 
 [resource]
-script = ExtResource("1_dh1tx")
+script = ExtResource("1_ijuci")
 jump_velocity = 6.0
 coyote_time = 0.1
 max_jumps = 2
@@ -14,8 +14,6 @@ run_speed = 6.0
 state_name = "grounded"
 display_name = "Default Grounded Movement"
 description = ""
-can_transition_to = Array[String]([])
-transition_conditions = Array[String]([])
 max_speed = 6.0
 acceleration = 15.0
 deceleration = 18.0

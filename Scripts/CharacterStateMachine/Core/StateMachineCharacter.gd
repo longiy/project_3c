@@ -1,11 +1,11 @@
 # CharacterStateMachine.gd - ADD THESE LINES to existing script
 extends StateMachine
-class_name CharacterStateMachine
+class_name StateMachineCharacter
 
 # ADD THIS: Resource configuration
 @export_group("State Resources")
-@export var grounded_state_resource: GroundedStateResource
-@export var airborne_state_resource: AirborneStateResource
+@export var grounded_state_resource: CharacterStateGroundedResource
+@export var airborne_state_resource: CharacterStateAirborneResource
 
 # Character-specific state tracking
 var movement_state_history: Array[String] = []
@@ -56,17 +56,17 @@ func _on_character_state_changed(old_state: String, new_state: String):
 
 func setup_basic_states():
 	"""Setup the basic movement states"""
-	add_state("grounded", GroundedState.new())
-	add_state("airborne", AirborneState.new())
+	add_state("grounded", StateGrounded.new())
+	add_state("airborne", StateAirborne.new())
 	
 	# Start in grounded state
 	change_state("grounded")
 
 func add_combat_states():
 	"""Add combat states (future expansion)"""
-	add_state("attacking", AttackingState.new())
-	add_state("blocking", BlockingState.new()) 
-	add_state("stunned", StunnedState.new())
+	add_state("attacking", StateAttacking.new())
+	add_state("blocking", StateBlocking.new()) 
+	add_state("stunned", StateStunned.new())
 
 func get_movement_state() -> String:
 	"""Get current movement-related state"""

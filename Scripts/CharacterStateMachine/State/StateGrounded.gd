@@ -1,6 +1,6 @@
-# GroundedState.gd - CLEANED UP VERSION
-extends BaseMovementState
-class_name GroundedState
+# StateGrounded.gd - CLEANED UP VERSION
+extends StateBaseMovement
+class_name StateGrounded
 
 # Resource-driven parameters
 var jump_velocity: float
@@ -17,7 +17,7 @@ func enter():
 
 func load_parameters_from_resource():
 	"""Load movement parameters from resource"""
-	var grounded_resource = state_resource as GroundedStateResource
+	var grounded_resource = state_resource as CharacterStateGroundedResource
 	
 	if grounded_resource:
 		jump_velocity = grounded_resource.jump_velocity
@@ -25,7 +25,7 @@ func load_parameters_from_resource():
 		max_jumps = grounded_resource.max_jumps
 		print("🏃 Grounded state loaded: Jump=", jump_velocity, " Coyote=", coyote_time, " MaxJumps=", max_jumps)
 	else:
-		push_error("GroundedState: No resource assigned! Movement will not work correctly.")
+		push_error("StateGrounded: No resource assigned! Movement will not work correctly.")
 
 func update(delta: float):
 	super.update(delta)

@@ -1,5 +1,5 @@
 extends CharacterStateResource  
-class_name AirborneStateResource
+class_name CharacterStateAirborneResource
 
 @export_group("Airborne Specific")
 @export var gravity_multiplier: float = 1.0

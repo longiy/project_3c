@@ -1,6 +1,6 @@
 # AttackingState.gd - Template for future combat system
-extends BaseMovementState
-class_name AttackingState
+extends StateBaseMovement
+class_name StateAttacking
 
 var attack_duration = 0.6
 var attack_timer = 0.0

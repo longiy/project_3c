@@ -9,8 +9,7 @@ extends CharacterBody3D
 @export_group("Components") 
 @export var animation_controller: AnimationController
 @export var camera: Camera3D
-@export var state_machine: CharacterStateMachine  # NEW: Reference to scene node
-@export var state_machine_config: CharacterStateMachineConfig
+@export var state_machine: StateMachineCharacter  # NEW: Reference to scene node
 
 @export_group("Movement Speeds")
 @export var slow_walk_speed = 2.0

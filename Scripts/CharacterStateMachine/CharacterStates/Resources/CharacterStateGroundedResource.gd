@@ -1,5 +1,5 @@
 extends CharacterStateResource
-class_name GroundedStateResource
+class_name CharacterStateGroundedResource
 
 @export_group("Grounded Specific")
 @export var jump_velocity: float = 6.0

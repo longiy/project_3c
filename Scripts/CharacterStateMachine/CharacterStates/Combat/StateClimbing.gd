@@ -1,6 +1,6 @@
 # ClimbingState.gd - Template for environmental interaction
-extends BaseMovementState
-class_name ClimbingState
+extends StateBaseMovement
+class_name StateClimbing
 
 var climb_speed = 2.0
 

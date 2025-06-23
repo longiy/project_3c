@@ -1,6 +1,6 @@
 # BlockingState.gd - Template for defensive state
-extends BaseMovementState
-class_name BlockingState
+extends StateBaseMovement
+class_name StateBlocking
 
 func enter():
 	super.enter()

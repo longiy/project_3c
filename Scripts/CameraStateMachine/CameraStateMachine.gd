@@ -1,6 +1,6 @@
-# CameraStateComponent.gd - Fixed logging spam and redundant state switches
+# CameraStateMachine.gd - Fixed logging spam and redundant state switches
 extends Node
-class_name CameraStateComponent
+class_name CameraStateMachine
 
 @export_group("References")
 @export var target_character: CharacterBody3D
@@ -52,25 +52,25 @@ func _ready():
 		camera_controller = get_parent() 
 	
 	if not target_character:
-		push_error("CameraStateComponent: target_character not assigned")
+		push_error("CameraStateMachine: target_character not assigned")
 		return
 	
 	# Get animation controller
 	animation_controller = target_character.get_node("AnimationController")
 	if not animation_controller or not animation_controller.animation_tree:
-		push_error("CameraStateComponent: AnimationController or AnimationTree not found")
+		push_error("CameraStateMachine: AnimationController or AnimationTree not found")
 		return
 	
 	# Get state machine
 	state_machine = animation_controller.animation_tree.get("parameters/playback")
 	if not state_machine:
-		push_error("CameraStateComponent: StateMachine not found in AnimationTree")
+		push_error("CameraStateMachine: StateMachine not found in AnimationTree")
 		return
 	
 	# Get camera directly from scene tree
 	camera = camera_controller.get_node("SpringArm3D/Camera3D")
 	if not camera:
-		push_error("CameraStateComponent: Camera not found at SpringArm3D/Camera3D")
+		push_error("CameraStateMachine: Camera not found at SpringArm3D/Camera3D")
 		return
 	
 	# Build state lookup dictionary
@@ -81,7 +81,7 @@ func _ready():
 	switch_to_state(current_anim_state)
 	
 	if enable_debug_logging:
-		print("✅ CameraStateComponent initialized with ", camera_states.size(), " states")
+		print("✅ CameraStateMachine initialized with ", camera_states.size(), " states")
 
 func _physics_process(delta):
 	if not state_machine:

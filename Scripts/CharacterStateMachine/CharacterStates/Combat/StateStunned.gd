@@ -1,6 +1,6 @@
 # StunnedState.gd - Template for status effect state
-extends BaseMovementState
-class_name StunnedState
+extends StateBaseMovement
+class_name StateStunned
 
 var stun_duration = 2.0
 var stun_timer = 0.0
