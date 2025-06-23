@@ -1,16 +1,44 @@
-# CharacterStateMachine.gd - Specialized for character controller
+# CharacterStateMachine.gd - ADD THESE LINES to existing script
 extends StateMachine
 class_name CharacterStateMachine
+
+# ADD THIS: Resource configuration
+@export_group("State Resources")
+@export var grounded_state_resource: GroundedStateResource
+@export var airborne_state_resource: AirborneStateResource
 
 # Character-specific state tracking
 var movement_state_history: Array[String] = []
 
+# ADD THIS: Resource lookup
+var state_resources: Dictionary = {}
+
 func _ready():
 	super._ready()
+	
+	# ADD THIS: Build resource lookup
+	build_resource_lookup()
 	
 	# Connect to signals for character-specific logic
 	state_changed.connect(_on_character_state_changed)
 
+# ADD THIS: New method to build resource lookup
+func build_resource_lookup():
+	"""Build dictionary mapping state names to resources"""
+	state_resources.clear()
+	
+	if grounded_state_resource:
+		state_resources["grounded"] = grounded_state_resource
+		print("📋 Registered grounded state resource: ", grounded_state_resource.display_name)
+	
+	if airborne_state_resource:
+		state_resources["airborne"] = airborne_state_resource
+		print("📋 Registered airborne state resource: ", airborne_state_resource.display_name)
+
+# ADD THIS: Method for states to get their resources
+func get_state_resource(state_name: String) -> CharacterStateResource:
+	"""Get resource for a specific state"""
+	return state_resources.get(state_name, null)
 func _on_character_state_changed(old_state: String, new_state: String):
 	"""Handle character-specific state changes"""
 	

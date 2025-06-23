@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=3 uid="uid://dngafe0y2nx5b"]
+[gd_scene load_steps=26 format=3 uid="uid://dngafe0y2nx5b"]
 
 [ext_resource type="Script" uid="uid://dt54n1ktg7wqr" path="res://Scripts/Controllers/ControllerCharacter.gd" id="1_5si1x"]
 [ext_resource type="Script" uid="uid://cms4l0nes10tn" path="res://Scripts/Controllers/ControllerCamera.gd" id="2_caybs"]
@@ -14,6 +14,9 @@
 [ext_resource type="Resource" uid="uid://djaibnhwg08cc" path="res://Scripts/CameraStateMachine/CameraStates/Airborne.tres" id="7_t5ir1"]
 [ext_resource type="PackedScene" uid="uid://bsprrm672tx2s" path="res://MARKER.tscn" id="7_w862e"]
 [ext_resource type="Resource" uid="uid://mvqgue1snc2x" path="res://Scripts/CameraStateMachine/CameraStates/Idle.tres" id="8_eyrhl"]
+[ext_resource type="Script" uid="uid://do2lvkxccp61u" path="res://Scripts/StateMachine/Logic/CharacterStateMachine.gd" id="13_patvt"]
+[ext_resource type="Resource" uid="uid://bjjnr8sj2pu70" path="res://Scripts/StateMachine/CharacterStates/Resources/GroundedDefault.tres" id="14_lcrxd"]
+[ext_resource type="Resource" uid="uid://c5g4kl1ajwas6" path="res://Scripts/StateMachine/CharacterStates/Resources/AirborneDefault.tres" id="15_ltj0m"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_3a8dd"]
 
@@ -110,12 +113,13 @@ target_character = NodePath("../../CHARACTER")
 camera_controller = NodePath("..")
 camera_states = Array[ExtResource("4_3ag1n")]([ExtResource("8_eyrhl"), ExtResource("6_eyrhl"), ExtResource("5_t5ir1"), ExtResource("7_t5ir1")])
 
-[node name="CHARACTER" type="CharacterBody3D" parent="." node_paths=PackedStringArray("animation_controller", "camera")]
+[node name="CHARACTER" type="CharacterBody3D" parent="." node_paths=PackedStringArray("animation_controller", "camera", "state_machine")]
 collision_layer = 2
 slide_on_ceiling = false
 script = ExtResource("1_5si1x")
 animation_controller = NodePath("AnimationController")
 camera = NodePath("../CAMERARIG/SpringArm3D/Camera3D")
+state_machine = NodePath("StateMachine")
 input_smoothing = 40.0
 rotation_speed = 16
 
@@ -129,11 +133,16 @@ script = ExtResource("4_wiekx")
 [node name="ClickNavigationComponent" type="Node" parent="CHARACTER" node_paths=PackedStringArray("camera", "destination_marker")]
 script = ExtResource("4_0er5f")
 camera = NodePath("../../CAMERARIG/SpringArm3D/Camera3D")
-destination_marker = NodePath("../../MARKER")
+destination_marker = NodePath("../../CURSOR")
 
 [node name="AnimationController" type="Node" parent="CHARACTER" node_paths=PackedStringArray("animation_tree")]
 script = ExtResource("5_gbv5d")
 animation_tree = NodePath("../PS_Character_Gurl/AnimationTree")
+
+[node name="StateMachine" type="Node" parent="CHARACTER"]
+script = ExtResource("13_patvt")
+grounded_state_resource = ExtResource("14_lcrxd")
+airborne_state_resource = ExtResource("15_ltj0m")
 
 [node name="PS_Character_Gurl" parent="CHARACTER" instance=ExtResource("3_aeafk")]
 
@@ -214,7 +223,7 @@ parameters/Move/blend_position = -0.844419
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.853688, 0)
 shape = SubResource("CapsuleShape3D_tcevt")
 
-[node name="MARKER" parent="." instance=ExtResource("7_w862e")]
+[node name="CURSOR" parent="." instance=ExtResource("7_w862e")]
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_w862e")

@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="AirborneStateResource" load_steps=2 format=3 uid="uid://c5g4kl1ajwas6"]
+
+[ext_resource type="Script" uid="uid://dhmol2tp3rqnk" path="res://Scripts/StateMachine/CharacterStates/AirborneStateResource.gd" id="1_y3u77"]
+
+[resource]
+script = ExtResource("1_y3u77")
+gravity_multiplier = 1.0
+terminal_velocity = 20.0
+air_jump_velocity = 5.0
+landing_buffer_time = 0.1
+state_name = ""
+display_name = ""
+description = ""
+can_transition_to = Array[String]([])
+transition_conditions = Array[String]([])
+max_speed = 6.0
+acceleration = 15.0
+deceleration = 18.0
+air_control_multiplier = 0.3
+animation_state_name = ""
+blend_parameter_path = ""
+log_transitions = true
+min_state_duration = 0.0
+metadata/_custom_type_script = "uid://dhmol2tp3rqnk"

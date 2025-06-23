@@ -1,9 +1,39 @@
-# AirborneState.gd - Handles jumping, falling, and air control with minimal logging
+# AirborneState.gd - REPLACE ENTIRE enter() function and ADD new methods
 extends BaseMovementState
 class_name AirborneState
 
+# ADD THIS: Resource-driven parameters (loaded in enter())
+var air_jump_velocity: float
+var air_control_multiplier: float
+var gravity_multiplier: float
+
 func enter():
 	super.enter()
+	
+	# ADD THIS: Load parameters from resource or use fallbacks
+	load_parameters_from_resource()
+
+# ADD THIS: Load parameters from resource
+func load_parameters_from_resource():
+	"""Load movement parameters from resource or use hardcoded fallbacks"""
+	
+	# Cast to specific resource type for type safety
+	var airborne_resource = state_resource as AirborneStateResource
+	
+	if airborne_resource:
+		# Use resource values
+		air_jump_velocity = airborne_resource.air_jump_velocity
+		air_control_multiplier = airborne_resource.air_control_multiplier
+		gravity_multiplier = airborne_resource.gravity_multiplier
+		
+		print("🪂 Airborne state using resource values - AirJump: ", air_jump_velocity, ", AirControl: ", air_control_multiplier, ", Gravity: ", gravity_multiplier)
+	else:
+		# Use hardcoded fallbacks
+		air_jump_velocity = 5.0
+		air_control_multiplier = 0.3
+		gravity_multiplier = 1.0
+		
+		print("🪂 Airborne state using fallback values - AirJump: ", air_jump_velocity, ", AirControl: ", air_control_multiplier, ", Gravity: ", gravity_multiplier)
 
 func update(delta: float):
 	super.update(delta)
@@ -34,12 +64,11 @@ func handle_air_control(delta: float):
 	var input_dir = apply_input_smoothing(raw_input, delta)
 	
 	if input_dir.length() > character.input_deadzone:
-		# Apply reduced air control
+		# Apply reduced air control using resource value
 		var movement_vector = calculate_movement_vector(input_dir)
 		var speed_data = get_target_speed_and_acceleration()
 		
-		# Reduced air control (typically 20-50% of ground control)
-		var air_control_multiplier = 0.3
+		# Use resource-driven air control multiplier
 		var reduced_acceleration = speed_data.acceleration * air_control_multiplier
 		
 		apply_movement_with_acceleration(
@@ -57,7 +86,8 @@ func handle_air_jumping():
 	if Input.is_action_just_pressed("jump"):
 		# Check for multi-jump (no coyote time in air)
 		if character.jumps_remaining > 0 and not character.is_on_floor():
-			character.velocity.y = character.jump_velocity
+			# Use resource-driven air jump velocity
+			character.velocity.y = air_jump_velocity
 			character.jumps_remaining -= 1
 
 func exit():

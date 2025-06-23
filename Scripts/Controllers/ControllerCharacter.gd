@@ -5,9 +5,12 @@ extends CharacterBody3D
 @export var reset_position = Vector3(0, 1, 0)
 @export var reset_rotation = Vector3(0, 0, 0)
 
-@export_group("Components")
+# TO THIS:
+@export_group("Components") 
 @export var animation_controller: AnimationController
 @export var camera: Camera3D
+@export var state_machine: CharacterStateMachine  # NEW: Reference to scene node
+@export var state_machine_config: CharacterStateMachineConfig
 
 @export_group("Movement Speeds")
 @export var slow_walk_speed = 2.0
@@ -36,8 +39,7 @@ extends CharacterBody3D
 @export var coyote_time = 0.1
 @export var ground_check_distance = 0.2
 
-# State machine
-var state_machine: CharacterStateMachine
+
 
 # Movement duration tracking
 var input_start_time = 0.0
@@ -69,16 +71,13 @@ func _ready():
 	
 	if not animation_controller:
 		push_warning("No AnimationController assigned - animations will not work")
-	
-	setup_state_machine()
-
-func setup_state_machine():
-	"""Initialize the character state machine"""
-	state_machine = CharacterStateMachine.new()
-	add_child(state_machine)
-	state_machine.setup_basic_states()
-	print("✅ Character: State machine ready")
-
+	# Initialize state machine if assigned
+	if state_machine:
+		state_machine.setup_basic_states()
+		print("✅ Character: State machine ready")
+	else:
+		push_error("StateMachine not assigned to CHARACTER!")
+		
 func _input(event):
 	"""Forward input to state machine"""
 	if state_machine:

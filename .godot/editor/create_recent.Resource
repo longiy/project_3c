@@ -1,1 +1,3 @@
+GroundedStateResource
+AirborneStateResource
 CameraState
