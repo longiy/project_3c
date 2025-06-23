@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="CameraState" load_steps=2 format=3 uid="uid://mvqgue1snc2x"]
 
-[ext_resource type="Script" uid="uid://cpmh0aclu0piq" path="res://Scripts/CameraState.gd" id="1_l7gvp"]
+[ext_resource type="Script" uid="uid://cpmh0aclu0piq" path="res://Scripts/CameraStateMachine/CameraState.gd" id="1_l7gvp"]
 
 [resource]
 script = ExtResource("1_l7gvp")
