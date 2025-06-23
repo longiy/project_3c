@@ -12,3 +12,6 @@ res://Scripts/StateMachine/Logic/BaseMovementState.gd
 res://Scripts/StateMachine/Logic/CharacterStateMachine.gd
 res://Scripts/StateMachine/Logic/AirborneState.gd
 res://Scripts/StateMachine/CharacterStates/CharacterStateMachineConfig.gd
+res://Assets/ps_character_gurl.tscn
+res://Scripts/StateMachine/CharacterStates/Resources/GroundedDefault.tres
+res://Scripts/StateMachine/CharacterStates/CharacterStateResource.gd

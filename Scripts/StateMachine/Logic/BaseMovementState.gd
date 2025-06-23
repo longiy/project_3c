@@ -26,15 +26,6 @@ func load_state_resource():
 			print("✅ State ", state_name, " loaded resource: ", state_resource.display_name)
 		else:
 			print("⚠️ State ", state_name, " using fallback values (no resource)")
-
-# ADD THIS: Helper to get resource values with fallbacks
-func get_resource_value(property_name: String, fallback_value):
-	"""Get value from resource or use fallback"""
-	if state_resource and state_resource.has_method("get"):
-		var resource_value = state_resource.get(property_name)
-		if resource_value != null:
-			return resource_value
-	return fallback_value
 	
 # === SHARED PHYSICS METHODS ===
 

@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3 uid="uid://dngafe0y2nx5b"]
+[gd_scene load_steps=27 format=3 uid="uid://dngafe0y2nx5b"]
 
 [ext_resource type="Script" uid="uid://dt54n1ktg7wqr" path="res://Scripts/Controllers/ControllerCharacter.gd" id="1_5si1x"]
 [ext_resource type="Script" uid="uid://cms4l0nes10tn" path="res://Scripts/Controllers/ControllerCamera.gd" id="2_caybs"]
@@ -14,6 +14,7 @@
 [ext_resource type="Resource" uid="uid://djaibnhwg08cc" path="res://Scripts/CameraStateMachine/CameraStates/Airborne.tres" id="7_t5ir1"]
 [ext_resource type="PackedScene" uid="uid://bsprrm672tx2s" path="res://MARKER.tscn" id="7_w862e"]
 [ext_resource type="Resource" uid="uid://mvqgue1snc2x" path="res://Scripts/CameraStateMachine/CameraStates/Idle.tres" id="8_eyrhl"]
+[ext_resource type="Script" uid="uid://bnsbnriikavnr" path="res://Scripts/StateMachine/CharacterStates/CharacterStateMachineConfig.gd" id="10_o542l"]
 [ext_resource type="Script" uid="uid://do2lvkxccp61u" path="res://Scripts/StateMachine/Logic/CharacterStateMachine.gd" id="13_patvt"]
 [ext_resource type="Resource" uid="uid://bjjnr8sj2pu70" path="res://Scripts/StateMachine/CharacterStates/Resources/GroundedDefault.tres" id="14_lcrxd"]
 [ext_resource type="Resource" uid="uid://c5g4kl1ajwas6" path="res://Scripts/StateMachine/CharacterStates/Resources/AirborneDefault.tres" id="15_ltj0m"]
@@ -120,6 +121,7 @@ script = ExtResource("1_5si1x")
 animation_controller = NodePath("AnimationController")
 camera = NodePath("../CAMERARIG/SpringArm3D/Camera3D")
 state_machine = NodePath("StateMachine")
+state_machine_config = ExtResource("10_o542l")
 input_smoothing = 40.0
 rotation_speed = 16
 
