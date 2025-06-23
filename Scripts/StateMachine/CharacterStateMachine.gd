@@ -33,16 +33,12 @@ func setup_basic_states():
 	
 	# Start in grounded state
 	change_state("grounded")
-	
-	print("🏃 Character states initialized")
 
 func add_combat_states():
 	"""Add combat states (future expansion)"""
 	add_state("attacking", AttackingState.new())
 	add_state("blocking", BlockingState.new()) 
 	add_state("stunned", StunnedState.new())
-	
-	print("⚔️ Combat states added")
 
 func get_movement_state() -> String:
 	"""Get current movement-related state"""

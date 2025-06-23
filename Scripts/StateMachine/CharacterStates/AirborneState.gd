@@ -1,10 +1,9 @@
-# AirborneState.gd - Handles jumping, falling, and air control
+# AirborneState.gd - Handles jumping, falling, and air control with minimal logging
 extends BaseMovementState
 class_name AirborneState
 
 func enter():
 	super.enter()
-	print("  🚀 Airborne: Started falling/jumping")
 
 func update(delta: float):
 	super.update(delta)
@@ -60,12 +59,9 @@ func handle_air_jumping():
 		if character.jumps_remaining > 0 and not character.is_on_floor():
 			character.velocity.y = character.jump_velocity
 			character.jumps_remaining -= 1
-			
-			print("  ⚡ Air jump performed (", character.jumps_remaining, " remaining)")
 
 func exit():
 	super.exit()
-	print("  🚀 Left airborne state")
 
 # === AIRBORNE-SPECIFIC HELPERS ===
 

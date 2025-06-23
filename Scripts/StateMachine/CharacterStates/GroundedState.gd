@@ -1,4 +1,4 @@
-# GroundedState.gd - Fixed to use unified movement handling
+# GroundedState.gd - Fixed to use unified movement handling with minimal logging
 extends BaseMovementState
 class_name GroundedState
 
@@ -8,8 +8,6 @@ func enter():
 	# Reset grounded-specific values
 	character.coyote_timer = character.coyote_time
 	character.jumps_remaining = character.max_jumps
-	
-	print("  🏃 Grounded: Coyote time reset, jumps restored")
 
 func update(delta: float):
 	super.update(delta)
@@ -36,13 +34,10 @@ func handle_jumping():
 			character.jumps_remaining -= 1
 			character.coyote_timer = 0
 			
-			print("  🚀 Ground jump performed")
-			
 			# Transition to airborne will happen on next frame via check_for_airborne_transition()
 
 func exit():
 	super.exit()
-	print("  🏃 Left grounded state")
 
 # === GROUNDED-SPECIFIC HELPERS ===
 

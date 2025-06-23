@@ -116,7 +116,6 @@ slide_on_ceiling = false
 script = ExtResource("1_5si1x")
 animation_controller = NodePath("AnimationController")
 camera = NodePath("../CAMERARIG/SpringArm3D/Camera3D")
-use_state_machine = true
 input_smoothing = 40.0
 rotation_speed = 16
 

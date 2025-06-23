@@ -7,3 +7,9 @@ res://Scripts/MovementStates/Idle.tres
 res://Assets/ps_character_gurl.tscn
 res://Scripts/StateMachine/BaseMovementState.gd
 res://Scripts/StateMachine/CharacterStates/GroundedState.gd
+res://Scripts/StateMachine/CharacterStateMachine.gd
+res://Scripts/ControllerCharacter.gd
+res://Scripts/StateMachine/StateMachine.gd
+res://Scripts/StateMachine/State.gd
+res://Scripts/StateMachine/CharacterStates/AirborneState.gd
+res://Scripts/CameraStateComponent.gd

@@ -1,4 +1,4 @@
-# State.gd - Base class for all states
+# State.gd - Base class for all states with minimal logging
 extends RefCounted
 class_name State
 
@@ -14,11 +14,12 @@ func enter():
 	"""Called when entering this state"""
 	time_in_state = 0.0
 	time_since_entered = 0.0
-	print("  ➤ Entering: ", state_name)
+	# No logging here - state machine handles it
 
 func exit():
 	"""Called when leaving this state"""
-	print("  ➤ Exiting: ", state_name, " (was active for ", "%.2f" % time_in_state, "s)")
+	# No logging here - state machine handles it
+	pass
 
 func update(delta: float):
 	"""Called every frame while in this state"""

@@ -1,4 +1,4 @@
-# CameraStateComponent.gd - Manages camera properties based on animation states
+# CameraStateComponent.gd - Fixed logging spam and redundant state switches
 extends Node
 class_name CameraStateComponent
 
@@ -8,15 +8,17 @@ class_name CameraStateComponent
 @export var camera_states: Array[CameraState] = []
 
 @export_group("Movement Delays")
-# Movement duration requirements - separate delays
-@export var enter_move_delay = 0.3    # Delay when starting to move  
-@export var exit_move_delay = 0.1     # Delay when stopping movement
-var last_state_switch_time = 0.0  # Track when last switch happened
+@export var enter_move_delay = 0.3
+@export var exit_move_delay = 0.1
+var last_state_switch_time = 0.0
 
 @export_group("Fallback Values")
 @export var default_fov = 75.0
 @export var default_distance = 4.0
 @export var default_height_offset = 0.0
+
+@export_group("Debug Settings")
+@export var enable_debug_logging = false  # NEW: Toggle debug logging
 
 # Internal references
 var animation_controller: AnimationController
@@ -40,6 +42,9 @@ var target_distance = 0.0
 var start_offset = Vector3.ZERO
 var target_offset = Vector3.ZERO
 
+# NEW: Prevent redundant switches
+var blend_change_threshold = 0.01  # Ignore tiny blend changes
+var last_logged_state = ""
 
 func _ready():
 	# Get references
@@ -75,7 +80,8 @@ func _ready():
 	var current_anim_state = state_machine.get_current_node()
 	switch_to_state(current_anim_state)
 	
-	print("✅ CameraStateComponent initialized with ", camera_states.size(), " states")
+	if enable_debug_logging:
+		print("✅ CameraStateComponent initialized with ", camera_states.size(), " states")
 
 func _physics_process(delta):
 	if not state_machine:
@@ -85,9 +91,9 @@ func _physics_process(delta):
 	var current_anim_state = state_machine.get_current_node()
 	var state_changed = current_anim_state != previous_animation_state
 	
-	# Check for blend position changes
+	# Check for blend position changes (with threshold)
 	var current_blend = animation_controller.animation_tree.get("parameters/Move/blend_position")
-	var blend_changed = current_blend != previous_blend_position
+	var blend_changed = abs(current_blend - previous_blend_position) > blend_change_threshold
 	
 	# Get current time for duration tracking
 	var current_time = Time.get_ticks_msec() / 1000.0
@@ -99,24 +105,32 @@ func _physics_process(delta):
 			# Entering Move state - check input duration
 			duration_ok = target_character.is_input_sustained(enter_move_delay)
 			var input_duration = target_character.get_input_duration()
-			print("🔒 Entering Move: input=", "%.3f" % input_duration, "s, required=", enter_move_delay, "s, ok=", duration_ok)
+			if enable_debug_logging:
+				print("🔒 Entering Move: input=", "%.3f" % input_duration, "s, required=", enter_move_delay, "s, ok=", duration_ok)
 		else:
 			# Leaving Move state - check time in Move state
 			var time_in_move = current_time - last_state_switch_time
 			duration_ok = time_in_move > exit_move_delay
-			print("🔒 Leaving Move: time_in_move=", "%.3f" % time_in_move, "s, required=", exit_move_delay, "s, ok=", duration_ok)
+			if enable_debug_logging:
+				print("🔒 Leaving Move: time_in_move=", "%.3f" % time_in_move, "s, required=", exit_move_delay, "s, ok=", duration_ok)
 	
 	# Switch if state/blend changed AND duration requirement met
 	var should_switch = (state_changed or blend_changed) and duration_ok
 	
-	if state_changed or blend_changed:
+	# FIXED: Only log if debug enabled AND there's actually a meaningful change
+	if (state_changed or blend_changed) and enable_debug_logging:
 		print("🎬 Change detected: state=", state_changed, ", blend=", blend_changed, ", duration_ok=", duration_ok, ", will_switch=", should_switch)
 	
 	if should_switch:
-		var input_duration = target_character.get_input_duration()
-		print("📹 Camera state switch: ", previous_animation_state, " → ", current_anim_state, 
-			  " | Blend: ", "%.2f" % current_blend, 
-			  " | Input duration: ", "%.2f" % input_duration, "s")
+		# NEW: Check if we're actually switching to a different state
+		var target_state_name = get_target_state_name(current_anim_state)
+		if target_state_name != last_logged_state:
+			var input_duration = target_character.get_input_duration()
+			if enable_debug_logging:
+				print("📹 Camera state switch: ", last_logged_state, " → ", target_state_name, 
+					  " | Blend: ", "%.2f" % current_blend, 
+					  " | Input duration: ", "%.2f" % input_duration, "s")
+			last_logged_state = target_state_name
 		
 		switch_to_state(current_anim_state)
 		previous_animation_state = current_anim_state
@@ -127,6 +141,18 @@ func _physics_process(delta):
 	if is_transitioning:
 		update_transition(delta)
 
+func get_target_state_name(animation_state_name: String) -> String:
+	"""Get the name of the state we would switch to"""
+	for state in camera_states:
+		if state and state.animation_state_name == animation_state_name:
+			if state.blend_parameter_path != "":
+				var blend_value = animation_controller.animation_tree.get(state.blend_parameter_path)
+				if blend_value >= state.blend_position_min and blend_value <= state.blend_position_max:
+					return state.animation_state_name + "_" + str(int(blend_value * 100))
+			else:
+				return state.animation_state_name
+	return "default"
+
 func build_state_lookup():
 	"""Build dictionary for fast state lookup by animation name"""
 	state_lookup.clear()
@@ -134,7 +160,8 @@ func build_state_lookup():
 	for state in camera_states:
 		if state and state.animation_state_name != "":
 			state_lookup[state.animation_state_name] = state
-			print("📋 Registered state: ", state.animation_state_name)
+			if enable_debug_logging:
+				print("📋 Registered state: ", state.animation_state_name)
 
 func switch_to_state(animation_state_name: String):
 	"""Switch to a new camera state based on animation state and blend position"""
@@ -161,14 +188,16 @@ func switch_to_state(animation_state_name: String):
 	
 	if new_state:
 		var blend_info = ""
-		if new_state.blend_parameter_path != "":
+		if new_state.blend_parameter_path != "" and enable_debug_logging:
 			var blend_value = animation_controller.animation_tree.get(new_state.blend_parameter_path)
 			blend_info = " (blend: " + "%.2f" % blend_value + ")"
-		print("🔄 Switching to state: ", new_state.animation_state_name, blend_info)
+		if enable_debug_logging:
+			print("🔄 Switching to state: ", new_state.animation_state_name, blend_info)
 		start_transition_to_state(new_state)
 	else:
 		# No matching state found - use defaults
-		print("⚠️ No state found for animation: ", animation_state_name)
+		if enable_debug_logging:
+			print("⚠️ No state found for animation: ", animation_state_name)
 		start_transition_to_defaults()
 
 func apply_defaults_immediately():
@@ -192,8 +221,7 @@ func apply_state_immediately(state: CameraState):
 		camera_controller.camera_offset = state.camera_offset
 	
 	is_transitioning = false
-	
-# CameraStateComponent.gd - Modify start_transition_to_state method
+
 func start_transition_to_state(new_state: CameraState):
 	current_state = new_state
 	
@@ -213,15 +241,18 @@ func start_transition_to_state(new_state: CameraState):
 			transition_duration = new_state.enter_transition_speed
 			transition_timer = 0.0
 			is_transitioning = true
-			print("🎬 Starting SMOOTH transition TO ", new_state.animation_state_name, " (speed: ", transition_duration, ")")
+			if enable_debug_logging:
+				print("🎬 Starting SMOOTH transition TO ", new_state.animation_state_name, " (speed: ", transition_duration, ")")
 		1: # Instant
 			apply_state_immediately(new_state)
-			print("⚡ INSTANT transition TO ", new_state.animation_state_name)
+			if enable_debug_logging:
+				print("⚡ INSTANT transition TO ", new_state.animation_state_name)
 		2: # Custom
 			transition_duration = new_state.enter_transition_speed
 			transition_timer = 0.0
 			is_transitioning = true
-			print("🎨 Starting CUSTOM transition TO ", new_state.animation_state_name, " (speed: ", transition_duration, ")")
+			if enable_debug_logging:
+				print("🎨 Starting CUSTOM transition TO ", new_state.animation_state_name, " (speed: ", transition_duration, ")")
 
 func start_transition_to_defaults():
 	var leaving_state = current_state
@@ -244,15 +275,18 @@ func start_transition_to_defaults():
 				transition_duration = leaving_state.exit_transition_speed
 				transition_timer = 0.0
 				is_transitioning = true
-				print("🎬 Starting SMOOTH transition FROM ", leaving_state.animation_state_name, " (speed: ", transition_duration, ")")
+				if enable_debug_logging:
+					print("🎬 Starting SMOOTH transition FROM ", leaving_state.animation_state_name, " (speed: ", transition_duration, ")")
 			1: # Instant
 				apply_defaults_immediately()
-				print("⚡ INSTANT transition FROM ", leaving_state.animation_state_name)
+				if enable_debug_logging:
+					print("⚡ INSTANT transition FROM ", leaving_state.animation_state_name)
 			2: # Custom
 				transition_duration = leaving_state.exit_transition_speed
 				transition_timer = 0.0
 				is_transitioning = true
-				print("🎨 Starting CUSTOM transition FROM ", leaving_state.animation_state_name, " (speed: ", transition_duration, ")")
+				if enable_debug_logging:
+					print("🎨 Starting CUSTOM transition FROM ", leaving_state.animation_state_name, " (speed: ", transition_duration, ")")
 	else:
 		# Fallback to smooth transition
 		transition_duration = 2.0
@@ -284,7 +318,8 @@ func add_camera_state(state: CameraState):
 	if state and state.animation_state_name != "":
 		camera_states.append(state)
 		state_lookup[state.animation_state_name] = state
-		print("➕ Added runtime state: ", state.animation_state_name)
+		if enable_debug_logging:
+			print("➕ Added runtime state: ", state.animation_state_name)
 
 func remove_camera_state(animation_state_name: String):
 	"""Remove a camera state at runtime"""
@@ -292,7 +327,8 @@ func remove_camera_state(animation_state_name: String):
 		var state = state_lookup[animation_state_name]
 		camera_states.erase(state)
 		state_lookup.erase(animation_state_name)
-		print("➖ Removed state: ", animation_state_name)
+		if enable_debug_logging:
+			print("➖ Removed state: ", animation_state_name)
 
 func get_current_state() -> CameraState:
 	"""Get currently active camera state"""

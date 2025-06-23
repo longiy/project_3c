@@ -1,4 +1,4 @@
-# StateMachine.gd - Complete state machine system
+# StateMachine.gd - Complete state machine system with sensible logging
 extends Node
 class_name StateMachine
 
@@ -17,7 +17,6 @@ var max_history_size = 10
 
 func _ready():
 	owner_node = get_parent()
-	print("🎯 StateMachine initialized for: ", owner_node.name)
 
 func add_state(state_name: String, state: State):
 	"""Add a state to the machine"""
@@ -29,8 +28,6 @@ func add_state(state_name: String, state: State):
 	state.state_machine = self
 	state.owner = owner_node
 	state.state_name = state_name
-	
-	print("✅ Added state: ", state_name)
 
 func change_state(new_state_name: String):
 	"""Change to a different state"""
@@ -62,7 +59,8 @@ func change_state(new_state_name: String):
 	state_entered.emit(new_state_name)
 	state_changed.emit(old_state_name, new_state_name)
 	
-	print("🔄 State: ", old_state_name, " → ", new_state_name)
+	# Only log actual state changes
+	print("🔄 ", old_state_name, " → ", new_state_name)
 
 func get_current_state_name() -> String:
 	"""Get current state name"""

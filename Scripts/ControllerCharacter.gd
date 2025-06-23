@@ -1,4 +1,4 @@
-# ControllerCharacter.gd - Fixed movement physics
+# ControllerCharacter.gd - State machine only implementation
 extends CharacterBody3D
 
 @export_group("Debug")
@@ -9,25 +9,22 @@ extends CharacterBody3D
 @export var animation_controller: AnimationController
 @export var camera: Camera3D
 
-@export_group("Migration Testing")
-@export var use_state_machine = false  # NEW
-
 @export_group("Movement Speeds")
 @export var slow_walk_speed = 2.0
 @export var walk_speed = 3.0
 @export var run_speed = 6.0
 
 @export_group("Movement Physics")
-@export var slow_walk_acceleration = 12.0  # Reduced from 50.0
-@export var walk_acceleration = 15.0       # Reduced from 50.0
-@export var run_acceleration = 20.0        # Reduced from 50.0
-@export var deceleration = 18.0            # Reduced from 50.0
+@export var slow_walk_acceleration = 12.0
+@export var walk_acceleration = 15.0
+@export var run_acceleration = 20.0
+@export var deceleration = 18.0
 @export var gravity_multiplier = 1
 
 @export_group("Input Smoothing")
-@export var input_deadzone = 0.05          # Ignore tiny inputs
-@export var min_input_duration = 0.08      # Minimum time before registering movement
-@export var input_smoothing = 12.0         # Smooth input transitions
+@export var input_deadzone = 0.05
+@export var min_input_duration = 0.08
+@export var input_smoothing = 12.0
 
 @export_group("Rotation")
 @export var rotation_speed = 6
@@ -39,6 +36,7 @@ extends CharacterBody3D
 @export var coyote_time = 0.1
 @export var ground_check_distance = 0.2
 
+# State machine
 var state_machine: CharacterStateMachine
 
 # Movement duration tracking
@@ -65,13 +63,33 @@ func _ready():
 	for child in get_children():
 		if child.has_method("get_movement_input"):
 			input_components.append(child)
-			print("Character: Found input component: ", child.name)
+	
+	if input_components.size() > 0:
+		print("Character: Found ", input_components.size(), " input components")
 	
 	if not animation_controller:
 		push_warning("No AnimationController assigned - animations will not work")
-	 # Add state machine setup
-	if use_state_machine:
-		setup_state_machine()
+	
+	setup_state_machine()
+
+func setup_state_machine():
+	"""Initialize the character state machine"""
+	state_machine = CharacterStateMachine.new()
+	add_child(state_machine)
+	state_machine.setup_basic_states()
+	print("✅ Character: State machine ready")
+
+func _input(event):
+	"""Forward input to state machine"""
+	if state_machine:
+		state_machine.handle_input(event)
+
+func _physics_process(delta):
+	"""Main physics update - only state machine logic"""
+	update_input_duration_tracking(delta)
+	
+	if state_machine:
+		state_machine.update(delta)
 
 func update_input_duration_tracking(delta: float):
 	"""Track input duration for minimum input filtering"""
@@ -85,86 +103,6 @@ func update_input_duration_tracking(delta: float):
 		is_input_active = false
 	
 	last_input_direction = raw_input
-
-
-func setup_state_machine():
-	"""Initialize the character state machine"""
-	print("🔧 Creating CharacterStateMachine...")
-	state_machine = CharacterStateMachine.new()
-	
-	print("🔧 Adding as child...")
-	add_child(state_machine)
-	
-	print("🔧 Setting up basic states...")
-	state_machine.setup_basic_states()
-	
-	print("✅ State machine ready for testing")
-
-func _physics_process(delta):
-	if use_state_machine:
-		print("🔧 Updating input tracking...")
-		update_input_duration_tracking(delta)
-		
-		print("🔧 Updating state machine...")
-		if state_machine:
-			state_machine.update(delta)
-		else:
-			print("❌ State machine is null!")
-
-	else:  
-		# ALL your existing code goes inside this else block
-		# Apply gravity
-		if not is_on_floor():
-			velocity.y -= (base_gravity * gravity_multiplier) * delta
-		
-		# Handle coyote time and jump reset
-		if is_on_floor():
-			coyote_timer = coyote_time
-			jumps_remaining = max_jumps
-		else:
-			coyote_timer -= delta
-		
-		# Get input with proper arbitration and smoothing
-		var raw_input = get_current_input()
-		var input_dir = apply_input_smoothing(raw_input, delta)
-		
-		# Track input duration with deadzone
-		var has_input_now = input_dir.length() > input_deadzone
-		
-		if has_input_now and not is_input_active:
-			input_start_time = Time.get_ticks_msec() / 1000.0
-			is_input_active = true
-		elif not has_input_now and is_input_active:
-			is_input_active = false
-		
-		last_input_direction = input_dir
-		
-		# Handle movement mode inputs
-		is_slow_walking = Input.is_action_pressed("walk")
-		is_running = Input.is_action_pressed("sprint") and not is_slow_walking
-		
-		# Handle reset
-		if Input.is_action_just_pressed("reset"):
-			reset_character_transform()
-		
-		# Handle jumping
-		if Input.is_action_just_pressed("jump"):
-			if (coyote_timer > 0 and jumps_remaining > 0) or (jumps_remaining > 0 and not is_on_floor()):
-				velocity.y = jump_velocity
-				jumps_remaining -= 1
-				coyote_timer = 0
-		
-		# Only apply movement if input has been sustained long enough OR we're already moving
-		var should_move = has_input_now and (get_input_duration() >= min_input_duration or get_movement_speed() > 0.5)
-		
-		if should_move:
-			var movement_vector = calculate_movement_vector(input_dir)
-			handle_movement_and_rotation(movement_vector, delta)
-		else:
-			# Gentle deceleration when stopping or input too brief
-			handle_deceleration(delta)
-		
-		move_and_slide()
 
 func apply_input_smoothing(raw_input: Vector2, delta: float) -> Vector2:
 	"""Smooth input transitions to prevent jitter"""
@@ -203,6 +141,7 @@ func cancel_all_input_components():
 			component.cancel_input()
 
 func calculate_movement_vector(input_dir: Vector2) -> Vector3:
+	"""Convert 2D input to 3D movement vector"""
 	var movement_vector = Vector3.ZERO
 	
 	if camera_relative_movement and camera:
@@ -217,37 +156,8 @@ func calculate_movement_vector(input_dir: Vector2) -> Vector3:
 	
 	return movement_vector
 
-func handle_movement_and_rotation(movement_vector: Vector3, delta: float):
-	"""Handle movement with smooth acceleration"""
-	var current_speed: float
-	var current_acceleration: float
-	
-	if is_slow_walking:
-		current_speed = slow_walk_speed
-		current_acceleration = slow_walk_acceleration
-	elif is_running:
-		current_speed = run_speed
-		current_acceleration = run_acceleration
-	else:
-		current_speed = walk_speed
-		current_acceleration = walk_acceleration
-	
-	var movement_direction = movement_vector.normalized()
-	
-	# Smooth acceleration to target speed
-	velocity.x = move_toward(velocity.x, movement_direction.x * current_speed, current_acceleration * delta)
-	velocity.z = move_toward(velocity.z, movement_direction.z * current_speed, current_acceleration * delta)
-	
-	# Smooth rotation
-	var target_rotation = atan2(movement_direction.x, movement_direction.z)
-	rotation.y = lerp_angle(rotation.y, target_rotation, rotation_speed * delta)
-
-func handle_deceleration(delta: float):
-	"""Handle smooth deceleration when no input"""
-	velocity.x = move_toward(velocity.x, 0, deceleration * delta)
-	velocity.z = move_toward(velocity.z, 0, deceleration * delta)
-
 func reset_character_transform():
+	"""Reset character to initial state"""
 	global_position = reset_position
 	rotation_degrees = reset_rotation
 	velocity = Vector3.ZERO
@@ -257,7 +167,8 @@ func reset_character_transform():
 	cancel_all_input_components()
 	print("Character reset to: ", reset_position)
 
-# PUBLIC METHODS
+# === PUBLIC API METHODS ===
+
 func get_movement_speed() -> float:
 	"""Get current horizontal movement speed"""
 	return Vector3(velocity.x, 0, velocity.z).length()
@@ -265,7 +176,7 @@ func get_movement_speed() -> float:
 func get_current_input_direction() -> Vector2:
 	"""Get current smoothed input direction"""
 	return smoothed_input
-	
+
 func get_input_duration() -> float:
 	"""Get how long current input has been active"""
 	if is_input_active:
@@ -277,39 +188,30 @@ func get_input_duration() -> float:
 func is_input_sustained(min_duration: float = 0.3) -> bool:
 	"""Check if input has been active for minimum duration"""
 	return get_input_duration() >= min_duration
-	
-# === PUBLIC API METHODS ===
 
 func get_current_character_state() -> String:
 	"""Get current character state"""
-	if use_state_machine and state_machine:
+	if state_machine:
 		return state_machine.get_current_state_name()
 	else:
-		# Fallback logic when state machine is disabled
-		if not is_on_floor():
-			return "airborne"
-		elif get_movement_speed() > 0.1:
-			return "moving"
-		else:
-			return "idle"
+		return "unknown"
 
 func get_previous_character_state() -> String:
 	"""Get previous character state"""
-	if use_state_machine and state_machine:
+	if state_machine:
 		return state_machine.get_previous_state_name()
 	else:
 		return "unknown"
 
 func get_state_debug_info() -> Dictionary:
 	"""Get debug information about current state"""
-	if use_state_machine and state_machine and state_machine.current_state:
+	if state_machine and state_machine.current_state:
 		if state_machine.current_state.has_method("get_debug_info"):
 			return state_machine.current_state.get_debug_info()
 	
-	# Fallback debug info when state machine disabled
 	return {
 		"state_name": get_current_character_state(),
 		"time_in_state": 0.0,
 		"character_speed": get_movement_speed(),
 		"character_grounded": is_on_floor()
-	}	
+	}
