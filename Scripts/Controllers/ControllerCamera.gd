@@ -100,15 +100,11 @@ func _ready():
 	emit_camera_state()
 
 func _input(event):
-	print("📹 Camera _input called - enabled: ", enable_camera_controller, " input_override: ", input_override_active)
-	
 	if not enable_camera_controller or input_override_active:
-		print("📹 Camera _input blocked - enabled: ", enable_camera_controller, " override: ", input_override_active)
 		return
 	
 	# Toggle mouse capture
 	if event.is_action_pressed("toggle_mouse_look"):
-		print("📹 Camera: Toggle mouse look pressed")
 		toggle_mouse_mode()
 			
 	# Zoom control
@@ -129,11 +125,7 @@ func _physics_process(delta):
 		if not enable_camera_controller:
 			print("📹 Camera: Controller disabled in _physics_process")
 		return
-	
-	# Print override status occasionally
-	if Engine.get_process_frames() % 60 == 0:  # Every second
-		print("📹 Camera status - input_override: ", input_override_active, " follow_override: ", follow_override_active, " external: ", external_control_active)
-	
+		
 	# Handle mouse look rotation
 	if is_mouse_captured and mouse_delta.length() > 0 and not input_override_active:
 		handle_mouse_look()

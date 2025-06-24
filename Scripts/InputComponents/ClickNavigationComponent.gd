@@ -189,38 +189,22 @@ func get_connection_status() -> Dictionary:
 	}
 
 func should_handle_input() -> bool:
-	"""Check if component should handle input based on all conditions"""
-	print("📍 ClickNav should_handle_input check:")
-	print("  - enabled: ", enable_click_navigation)
-	print("  - respect_cinematic: ", respect_cinematic_mode)
-	print("  - cinematic_active: ", is_cinematic_mode_active)
-	print("  - mouse_captured: ", is_mouse_captured)
-	
+
 	if not enable_click_navigation:
-		print("📍 ClickNav blocked: not enabled")
 		return false
 	
 	if respect_cinematic_mode and is_cinematic_mode_active:
-		print("📍 ClickNav blocked: cinematic mode active")
 		return false
 	
 	if is_mouse_captured:
-		print("📍 ClickNav blocked: mouse captured")
 		return false
 	
-	print("📍 ClickNav: Should handle input = TRUE")
 	return true
 
 # Add this to ClickNavigationComponent.gd in _input method
 func _input(event):
-	"""Handle input with proper modular checks"""
-	print("📍 ClickNav _input called")
-	
 	if not should_handle_input():
-		print("📍 ClickNav _input blocked by should_handle_input")
 		return
-	
-	print("📍 ClickNav processing input event")
 	
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
