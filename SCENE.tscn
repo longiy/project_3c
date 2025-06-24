@@ -34,7 +34,7 @@ radius = 0.01
 [sub_resource type="GDScript" id="GDScript_eyrhl"]
 script/source = "# StateAirborne.gd - Character is falling or in air
 extends CharacterStateBase
-class_name StateAirborne_new
+class_name StateAirborne
 
 func enter():
 	super.enter()
