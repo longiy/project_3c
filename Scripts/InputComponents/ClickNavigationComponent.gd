@@ -14,6 +14,12 @@ class_name ClickNavigationComponent
 @export var drag_update_rate = 0.01  # Seconds between updates while dragging
 @export var continuous_cursor_follow = true  # True = Diablo style, False = Click-to-position
 
+# Add this variable near the top with other exports
+@export_group("Cinematic Integration")
+@export var camera_responder: CameraResponder
+
+var cached_camera_responder: CameraResponder
+
 var character: CharacterBody3D
 var is_mouse_captured = true
 
@@ -42,6 +48,28 @@ func _ready():
 		push_error("Camera must be assigned to ClickNavigationComponent")
 		return
 	
+	# Find camera responder for cinematic mode checking
+	if not camera_responder:
+		# Try multiple possible paths to find CameraResponder
+		var possible_paths = [
+			"../../CAMERARIG/CameraResponder",
+			"../CAMERARIG/CameraResponder",
+			"../../CameraResponder",
+			"/root/Scene/CAMERARIG/CameraResponder"
+		]
+		
+		for path in possible_paths:
+			var found_responder = get_node_or_null(path)
+			if found_responder:
+				cached_camera_responder = found_responder
+				print("✅ ClickNav: Found CameraResponder at: ", path)
+				break
+		
+		if not cached_camera_responder:
+			print("⚠️ ClickNav: Could not find CameraResponder - cinematic mode detection disabled")
+	else:
+		cached_camera_responder = camera_responder
+	
 	# Connect to camera's mouse mode signal if available
 	var camera_rig = camera.get_parent().get_parent()  # Camera3D -> SpringArm3D -> CameraRig
 	if camera_rig.has_signal("mouse_mode_changed"):
@@ -61,6 +89,10 @@ func _on_mouse_mode_changed(captured: bool):
 			call_deferred("update_cursor_preview_current")
 
 func _input(event):
+	# Check if camera is in cinematic mode
+	if cached_camera_responder and cached_camera_responder.is_cinematic_mode:
+		return  # Don't handle any input during cinematics
+	
 	# ONLY handle click navigation when mouse is visible
 	if not is_mouse_captured:
 		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
@@ -142,7 +174,11 @@ func cancel_input():
 	is_dragging = false
 	is_arrival_delay_active = false
 	
-	if not is_mouse_captured and show_cursor_preview and destination_marker:
+	# Only show cursor preview if not in cinematic mode
+	if cached_camera_responder and cached_camera_responder.is_cinematic_mode:
+		if destination_marker:
+			destination_marker.visible = false
+	elif not is_mouse_captured and show_cursor_preview and destination_marker:
 		is_showing_preview = true
 		update_cursor_preview_current()
 	elif destination_marker:

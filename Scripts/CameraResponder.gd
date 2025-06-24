@@ -12,6 +12,10 @@ class_name CameraResponder
 @export var default_fov = 75.0
 @export var default_distance = 4.0
 
+@export_group("Debug Controls")
+@export var enable_debug_toggle = true
+@export var debug_toggle_key = "f1"  # Change this to whatever key you want
+
 @export_group("Transition Settings")
 @export var transition_speed = 0.3
 @export var fast_transition_speed = 0.1
@@ -74,6 +78,11 @@ func _physics_process(delta):
 			exit_cinematic_mode()
 
 func _input(event):
+	# Debug toggle for testing
+	if enable_debug_toggle and event.is_action_pressed(debug_toggle_key):
+		toggle_cinematic_mode()
+		print("🎮 Debug: Toggled cinematic mode - now ", "ON" if is_cinematic_mode else "OFF")
+	
 	# Emergency exit from cinematic mode
 	if is_cinematic_mode and event.is_action_pressed("ui_cancel"):
 		print("🎬 Emergency exit from cinematic mode")
@@ -161,9 +170,10 @@ func enter_cinematic_mode(auto_exit_after: float = 0.0):
 	stored_mouse_mode = Input.mouse_mode
 	stored_follow_mode = camera_controller.follow_mode
 	
-	# Disable mouse look and following in camera controller
+	# Force disable mouse look and following in camera controller
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	camera_controller.follow_mode = 2  # Manual mode (no following)
+	camera_controller.is_mouse_captured = false  # Force disable mouse capture flag
 	
 	# Set up auto-exit timer if specified
 	if auto_exit_after > 0:
@@ -189,6 +199,7 @@ func exit_cinematic_mode():
 	# Restore camera controller state
 	Input.mouse_mode = stored_mouse_mode
 	camera_controller.follow_mode = stored_follow_mode
+	camera_controller.is_mouse_captured = (stored_mouse_mode == Input.MOUSE_MODE_CAPTURED)
 	
 	# Optionally emit signal
 	if camera_controller.has_signal("cinematic_mode_exited"):

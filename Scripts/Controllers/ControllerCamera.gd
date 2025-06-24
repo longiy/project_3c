@@ -40,9 +40,13 @@ signal mouse_mode_changed(is_captured: bool)
 @export var offset_smoothing = 8.0
 @export var enable_dynamic_offset = false
 
-
 @onready var spring_arm = $SpringArm3D
 @onready var camera = $SpringArm3D/Camera3D
+@export var camera_responder: CameraResponder
+
+# Add this variable with other vars
+var is_cinematic_override = false
+
 
 var character: CharacterBody3D
 var mouse_delta = Vector2.ZERO
@@ -85,23 +89,31 @@ func _ready():
 		follow_target_position = initial_pos
 	
 	base_target_distance = target_distance
-
+ # Find camera responder if not assigned
+	if not camera_responder:
+		camera_responder = get_node_or_null("CameraResponder")
+		if camera_responder:
+			print("✅ Camera Controller: Found CameraResponder")
+			
 func _input(event):
-	# Toggle mouse capture
+	# Don't handle input if in cinematic mode
+	if is_cinematic_override:
+		return
+		
+	# Toggle mouse capture - ONLY if not in cinematic mode
 	if event.is_action_pressed("toggle_mouse_look"):
 		toggle_mouse_mode()
 	
-	# Mouse look when captured
-	if is_mouse_captured and event is InputEventMouseMotion:
-		mouse_delta = event.relative
-	
-	# Zoom control
+	# Zoom control - ONLY if not in cinematic mode
 	if enable_scroll_zoom and event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
 			target_distance = clamp(target_distance - scroll_speed, min_distance, max_distance)
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
 			target_distance = clamp(target_distance + scroll_speed, min_distance, max_distance)
-
+	
+	# Mouse look when captured - ONLY if not in cinematic mode
+	if is_mouse_captured and event is InputEventMouseMotion:
+		mouse_delta = event.relative
 func toggle_mouse_mode():
 	is_mouse_captured = !is_mouse_captured
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if is_mouse_captured else Input.MOUSE_MODE_VISIBLE
@@ -111,21 +123,25 @@ func _physics_process(delta):
 	if not character:
 		return
 	
-	# Handle mouse look rotation
-	if is_mouse_captured and mouse_delta.length() > 0:
+	# Check if responder is in cinematic mode
+	is_cinematic_override = camera_responder != null and camera_responder.is_cinematic_mode
+	
+	# Handle mouse look rotation - ONLY if not in cinematic mode
+	if is_mouse_captured and mouse_delta.length() > 0 and not is_cinematic_override:
 		handle_mouse_look()
 		mouse_delta = Vector2.ZERO
 	
-	# Handle follow behavior
-	match follow_mode:
-		0: # Immediate
-			update_immediate_follow(delta)
-		1: # Delayed
-			update_follow_with_delay(delta)
-		2: # Manual
-			pass # No automatic following
+	# Handle follow behavior - ONLY if not in cinematic mode  
+	if not is_cinematic_override:
+		match follow_mode:
+			0: # Immediate
+				update_immediate_follow(delta)
+			1: # Delayed
+				update_follow_with_delay(delta)
+			2: # Manual
+				pass # No automatic following
 	
-	# Update camera properties
+	# Update camera properties (these can still work in cinematic mode)
 	update_camera_distance(delta)
 	update_camera_offset(delta)
 	update_spring_arm_rotation()

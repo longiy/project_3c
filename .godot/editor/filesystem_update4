@@ -1,11 +1,6 @@
-res://Scripts/CharacterStateMachine/State.gd
-res://Scripts/Controllers/ControllerCharacter.gd
 res://SCENE.tscn
 res://AnimationTreeMove1d.tres
-res://Scripts/CharacterStateMachine/CharacterStateMachine.gd
 res://Assets/ps_character_gurl.tscn
-res://Scripts/CharacterStateMachine/CharacterStatesBase.gd
-res://Scripts/CameraStateMachine/X/CameraResponder.gd
-res://character_controller_plan.md
 res://Scripts/Controllers/ControllerCamera.gd
 res://Scripts/CameraResponder.gd
+res://Scripts/InputComponents/ClickNavigationComponent.gd
