@@ -22,18 +22,16 @@ func update(delta: float):
 func handle_movement_input(delta: float):
 	"""Handle movement input while idle"""
 	if character.should_process_input():
-		var input = character.get_smoothed_input()
+		var input = character.get_smoothed_input()  # This gets from ALL sources
 		if input.length() > 0:
-			# Start moving based on speed
 			var target_speed = character.get_target_speed()
 			if target_speed <= character.slow_walk_speed:
-				change_to("walking")  # Slow walk
+				change_to("walking")
 			elif character.is_running:
 				change_to("running")
 			else:
-				change_to("walking")  # Normal walk
+				change_to("walking")
 	else:
-		# Apply deceleration
 		character.apply_deceleration(delta)
 
 func handle_jump_input():

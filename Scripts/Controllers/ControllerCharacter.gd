@@ -61,6 +61,18 @@ var input_components: Array[Node] = []
 func _ready():
 	setup_character()
 	setup_state_machine()
+	
+	# Debug input components
+	print("=== INPUT COMPONENT DEBUG ===")
+	for child in get_children():
+		print("Child: ", child.name, " Type: ", child.get_class())
+		if child.has_method("get_movement_input"):
+			print("  ✓ Has get_movement_input")
+		if child.has_method("is_active"):
+			print("  ✓ Has is_active")
+		if child.has_method("cancel_input"):
+			print("  ✓ Has cancel_input")
+	
 	find_input_components()
 
 func setup_character():
@@ -97,11 +109,16 @@ func find_input_components():
 	"""Automatically find input components"""
 	input_components.clear()
 	for child in get_children():
-		if child.has_method("get_movement_input") and child.has_method("is_active"):
+		if child == null:
+			continue
+		# Check if it's an input component (has the required methods)
+		if child.has_method("get_movement_input"):
 			input_components.append(child)
+			if enable_debug_logging:
+				print("📝 Found input component: ", child.name)
 	
-	if enable_debug_logging and input_components.size() > 0:
-		print("📝 Found ", input_components.size(), " input components")
+	if enable_debug_logging:
+		print("📝 Total input components: ", input_components.size())
 
 func _input(event):
 	if state_machine:
@@ -147,9 +164,21 @@ func get_current_input() -> Vector2:
 		cancel_all_input_components()
 		return wasd_input
 	
-	# Check input components
+	# Check input components safely
 	for component in input_components:
-		if component.is_active():
+		if component == null or not is_instance_valid(component):
+			continue
+		
+		# Check if component is active
+		var is_active = false
+		if component.has_method("is_active"):
+			is_active = component.is_active()
+		elif component.has_method("get_movement_input"):
+			# Fallback: if no is_active method, check if it returns non-zero input
+			var test_input = component.get_movement_input()
+			is_active = test_input.length() > input_deadzone
+		
+		if is_active and component.has_method("get_movement_input"):
 			return component.get_movement_input()
 	
 	return Vector2.ZERO
