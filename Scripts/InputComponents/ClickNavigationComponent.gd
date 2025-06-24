@@ -24,7 +24,7 @@ signal drag_mode_changed(is_dragging: bool)
 @export var respect_cinematic_mode = true
 
 @export_group("External Dependencies")
-@export var camera_responder: CameraResponder
+@export var camera_cinema: CameraCinema
 
 var character: CharacterBody3D
 var is_mouse_captured = true
@@ -60,41 +60,25 @@ func setup_connections():
 	if not character:
 		push_error("ClickNavigationComponent must be child of CharacterBody3D")
 		return
-	
+
 	if not camera:
-		push_error("Camera must be assigned or auto-found for ClickNavigationComponent")
+		push_error("Camera must be assigned for ClickNavigationComponent")
 		return
-	
+
 	# Connect to camera controller signals if available
 	var camera_rig = camera.get_parent().get_parent()  # Camera3D -> SpringArm3D -> CameraRig
 	if camera_rig and camera_rig.has_signal("mouse_mode_changed"):
 		camera_rig.mouse_mode_changed.connect(_on_mouse_mode_changed)
 		is_connected_to_camera = true
 		print("✅ ClickNav: Connected to camera controller signals")
-	
-	# Setup camera responder connection
-	if not camera_responder and respect_cinematic_mode:
-		# Try to find CameraResponder
-		var responder_paths = [
-			"../../CAMERARIG/CameraResponder",
-			"../CAMERARIG/CameraResponder",
-			"/root/Scene/CAMERARIG/CameraResponder"
-		]
-		
-		for path in responder_paths:
-			var found_responder = get_node_or_null(path) as CameraResponder
-			if found_responder:
-				camera_responder = found_responder
-				print("✅ ClickNav: Auto-found CameraResponder at: ", path)
-				break
-	
-	# Connect to camera responder signals
-	if camera_responder and camera_responder.has_signal("cinematic_mode_changed"):
-		camera_responder.cinematic_mode_changed.connect(_on_cinematic_mode_changed)
+
+	# Connect to CameraCinema if assigned
+	if camera_cinema and camera_cinema.has_signal("cinematic_mode_changed"):
+		camera_cinema.cinematic_mode_changed.connect(_on_cinematic_mode_changed)
 		is_connected_to_responder = true
-		print("✅ ClickNav: Connected to CameraResponder signals")
-	
-	# Initialize state
+		print("✅ ClickNav: Connected to CameraCinema signals")
+   
+# Initialize state
 	is_mouse_captured = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 
 # === SIGNAL HANDLERS ===
@@ -164,7 +148,7 @@ func get_connection_status() -> Dictionary:
 		"connected_to_camera": is_connected_to_camera,
 		"connected_to_responder": is_connected_to_responder,
 		"has_camera": camera != null,
-		"has_responder": camera_responder != null,
+		"has_cinema": camera_cinema != null,
 		"has_character": character != null,
 		"has_marker": destination_marker != null,
 		"enabled": enable_click_navigation,
@@ -173,7 +157,6 @@ func get_connection_status() -> Dictionary:
 	}
 
 func should_handle_input() -> bool:
-
 	if not enable_click_navigation:
 		return false
 	
@@ -184,6 +167,21 @@ func should_handle_input() -> bool:
 		return false
 	
 	return true
+
+func toggle_cursor_in_cinema_mode():
+	"""In cinema mode, mouse2 only toggles cursor visibility"""
+	if is_showing_preview:
+		# Hide cursor and cancel navigation
+		cancel_input()
+		is_showing_preview = false
+		if destination_marker:
+			destination_marker.visible = false
+		print("📍 ClickNav: Cursor hidden in cinema mode")
+	else:
+		# Show cursor and enable preview
+		is_showing_preview = true
+		update_cursor_preview_current()
+		print("📍 ClickNav: Cursor shown in cinema mode")
 
 # Add this to ClickNavigationComponent.gd in _input method
 func _input(event):
@@ -200,6 +198,13 @@ func _input(event):
 			if is_dragging:
 				stop_drag_mode()
 	
+		# Handle right mouse button based on mode
+	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+		if is_cinematic_mode_active:
+			toggle_cursor_in_cinema_mode()
+			get_viewport().set_input_as_handled()  # Prevent camera controller from handling it
+		# In normal mode, let camera controller handle mouse2 (don't intercept)
+
 	elif event is InputEventMouseMotion:
 		if is_dragging and enable_drag_mode:
 			update_drag_destination(event.position)

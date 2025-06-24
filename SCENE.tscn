@@ -123,11 +123,12 @@ mesh = SubResource("CapsuleMesh_0er5f")
 [node name="GamepadComponent" type="Node" parent="CHARACTER"]
 script = ExtResource("4_wiekx")
 
-[node name="ClickNavigationComponent" type="Node" parent="CHARACTER" node_paths=PackedStringArray("camera", "destination_marker", "camera_responder")]
+[node name="ClickNavigationComponent" type="Node" parent="CHARACTER" node_paths=PackedStringArray("camera", "destination_marker", "camera_cinema")]
 script = ExtResource("4_0er5f")
 camera = NodePath("../../CAMERARIG/SpringArm3D/Camera3D")
 destination_marker = NodePath("../../CURSOR")
-camera_responder = NodePath("../../CAMERARIG/CameraResponder")
+respect_cinematic_mode = false
+camera_cinema = NodePath("../../CAMERARIG/CameraCinema")
 
 [node name="AnimationController" type="Node" parent="CHARACTER" node_paths=PackedStringArray("animation_tree")]
 script = ExtResource("5_gbv5d")
