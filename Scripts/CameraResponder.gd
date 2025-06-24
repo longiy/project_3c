@@ -15,8 +15,6 @@ signal camera_response_completed(state_name: String)
 
 @export_group("Component Control")
 @export var enable_responder = true
-@export var auto_connect_to_character = true
-@export var auto_connect_to_camera = true
 
 @export_group("Camera Presets")
 @export var default_fov = 75.0
@@ -35,10 +33,6 @@ var stored_camera_state: Dictionary = {}
 var auto_exit_timer = 0.0
 var auto_exit_duration = 0.0
 
-# Connection tracking
-var is_connected_to_character = false
-var is_connected_to_camera = false
-
 func _ready():
 	setup_connections()
 	
@@ -49,41 +43,11 @@ func _input(event):
 		toggle_cinematic_mode()
 
 func setup_connections():
-	"""Setup connections to camera controller and character"""
 	
-	# Auto-find camera controller if not assigned
-	if not camera_controller and auto_connect_to_camera:
-		camera_controller = get_parent()
-		if camera_controller:
-			print("✅ CameraResponder: Auto-found camera controller")
 	
 	# Connect to camera controller signals
 	if camera_controller and camera_controller.has_signal("camera_state_changed"):
 		camera_controller.camera_state_changed.connect(_on_camera_state_changed)
-		is_connected_to_camera = true
-		print("✅ CameraResponder: Connected to camera controller")
-	
-	# Auto-find character if not assigned
-	if not character and auto_connect_to_character:
-		var possible_paths = [
-			"../../CHARACTER",
-			"../CHARACTER", 
-			"/root/Scene/CHARACTER"
-		]
-		
-		for path in possible_paths:
-			var found_character = get_node_or_null(path) as CharacterBody3D
-			if found_character:
-				character = found_character
-				print("✅ CameraResponder: Auto-found character at: ", path)
-				break
-	
-	# Auto-find camera and spring arm
-	if camera_controller:
-		if not camera:
-			camera = camera_controller.get_node_or_null("SpringArm3D/Camera3D")
-		if not spring_arm:
-			spring_arm = camera_controller.get_node_or_null("SpringArm3D")
 	
 	# Connect to character state machine with delay
 	call_deferred("connect_to_character_state_machine")
@@ -100,8 +64,6 @@ func connect_to_character_state_machine():
 	
 	if state_machine.has_signal("state_changed"):
 		state_machine.state_changed.connect(_on_character_state_changed)
-		is_connected_to_character = true
-		print("✅ CameraResponder: Connected to character state machine")
 	else:
 		print("❌ CameraResponder: CharacterStateMachine has no state_changed signal")
 
@@ -134,8 +96,6 @@ func is_enabled() -> bool:
 func get_connection_status() -> Dictionary:
 	"""Get connection status for debugging"""
 	return {
-		"connected_to_character": is_connected_to_character,
-		"connected_to_camera": is_connected_to_camera,
 		"has_character": character != null,
 		"has_camera_controller": camera_controller != null,
 		"has_camera": camera != null,
@@ -185,10 +145,10 @@ func respond_to_state(state_name: String):
 			tween_camera_properties(65.0, 4.0, Vector3.ZERO, transition_speed)
 		
 		"walking":
-			tween_camera_properties(70.0, 4.2, Vector3(0, 0.1, 0), transition_speed)
+			tween_camera_properties(65.0, 4.0, Vector3(0, 0, 0), transition_speed)
 		
 		"running":
-			tween_camera_properties(80.0, 4.5, Vector3(0, 0.2, 0), transition_speed, Tween.EASE_OUT)
+			tween_camera_properties(65.0, 4.0, Vector3(0, 0, 0), transition_speed, Tween.EASE_OUT)
 		
 		"jumping":
 			tween_camera_properties(85.0, 4.8, Vector3(0, 0.3, 0), fast_transition_speed)

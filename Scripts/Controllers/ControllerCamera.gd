@@ -40,7 +40,7 @@ signal follow_mode_changed(mode: int)
 
 @export_group("Camera Offset")
 @export var camera_offset = Vector3.ZERO
-@export var offset_smoothing = 8.0
+@export var offset_smoothing = 0
 @export var enable_dynamic_offset = false
 
 @export_group("Modular Components")

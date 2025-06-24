@@ -1,8 +1,5 @@
 res://SCENE.tscn
 res://AnimationTreeMove1d.tres
-res://Assets/ps_character_gurl.tscn
 res://Scripts/Controllers/ControllerCamera.gd
+res://Assets/ps_character_gurl.tscn
 res://Scripts/CameraResponder.gd
-res://Scripts/InputComponents/ClickNavigationComponent.gd
-res://Scripts/CharacterStateMachine/State.gd
-res://Scripts/_Debug/DebugUI.gd
