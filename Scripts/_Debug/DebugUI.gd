@@ -13,7 +13,7 @@ extends Control
 @export var show_camera_info = true
 @export var show_performance_info = false
 
-func _process(delta):
+func _process(_delta):
 	if character and debug_label:
 		update_debug_display()
 

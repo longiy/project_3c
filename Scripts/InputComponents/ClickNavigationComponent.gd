@@ -115,6 +115,26 @@ func setup_connections():
 
 # === SIGNAL HANDLERS ===
 
+# Add this new method to ClickNavigationComponent.gd
+func refresh_mouse_state_from_input():
+	"""Refresh mouse state when cinematic mode exits"""
+	# Wait a frame for Input.mouse_mode to be processed
+	await get_tree().process_frame
+	
+	var new_mouse_captured = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+	print("📍 ClickNav: refresh_mouse_state - current: ", is_mouse_captured, " actual: ", new_mouse_captured)
+	
+	if new_mouse_captured != is_mouse_captured:
+		is_mouse_captured = new_mouse_captured
+		print("📍 ClickNav: Updated mouse state - captured: ", is_mouse_captured)
+		
+		# If mouse is not captured and we should handle input, show cursor preview
+		if not is_mouse_captured and should_handle_input() and show_cursor_preview:
+			is_showing_preview = true
+			call_deferred("update_cursor_preview_current")
+			print("📍 ClickNav: Cursor preview re-enabled")
+
+
 func _on_mouse_mode_changed(captured: bool):
 	"""React to camera controller mouse mode changes"""
 	is_mouse_captured = captured
@@ -126,15 +146,18 @@ func _on_mouse_mode_changed(captured: bool):
 			is_showing_preview = true
 			call_deferred("update_cursor_preview_current")
 
-func _on_cinematic_mode_changed(is_active: bool):
+func _on_cinematic_mode_changed(cinematic_active: bool):
 	"""React to cinematic mode changes"""
-	is_cinematic_mode_active = is_active
+	print("📍 ClickNav: Cinematic mode changed to: ", cinematic_active)
+	is_cinematic_mode_active = cinematic_active
 	
-	if is_active:
+	if cinematic_active:
 		# Cancel any active navigation when entering cinematic mode
 		cancel_input()
 		print("📍 ClickNav: Disabled due to cinematic mode")
 	else:
+		# When exiting cinematic mode, refresh our mouse state
+		call_deferred("refresh_mouse_state_from_input")
 		print("📍 ClickNav: Re-enabled after cinematic mode")
 
 # === MODULAR CONTROL API ===
@@ -167,21 +190,37 @@ func get_connection_status() -> Dictionary:
 
 func should_handle_input() -> bool:
 	"""Check if component should handle input based on all conditions"""
+	print("📍 ClickNav should_handle_input check:")
+	print("  - enabled: ", enable_click_navigation)
+	print("  - respect_cinematic: ", respect_cinematic_mode)
+	print("  - cinematic_active: ", is_cinematic_mode_active)
+	print("  - mouse_captured: ", is_mouse_captured)
+	
 	if not enable_click_navigation:
+		print("📍 ClickNav blocked: not enabled")
 		return false
 	
 	if respect_cinematic_mode and is_cinematic_mode_active:
+		print("📍 ClickNav blocked: cinematic mode active")
 		return false
 	
 	if is_mouse_captured:
+		print("📍 ClickNav blocked: mouse captured")
 		return false
 	
+	print("📍 ClickNav: Should handle input = TRUE")
 	return true
 
+# Add this to ClickNavigationComponent.gd in _input method
 func _input(event):
 	"""Handle input with proper modular checks"""
+	print("📍 ClickNav _input called")
+	
 	if not should_handle_input():
+		print("📍 ClickNav _input blocked by should_handle_input")
 		return
+	
+	print("📍 ClickNav processing input event")
 	
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:

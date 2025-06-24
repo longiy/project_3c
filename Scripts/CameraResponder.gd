@@ -41,6 +41,12 @@ var is_connected_to_camera = false
 
 func _ready():
 	setup_connections()
+	
+func _input(event):
+	"""Handle cinematic mode toggle - works even when camera controller is overridden"""
+	if event.is_action_pressed("CinematicMode"):
+		print("🎬 CameraResponder: F1 pressed - current cinematic mode: ", is_cinematic_mode)
+		toggle_cinematic_mode()
 
 func setup_connections():
 	"""Setup connections to camera controller and character"""
@@ -139,7 +145,7 @@ func get_connection_status() -> Dictionary:
 
 # === SIGNAL HANDLERS ===
 
-func _on_camera_state_changed(state_data: Dictionary):
+func _on_camera_state_changed(_state_data: Dictionary):
 	"""React to camera controller state changes"""
 	if not enable_responder:
 		return
@@ -148,7 +154,7 @@ func _on_camera_state_changed(state_data: Dictionary):
 	# For now, just track the state
 	pass
 
-func _on_character_state_changed(old_state: String, new_state: String):
+func _on_character_state_changed(_old_state: String, new_state: String):
 	"""Respond to character state changes with camera tweening"""
 	if not enable_responder:
 		return
@@ -200,16 +206,17 @@ func respond_to_state(state_name: String):
 	if current_tween:
 		current_tween.finished.connect(func(): camera_response_completed.emit(state_name))
 
-func tween_camera_properties(fov: float = -1, distance: float = -1, offset: Vector3 = Vector3.INF, duration: float = 0.3, ease: Tween.EaseType = Tween.EASE_OUT):
+# Fix 5: CameraResponder.gd - Fix the ease parameter conflicts
+func tween_camera_properties(fov: float = -1, distance: float = -1, offset: Vector3 = Vector3.INF, duration: float = 0.3, tween_ease: Tween.EaseType = Tween.EASE_OUT):
 	"""Helper function to tween multiple camera properties"""
 	if not current_tween:
 		return
 	
 	if fov > 0 and camera:
-		current_tween.tween_property(camera, "fov", fov, duration).set_ease(ease)
+		current_tween.tween_property(camera, "fov", fov, duration).set_ease(tween_ease)
 	
 	if distance > 0 and spring_arm:
-		current_tween.tween_property(spring_arm, "spring_length", distance, duration).set_ease(ease)
+		current_tween.tween_property(spring_arm, "spring_length", distance, duration).set_ease(tween_ease)
 	
 	if offset != Vector3.INF and camera_controller and camera_controller.has_method("set_camera_offset"):
 		# Use camera controller's offset system if available
@@ -225,10 +232,19 @@ func enter_cinematic_mode(auto_exit_after: float = 0.0):
 	print("🎬 CameraResponder: Entering cinematic mode")
 	is_cinematic_mode = true
 	
-	# Store current camera controller state
+	# Store current camera controller state AND mouse mode
 	if camera_controller:
 		stored_camera_state = camera_controller.get_control_status()
+		# Also store the current mouse mode
+		stored_camera_state["mouse_mode"] = Input.mouse_mode
+		stored_camera_state["mouse_captured"] = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+		print("🎬 Stored state: ", stored_camera_state)
+		
 		camera_controller.set_external_control(true, "full")
+	
+	# Release mouse for cinematic control
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	print("🎬 Mouse set to visible")
 	
 	# Set up auto-exit timer
 	if auto_exit_after > 0:
@@ -247,18 +263,42 @@ func exit_cinematic_mode():
 		return
 	
 	print("🎬 CameraResponder: Exiting cinematic mode")
+	print("🎬 Restoring from stored state: ", stored_camera_state)
+	
 	is_cinematic_mode = false
 	auto_exit_duration = 0.0
+	
+	# Restore the original mouse mode FIRST
+	if stored_camera_state.has("mouse_mode"):
+		Input.mouse_mode = stored_camera_state["mouse_mode"]
+		print("🎬 Restored mouse mode to: ", stored_camera_state["mouse_mode"])
+	else:
+		# Fallback - assume it should be captured for normal gameplay
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		print("🎬 No stored mouse mode, defaulting to captured")
+	
+	# Give the input system a frame to process the mouse mode change
+	await get_tree().process_frame
 	
 	# Restore camera controller state
 	if camera_controller:
 		camera_controller.set_external_control(false, "full")
+		
+		# Force camera controller to update its mouse state
+		if camera_controller.has_method("refresh_mouse_state"):
+			camera_controller.refresh_mouse_state()
 	
-	# Emit signal
+	# Clear stored state
+	stored_camera_state.clear()
+	
+	# Emit signal AFTER everything is restored
 	cinematic_mode_changed.emit(false)
+	print("🎬 Cinematic mode exit complete")
 
 func toggle_cinematic_mode():
 	"""Toggle between cinematic and normal mode"""
+	print("🎬 CameraResponder: toggle_cinematic_mode called - current state: ", is_cinematic_mode)
+	
 	if is_cinematic_mode:
 		exit_cinematic_mode()
 	else:

@@ -27,7 +27,8 @@ func update(delta: float):
 	time_in_state += delta
 	time_since_entered += delta
 
-func handle_input(event: InputEvent):
+# Fix 1: State.gd line 30 - Add underscore prefix
+func handle_input(_event: InputEvent):
 	"""Called for input events while in this state"""
 	pass
 

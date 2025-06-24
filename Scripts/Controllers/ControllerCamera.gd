@@ -100,18 +100,17 @@ func _ready():
 	emit_camera_state()
 
 func _input(event):
+	print("📹 Camera _input called - enabled: ", enable_camera_controller, " input_override: ", input_override_active)
+	
 	if not enable_camera_controller or input_override_active:
+		print("📹 Camera _input blocked - enabled: ", enable_camera_controller, " override: ", input_override_active)
 		return
 	
 	# Toggle mouse capture
 	if event.is_action_pressed("toggle_mouse_look"):
+		print("📹 Camera: Toggle mouse look pressed")
 		toggle_mouse_mode()
-		
-	# Add this for cinematic mode
-	if event.is_action_pressed("CinematicMode"):  # This input action already exists in your project.godot
-		var camera_responder = get_node_or_null("CameraResponder")
-		if camera_responder:
-			camera_responder.toggle_cinematic_mode()
+			
 	# Zoom control
 	if enable_scroll_zoom and event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
@@ -125,7 +124,15 @@ func _input(event):
 
 func _physics_process(delta):
 	if not character or not enable_camera_controller:
+		if not character:
+			print("📹 Camera: No character in _physics_process")
+		if not enable_camera_controller:
+			print("📹 Camera: Controller disabled in _physics_process")
 		return
+	
+	# Print override status occasionally
+	if Engine.get_process_frames() % 60 == 0:  # Every second
+		print("📹 Camera status - input_override: ", input_override_active, " follow_override: ", follow_override_active, " external: ", external_control_active)
 	
 	# Handle mouse look rotation
 	if is_mouse_captured and mouse_delta.length() > 0 and not input_override_active:
@@ -151,6 +158,8 @@ func _physics_process(delta):
 
 func set_external_control(active: bool, control_type: String = ""):
 	"""Allow external components to take control"""
+	print("📹 Camera: set_external_control called - active: ", active, " type: ", control_type)
+	
 	match control_type:
 		"input":
 			input_override_active = active
@@ -161,12 +170,27 @@ func set_external_control(active: bool, control_type: String = ""):
 			input_override_active = active
 			follow_override_active = active
 	
+	# When releasing control, ensure we restore proper state
+	if not active:
+		# Force refresh mouse state from actual Input
+		var actual_mouse_captured = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+		if actual_mouse_captured != is_mouse_captured:
+			is_mouse_captured = actual_mouse_captured
+			print("📹 Camera: Synced mouse state - captured: ", is_mouse_captured)
+			mouse_mode_changed.emit(is_mouse_captured)
+		
+		# Reset follow mode if it was overridden
+		if control_type == "follow" or control_type == "full" or control_type == "":
+			follow_just_enabled = true
+			print("📹 Camera: Follow re-enabled")
+	
 	if active:
 		print("📹 Camera: External control activated (", control_type, ")")
 	else:
 		print("📹 Camera: External control released (", control_type, ")")
 	
 	emit_camera_state()
+
 
 func is_externally_controlled() -> bool:
 	"""Check if camera is under external control"""
@@ -197,6 +221,17 @@ func is_enabled() -> bool:
 	return enable_camera_controller
 
 # === SIGNAL EMISSION HELPERS ===
+
+func refresh_mouse_state():
+	"""Refresh mouse capture state - called when external control is released"""
+	var new_mouse_captured = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+	print("📹 Camera: refresh_mouse_state called - current: ", is_mouse_captured, " actual: ", new_mouse_captured)
+	
+	if new_mouse_captured != is_mouse_captured:
+		is_mouse_captured = new_mouse_captured
+		mouse_mode_changed.emit(is_mouse_captured)
+		emit_camera_state()
+		print("📹 Camera: Refreshed mouse state - captured: ", is_mouse_captured)
 
 func emit_camera_state():
 	"""Emit current camera state for listening components"""
