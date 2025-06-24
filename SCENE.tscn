@@ -117,6 +117,7 @@ slow_walk_speed = 1.0
 input_smoothing = 40.0
 animation_controller = NodePath("AnimationController")
 camera = NodePath("../CAMERARIG/SpringArm3D/Camera3D")
+enable_debug_logging = true
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="CHARACTER"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
@@ -129,6 +130,7 @@ script = ExtResource("4_wiekx")
 script = ExtResource("4_0er5f")
 camera = NodePath("../../CAMERARIG/SpringArm3D/Camera3D")
 destination_marker = NodePath("../../CURSOR")
+respect_cinematic_mode = false
 camera_responder = NodePath("../../CAMERARIG/CameraResponder")
 
 [node name="AnimationController" type="Node" parent="CHARACTER" node_paths=PackedStringArray("animation_tree")]

@@ -106,7 +106,12 @@ func _input(event):
 	# Toggle mouse capture
 	if event.is_action_pressed("toggle_mouse_look"):
 		toggle_mouse_mode()
-	
+		
+	# Add this for cinematic mode
+	if event.is_action_pressed("CinematicMode"):  # This input action already exists in your project.godot
+		var camera_responder = get_node_or_null("CameraResponder")
+		if camera_responder:
+			camera_responder.toggle_cinematic_mode()
 	# Zoom control
 	if enable_scroll_zoom and event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
