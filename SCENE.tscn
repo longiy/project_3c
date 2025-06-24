@@ -101,7 +101,7 @@ spring_length = 2.0
 [node name="Camera3D" type="Camera3D" parent="CAMERARIG/SpringArm3D"]
 transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 0, 0, 0)
 
-[node name="CameraResponder" type="Node3D" parent="CAMERARIG" node_paths=PackedStringArray("camera_controller", "character", "camera", "spring_arm")]
+[node name="CameraResponder" type="Node" parent="CAMERARIG" node_paths=PackedStringArray("camera_controller", "character", "camera", "spring_arm")]
 script = ExtResource("9_16ayq")
 camera_controller = NodePath("..")
 character = NodePath("../../CHARACTER")
@@ -125,10 +125,12 @@ mesh = SubResource("CapsuleMesh_0er5f")
 [node name="GamepadComponent" type="Node" parent="CHARACTER"]
 script = ExtResource("4_wiekx")
 
-[node name="ClickNavigationComponent" type="Node" parent="CHARACTER" node_paths=PackedStringArray("camera", "destination_marker")]
+[node name="ClickNavigationComponent" type="Node" parent="CHARACTER" node_paths=PackedStringArray("camera", "destination_marker", "camera_responder")]
 script = ExtResource("4_0er5f")
 camera = NodePath("../../CAMERARIG/SpringArm3D/Camera3D")
 destination_marker = NodePath("../../CURSOR")
+camera_responder = NodePath("../../CAMERARIG/CameraResponder")
+disable_in_cinematic_mode = false
 
 [node name="AnimationController" type="Node" parent="CHARACTER" node_paths=PackedStringArray("animation_tree")]
 script = ExtResource("5_gbv5d")
