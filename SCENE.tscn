@@ -96,19 +96,6 @@ script = ExtResource("2_caybs")
 target_character = NodePath("../CHARACTER")
 enable_dynamic_offset = true
 
-[node name="SpringArm3D" type="SpringArm3D" parent="CAMERARIG"]
-spring_length = 2.0
-
-[node name="Camera3D" type="Camera3D" parent="CAMERARIG/SpringArm3D"]
-transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 0, 0, 0)
-
-[node name="CameraCinema" type="Node" parent="CAMERARIG" node_paths=PackedStringArray("camera_controller", "camera_responder", "camera", "spring_arm")]
-script = ExtResource("4_patvt")
-camera_controller = NodePath("..")
-camera_responder = NodePath("../CameraStateMachine")
-camera = NodePath("../SpringArm3D/Camera3D")
-spring_arm = NodePath("../SpringArm3D")
-
 [node name="CameraStateMachine" type="Node" parent="CAMERARIG" node_paths=PackedStringArray("character", "camera", "spring_arm", "camera_response_nodes")]
 script = ExtResource("5_msfgm")
 character = NodePath("../../CHARACTER")
@@ -140,27 +127,25 @@ target_state = "running"
 script = ExtResource("11_pj1qn")
 target_state = "walking"
 
+[node name="CameraCinema" type="Node" parent="CAMERARIG" node_paths=PackedStringArray("camera_controller", "camera_responder", "camera", "spring_arm")]
+script = ExtResource("4_patvt")
+camera_controller = NodePath("..")
+camera_responder = NodePath("../CameraStateMachine")
+camera = NodePath("../SpringArm3D/Camera3D")
+spring_arm = NodePath("../SpringArm3D")
+
+[node name="SpringArm3D" type="SpringArm3D" parent="CAMERARIG"]
+spring_length = 2.0
+
+[node name="Camera3D" type="Camera3D" parent="CAMERARIG/SpringArm3D"]
+transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 0, 0, 0)
+
 [node name="CHARACTER" type="CharacterBody3D" parent="." node_paths=PackedStringArray("animation_controller", "camera")]
 collision_layer = 2
 slide_on_ceiling = false
 script = ExtResource("1_5si1x")
 animation_controller = NodePath("AnimationController")
 camera = NodePath("../CAMERARIG/SpringArm3D/Camera3D")
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="CHARACTER"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
-mesh = SubResource("CapsuleMesh_0er5f")
-
-[node name="GamepadComponent" type="Node" parent="CHARACTER"]
-script = ExtResource("4_wiekx")
-
-[node name="ClickNavigationComponent" type="Node" parent="CHARACTER" node_paths=PackedStringArray("destination_marker")]
-script = ExtResource("4_0er5f")
-destination_marker = NodePath("../../CURSOR")
-
-[node name="AnimationController" type="Node" parent="CHARACTER" node_paths=PackedStringArray("animation_tree")]
-script = ExtResource("5_gbv5d")
-animation_tree = NodePath("../PS_Character_Gurl/AnimationTree")
 
 [node name="CharacterStateMachine" type="Node" parent="CHARACTER" node_paths=PackedStringArray("state_nodes")]
 script = ExtResource("13_n01k3")
@@ -183,6 +168,21 @@ script = ExtResource("18_fuc0d")
 
 [node name="Walking" type="Node" parent="CHARACTER/CharacterStateMachine"]
 script = ExtResource("19_sjx82")
+
+[node name="AnimationController" type="Node" parent="CHARACTER" node_paths=PackedStringArray("animation_tree")]
+script = ExtResource("5_gbv5d")
+animation_tree = NodePath("../PS_Character_Gurl/AnimationTree")
+
+[node name="GamepadComponent" type="Node" parent="CHARACTER"]
+script = ExtResource("4_wiekx")
+
+[node name="ClickNavigationComponent" type="Node" parent="CHARACTER" node_paths=PackedStringArray("destination_marker")]
+script = ExtResource("4_0er5f")
+destination_marker = NodePath("../../CURSOR")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="CHARACTER"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+mesh = SubResource("CapsuleMesh_0er5f")
 
 [node name="PS_Character_Gurl" parent="CHARACTER" instance=ExtResource("3_aeafk")]
 
