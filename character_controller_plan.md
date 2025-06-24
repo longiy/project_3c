@@ -150,6 +150,22 @@ CharacterController (main scene)
 - [ ] Edge case testing (slopes, tight spaces, etc.)
 - [ ] Documentation for parameters and usage
 
+## Phase 11: Camera System Simplification ✅
+**Goal:** Replace camera state machine with direct tweening
+- [x] Removed complex camera state machine
+- [x] Created CameraResponder component
+- [x] Implemented tween-based camera responses
+- [x] Added special effects functions for fighting game moments
+- [x] Reduced camera code from 600+ lines to ~150 lines
+
+**Benefits:**
+- 80% less camera-related code
+- No synchronization issues between character and camera states
+- More responsive camera behavior
+- Easier to add state-specific camera effects
+- Better performance (no dual state machines)
+
+
 ## Core 3C Parameters
 
 ### Character

@@ -40,8 +40,6 @@ signal mouse_mode_changed(is_captured: bool)
 @export var offset_smoothing = 8.0
 @export var enable_dynamic_offset = false
 
-@export_group("State Integration") 
-@export var enable_state_overrides = true
 
 @onready var spring_arm = $SpringArm3D
 @onready var camera = $SpringArm3D/Camera3D
@@ -55,7 +53,6 @@ var target_distance = 4.0
 var current_distance = 4.0
 var current_offset = Vector3.ZERO
 var base_target_distance = 4.0
-var is_state_controlled = false
 
 # Follow delay system
 var is_character_moving = false
@@ -132,10 +129,6 @@ func _physics_process(delta):
 	update_camera_distance(delta)
 	update_camera_offset(delta)
 	update_spring_arm_rotation()
-	
-	# Handle state overrides
-	if enable_state_overrides:
-		handle_state_overrides(delta)
 
 func handle_mouse_look():
 	"""Handle mouse look with flexible limits"""
@@ -381,10 +374,6 @@ func free_pitch():
 	set_pitch_limits(-80.0, 50.0, false)
 
 # === PLACEHOLDER METHODS ===
-
-func handle_state_overrides(delta):
-	# State system integration placeholder
-	pass
 
 func get_current_distance() -> float:
 	return current_distance
