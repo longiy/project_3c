@@ -1,11 +1,11 @@
 ea4bc82a6ad023ab7ee23ee620429895
-::res://::1750768343
+::res://::1750768368
 AnimationTreeMove1d.tres::AnimationNodeStateMachine::4004582357929615921::1750759267::0::1::::<><><>0<>0<><>::
 AnimationTreeMove2d.tres::AnimationNodeStateMachine/AnimationNodeStateMachine::2843802097598711195::1750288653::0::1::::<><><>0<>0<><>::
 character_controller_plan.md::TextFile::-1::1750768187::0::1::::<><><>0<>0<><>::
 icon.svg::CompressedTexture2D/CompressedTexture2D::7319379552952027675::1749921664::1749922168::1::::<><><>0<>0<>15fd9e727c8de2b5e0d0ab34ce31311c<>res://.godot/imported/icon.svg-218a8f2b3041327d8a5756f3a245f83b.ctex::
 MARKER.tscn::PackedScene/PackedScene::3681848762521921292::1749967732::0::1::::<><><>0<>0<><>::uid://cc7t3a5ncyf1y::::res://Assets/grid-cursor.png
-SCENE.tscn::PackedScene::8084112463708188081::1750768368::0::1::::<><><>0<>0<><>::uid://dt54n1ktg7wqr::::res://Scripts/Controllers/ControllerCharacter.gd<>uid://cms4l0nes10tn::::res://Scripts/Controllers/ControllerCamera.gd<>uid://cws7m480lxvaf::::res://Scripts/_Debug/DebugUI.gd<>uid://cbx0rhk665pls::::res://Assets/ps_character_gurl.tscn<>uid://c63imyupotuj1::::res://Scripts/InputComponents/ClickNavigationComponent.gd<>uid://csay0tqtwpcea::::res://Scripts/InputComponents/GamepadComponent.gd<>uid://ceg85p1hqrfpk::::res://Scripts/Controllers/AnimationController.gd<>uid://bsprrm672tx2s::::res://MARKER.tscn<>uid://dmg7iiw5ugw47::::res://Scripts/CameraStateMachine/X/CameraResponder.gd<>uid://deibi5xmtfs1h::::res://Scripts/CharacterStateMachine/CharacterStateMachine.gd<>uid://mwfti1hv45ue::::res://Scripts/CharacterStateMachine/States/StateIdle.gd<>uid://1uqst38ejbn3::::res://Scripts/CharacterStateMachine/States/StateAirborne.gd<>uid://c7v6qfkst2sfh::::res://Scripts/CharacterStateMachine/States/StateJumping.gd<>uid://dvxh1oyh11gby::::res://Scripts/CharacterStateMachine/States/StateLanding.gd<>uid://dg7vpc6xymvpp::::res://Scripts/CharacterStateMachine/States/StateRunning.gd<>uid://chw8f4cb3xd47::::res://Scripts/CharacterStateMachine/States/StateWalking.gd
+SCENE.tscn::PackedScene::8084112463708188081::1750768729::0::1::::<><><>0<>0<><>::uid://dt54n1ktg7wqr::::res://Scripts/Controllers/ControllerCharacter.gd<>uid://cms4l0nes10tn::::res://Scripts/Controllers/ControllerCamera.gd<>uid://cws7m480lxvaf::::res://Scripts/_Debug/DebugUI.gd<>uid://cbx0rhk665pls::::res://Assets/ps_character_gurl.tscn<>uid://c63imyupotuj1::::res://Scripts/InputComponents/ClickNavigationComponent.gd<>uid://csay0tqtwpcea::::res://Scripts/InputComponents/GamepadComponent.gd<>uid://ceg85p1hqrfpk::::res://Scripts/Controllers/AnimationController.gd<>uid://bsprrm672tx2s::::res://MARKER.tscn<>uid://dmg7iiw5ugw47::::res://Scripts/CameraStateMachine/CameraResponder.gd<>uid://deibi5xmtfs1h::::res://Scripts/CharacterStateMachine/CharacterStateMachine.gd<>uid://mwfti1hv45ue::::res://Scripts/CharacterStateMachine/States/StateIdle.gd<>uid://1uqst38ejbn3::::res://Scripts/CharacterStateMachine/States/StateAirborne.gd<>uid://c7v6qfkst2sfh::::res://Scripts/CharacterStateMachine/States/StateJumping.gd<>uid://dvxh1oyh11gby::::res://Scripts/CharacterStateMachine/States/StateLanding.gd<>uid://dg7vpc6xymvpp::::res://Scripts/CharacterStateMachine/States/StateRunning.gd<>uid://chw8f4cb3xd47::::res://Scripts/CharacterStateMachine/States/StateWalking.gd
 ::res://Assets/::1750768325
 grid-cursor.png::CompressedTexture2D/CompressedTexture2D::4980482814822495264::1748076414::1749961858::1::::<><><>0<>0<>47e712bf99d5fa563027ad32053670e9<>res://.godot/imported/grid-cursor.png-673318dfdf0a00e41c780c9a4bd556bf.s3tc.ctex::
 PS_Character_Gurl.glb::PackedScene/PackedScene::7846616833244281231::1749959283::1749959312::1::::<><><>0<>0<>274300d197ee525a5ebd99e1bd8ff9d9<>res://.godot/imported/PS_Character_Gurl.glb-f90c415f7d423266d0e2968c83a05794.scn::
@@ -15,8 +15,7 @@ ps_character_gurl.tscn::PackedScene::4892059567245770756::1750768325::0::1::::<>
 ::res://Scripts/::1750720269
 ::res://Scripts/_Debug/::1750755775
 DebugUI.gd::GDScript/GDScript::6356120675598589601::1750755749::0::1::::<>Control<><>0<>0<><>::
-::res://Scripts/CameraStateMachine/::1750768361
-::res://Scripts/CameraStateMachine/X/::1750768283
+::res://Scripts/CameraStateMachine/::1750768371
 CameraResponder.gd::GDScript::8015872126942366466::1750768283::0::1::::CameraResponder<>Node<><>0<>0<><>::
 ::res://Scripts/CharacterStateMachine/::1750759912
 CharacterStateMachine.gd::GDScript::7456609062809756123::1750759898::0::1::::CharacterStateMachine<>Node<><>0<>0<><>::
@@ -24,7 +23,7 @@ CharacterStatesBase.gd::GDScript::7470258955313224311::1750759912::0::1::::Chara
 State.gd::GDScript::6425908865772312837::1750759887::0::1::::State<>Node<><>0<>0<><>::
 ::res://Scripts/CharacterStateMachine/States/::1750755990
 StateAirborne.gd::GDScript/GDScript::1867202148547835138::1750755749::0::1::::StateAirborne<>CharacterStateBase<><>0<>0<><>::
-StateIdle.gd::GDScript::888020409992731196::1750755990::0::1::::StateIdle<>CharacterStateBase<><>0<>0<><>::
+StateIdle.gd::GDScript/GDScript::888020409992731196::1750755990::0::1::::StateIdle<>CharacterStateBase<><>0<>0<><>::
 StateJumping.gd::GDScript/GDScript::7064147375025837505::1750755749::0::1::::StateJumping<>CharacterStateBase<><>0<>0<><>::
 StateLanding.gd::GDScript/GDScript::8681180678168280226::1750755749::0::1::::StateLanding<>CharacterStateBase<><>0<>0<><>::
 StateRunning.gd::GDScript/GDScript::7647757198807299937::1750755749::0::1::::StateRunning<>CharacterStateBase<><>0<>0<><>::
