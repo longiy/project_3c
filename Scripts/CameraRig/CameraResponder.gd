@@ -89,6 +89,20 @@ func _on_character_state_changed(_old_state: String, new_state: String):
 
 # === CAMERA RESPONSE LOGIC ===
 
+func tween_camera_properties(fov: float = -1, distance: float = -1, offset: Vector3 = Vector3.INF, duration: float = 0.3, tween_ease: Tween.EaseType = Tween.EASE_OUT):
+	"""Helper function to tween multiple camera properties"""
+	if not current_tween:
+		return
+	
+	if fov > 0 and camera:
+		current_tween.tween_property(camera, "fov", fov, duration).set_ease(tween_ease)
+	
+	if distance > 0 and spring_arm:
+		current_tween.tween_property(spring_arm, "spring_length", distance, duration).set_ease(tween_ease)
+	
+	# Note: Offset handling would need camera controller integration
+	# Simplified for this split
+
 func respond_to_state(state_name: String):
 	"""Main camera response logic"""
 	if not enable_responder or is_external_control_active:
@@ -132,19 +146,7 @@ func respond_to_state(state_name: String):
 	if current_tween:
 		current_tween.finished.connect(func(): camera_response_completed.emit(state_name))
 
-func tween_camera_properties(fov: float = -1, distance: float = -1, offset: Vector3 = Vector3.INF, duration: float = 0.3, tween_ease: Tween.EaseType = Tween.EASE_OUT):
-	"""Helper function to tween multiple camera properties"""
-	if not current_tween:
-		return
-	
-	if fov > 0 and camera:
-		current_tween.tween_property(camera, "fov", fov, duration).set_ease(tween_ease)
-	
-	if distance > 0 and spring_arm:
-		current_tween.tween_property(spring_arm, "spring_length", distance, duration).set_ease(tween_ease)
-	
-	# Note: Offset handling would need camera controller integration
-	# Simplified for this split
+
 
 # === DEBUG AND TESTING ===
 
