@@ -14,7 +14,7 @@ class_name CameraResponder
 
 @export_group("Debug Controls")
 @export var enable_debug_toggle = true
-@export var debug_toggle_key = "f1"  # Change this to whatever key you want
+@export var debug_toggle_key = "ui_accept"  # Use existing Enter key
 
 @export_group("Transition Settings")
 @export var transition_speed = 0.3

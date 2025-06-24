@@ -17,8 +17,11 @@ class_name ClickNavigationComponent
 # Add this variable near the top with other exports
 @export_group("Cinematic Integration")
 @export var camera_responder: CameraResponder
+@export var disable_in_cinematic_mode = true  # Toggle for testing
 
+# Add this variable with other vars
 var cached_camera_responder: CameraResponder
+
 
 var character: CharacterBody3D
 var is_mouse_captured = true
@@ -38,6 +41,7 @@ var arrival_timer = 0.0
 var is_dragging = false
 var drag_timer = 0.0
 
+# Modify the _ready() function to find camera responder
 func _ready():
 	character = get_parent() as CharacterBody3D
 	if not character:
@@ -77,7 +81,6 @@ func _ready():
 	
 	# Initialize state
 	is_mouse_captured = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
-
 func _on_mouse_mode_changed(captured: bool):
 	is_mouse_captured = captured
 	
@@ -89,8 +92,8 @@ func _on_mouse_mode_changed(captured: bool):
 			call_deferred("update_cursor_preview_current")
 
 func _input(event):
-	# Check if camera is in cinematic mode
-	if cached_camera_responder and cached_camera_responder.is_cinematic_mode:
+	# Check if camera is in cinematic mode (only if toggle is enabled)
+	if disable_in_cinematic_mode and cached_camera_responder and cached_camera_responder.is_cinematic_mode:
 		return  # Don't handle any input during cinematics
 	
 	# ONLY handle click navigation when mouse is visible
@@ -113,7 +116,7 @@ func _input(event):
 			elif show_cursor_preview and not is_dragging:
 				# Normal cursor preview (only when not dragging)
 				update_cursor_preview(event.position)
-
+				
 func _physics_process(delta):
 	# Handle arrival delay timer
 	if is_arrival_delay_active:
