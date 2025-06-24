@@ -1,124 +1,177 @@
-# CameraResponder.gd - Replaces the camera state machine with simple tweening
+# CameraResponder.gd - Modular camera state responder with signal-based communication
 extends Node
 class_name CameraResponder
 
+# Signals for modular communication
+signal cinematic_mode_changed(is_active: bool)
+signal camera_response_started(state_name: String)
+signal camera_response_completed(state_name: String)
+
 @export_group("References")
-@export var camera_controller: Node3D  # Your CAMERARIG node
+@export var camera_controller: Node3D
 @export var character: CharacterBody3D
 @export var camera: Camera3D
 @export var spring_arm: SpringArm3D
+
+@export_group("Component Control")
+@export var enable_responder = true
+@export var auto_connect_to_character = true
+@export var auto_connect_to_camera = true
 
 @export_group("Camera Presets")
 @export var default_fov = 75.0
 @export var default_distance = 4.0
 
-@export_group("Debug Controls")
-@export var enable_debug_toggle = true
-@export var debug_toggle_key = "ui_accept"  # Use existing Enter key
-
 @export_group("Transition Settings")
 @export var transition_speed = 0.3
 @export var fast_transition_speed = 0.1
 
-# Current tween reference (to stop previous tweens)
+# Current tween reference
 var current_tween: Tween
 
 # Cinematic control state
 var is_cinematic_mode = false
-var stored_mouse_mode: Input.MouseMode
-var stored_follow_mode: int
+var stored_camera_state: Dictionary = {}
 var auto_exit_timer = 0.0
 var auto_exit_duration = 0.0
 
+# Connection tracking
+var is_connected_to_character = false
+var is_connected_to_camera = false
+
 func _ready():
-	# Auto-find references if not assigned
-	if not camera_controller:
-		camera_controller = get_parent()
+	setup_connections()
+
+func setup_connections():
+	"""Setup connections to camera controller and character"""
 	
-	if not character:
-		# Try multiple possible paths
+	# Auto-find camera controller if not assigned
+	if not camera_controller and auto_connect_to_camera:
+		camera_controller = get_parent()
+		if camera_controller:
+			print("✅ CameraResponder: Auto-found camera controller")
+	
+	# Connect to camera controller signals
+	if camera_controller and camera_controller.has_signal("camera_state_changed"):
+		camera_controller.camera_state_changed.connect(_on_camera_state_changed)
+		is_connected_to_camera = true
+		print("✅ CameraResponder: Connected to camera controller")
+	
+	# Auto-find character if not assigned
+	if not character and auto_connect_to_character:
 		var possible_paths = [
 			"../../CHARACTER",
 			"../CHARACTER", 
-			"/root/Scene/CHARACTER",
-			"../../../CHARACTER"
+			"/root/Scene/CHARACTER"
 		]
 		
 		for path in possible_paths:
 			var found_character = get_node_or_null(path) as CharacterBody3D
 			if found_character:
 				character = found_character
-				print("✅ CameraResponder: Found character at: ", path)
+				print("✅ CameraResponder: Auto-found character at: ", path)
 				break
-		
-		if not character:
-			print("❌ CameraResponder: Could not find CHARACTER node. Tried paths: ", possible_paths)
-			return
 	
-	if not camera:
-		camera = camera_controller.get_node_or_null("SpringArm3D/Camera3D")
+	# Auto-find camera and spring arm
+	if camera_controller:
 		if not camera:
-			print("❌ CameraResponder: Could not find Camera3D")
-			return
-	
-	if not spring_arm:
-		spring_arm = camera_controller.get_node_or_null("SpringArm3D")
+			camera = camera_controller.get_node_or_null("SpringArm3D/Camera3D")
 		if not spring_arm:
-			print("❌ CameraResponder: Could not find SpringArm3D")
-			return
+			spring_arm = camera_controller.get_node_or_null("SpringArm3D")
 	
-	# Connect to character state changes with delay to ensure state machine is ready
-	call_deferred("connect_to_state_machine")
+	# Connect to character state machine with delay
+	call_deferred("connect_to_character_state_machine")
+
+func connect_to_character_state_machine():
+	"""Connect to character state machine signals"""
+	if not character or not enable_responder:
+		return
+	
+	var state_machine = character.get_node_or_null("CharacterStateMachine")
+	if not state_machine:
+		print("⚠️ CameraResponder: No CharacterStateMachine found")
+		return
+	
+	if state_machine.has_signal("state_changed"):
+		state_machine.state_changed.connect(_on_character_state_changed)
+		is_connected_to_character = true
+		print("✅ CameraResponder: Connected to character state machine")
+	else:
+		print("❌ CameraResponder: CharacterStateMachine has no state_changed signal")
 
 func _physics_process(delta):
+	if not enable_responder:
+		return
+	
 	# Handle auto-exit timer
 	if is_cinematic_mode and auto_exit_duration > 0:
 		auto_exit_timer -= delta
 		if auto_exit_timer <= 0:
 			exit_cinematic_mode()
 
-func _input(event):
-	# Debug toggle for testing
-	if enable_debug_toggle and event.is_action_pressed(debug_toggle_key):
-		toggle_cinematic_mode()
-		print("🎮 Debug: Toggled cinematic mode - now ", "ON" if is_cinematic_mode else "OFF")
-	
-	# Emergency exit from cinematic mode
-	if is_cinematic_mode and event.is_action_pressed("ui_cancel"):
-		print("🎬 Emergency exit from cinematic mode")
-		exit_cinematic_mode()
+# === MODULAR CONTROL API ===
 
-func connect_to_state_machine():
-	"""Connect to state machine after everything is initialized"""
-	if not character:
-		print("❌ CameraResponder: No character to connect to")
-		return
-		
-	var state_machine = character.get_node_or_null("CharacterStateMachine")
-	if not state_machine:
-		print("❌ CameraResponder: Could not find CharacterStateMachine node")
+func set_enabled(enabled: bool):
+	"""Enable/disable the camera responder"""
+	enable_responder = enabled
+	if not enabled:
+		print("📹 CameraResponder: Disabled")
+		# Release any active cinematic mode
+		if is_cinematic_mode:
+			exit_cinematic_mode()
+	else:
+		print("📹 CameraResponder: Enabled")
+
+func is_enabled() -> bool:
+	return enable_responder
+
+func get_connection_status() -> Dictionary:
+	"""Get connection status for debugging"""
+	return {
+		"connected_to_character": is_connected_to_character,
+		"connected_to_camera": is_connected_to_camera,
+		"has_character": character != null,
+		"has_camera_controller": camera_controller != null,
+		"has_camera": camera != null,
+		"has_spring_arm": spring_arm != null,
+		"enabled": enable_responder
+	}
+
+# === SIGNAL HANDLERS ===
+
+func _on_camera_state_changed(state_data: Dictionary):
+	"""React to camera controller state changes"""
+	if not enable_responder:
 		return
 	
-	if state_machine.has_signal("state_changed"):
-		state_machine.state_changed.connect(_on_character_state_changed)
-		print("✅ CameraResponder: Connected to character state machine")
-	else:
-		print("❌ CameraResponder: CharacterStateMachine has no state_changed signal")
+	# Could add logic here to respond to camera state changes
+	# For now, just track the state
+	pass
 
 func _on_character_state_changed(old_state: String, new_state: String):
 	"""Respond to character state changes with camera tweening"""
+	if not enable_responder:
+		return
+	
 	respond_to_state(new_state)
 
+# === CAMERA RESPONSE LOGIC ===
+
 func respond_to_state(state_name: String):
-	"""Main camera response logic - customize this for your needs"""
+	"""Main camera response logic"""
+	if not enable_responder or is_cinematic_mode:
+		return
 	
 	# Stop any existing tween
 	if current_tween:
 		current_tween.kill()
 	
+	# Emit signal that response is starting
+	camera_response_started.emit(state_name)
+	
 	# Create new tween
 	current_tween = create_tween()
-	current_tween.set_parallel(true)  # Allow multiple properties to tween simultaneously
+	current_tween.set_parallel(true)
 	
 	# Define camera responses for each state
 	match state_name:
@@ -141,41 +194,43 @@ func respond_to_state(state_name: String):
 			tween_camera_properties(75.0, 4.0, Vector3(0, 0.1, 0), fast_transition_speed, Tween.EASE_IN)
 		
 		_:
-			# Default/fallback
 			tween_camera_properties(default_fov, default_distance, Vector3.ZERO, transition_speed)
+	
+	# Emit completion signal when tween finishes
+	if current_tween:
+		current_tween.finished.connect(func(): camera_response_completed.emit(state_name))
 
 func tween_camera_properties(fov: float = -1, distance: float = -1, offset: Vector3 = Vector3.INF, duration: float = 0.3, ease: Tween.EaseType = Tween.EASE_OUT):
 	"""Helper function to tween multiple camera properties"""
+	if not current_tween:
+		return
 	
-	if fov > 0:
+	if fov > 0 and camera:
 		current_tween.tween_property(camera, "fov", fov, duration).set_ease(ease)
 	
-	if distance > 0:
+	if distance > 0 and spring_arm:
 		current_tween.tween_property(spring_arm, "spring_length", distance, duration).set_ease(ease)
 	
-	if offset != Vector3.INF:
-		current_tween.tween_property(camera_controller, "camera_offset", offset, duration).set_ease(ease)
+	if offset != Vector3.INF and camera_controller and camera_controller.has_method("set_camera_offset"):
+		# Use camera controller's offset system if available
+		camera_controller.set_camera_offset(offset)
 
 # === CINEMATIC CONTROL FUNCTIONS ===
 
 func enter_cinematic_mode(auto_exit_after: float = 0.0):
-	"""Take full control of camera - disable mouse look and following"""
+	"""Take full control of camera"""
 	if is_cinematic_mode:
-		return  # Already in cinematic mode
+		return
 	
 	print("🎬 CameraResponder: Entering cinematic mode")
 	is_cinematic_mode = true
 	
 	# Store current camera controller state
-	stored_mouse_mode = Input.mouse_mode
-	stored_follow_mode = camera_controller.follow_mode
+	if camera_controller:
+		stored_camera_state = camera_controller.get_control_status()
+		camera_controller.set_external_control(true, "full")
 	
-	# Force disable mouse look and following in camera controller
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	camera_controller.follow_mode = 2  # Manual mode (no following)
-	camera_controller.is_mouse_captured = false  # Force disable mouse capture flag
-	
-	# Set up auto-exit timer if specified
+	# Set up auto-exit timer
 	if auto_exit_after > 0:
 		auto_exit_duration = auto_exit_after
 		auto_exit_timer = auto_exit_after
@@ -183,27 +238,24 @@ func enter_cinematic_mode(auto_exit_after: float = 0.0):
 	else:
 		auto_exit_duration = 0.0
 	
-	# Optionally emit signal for other systems
-	if camera_controller.has_signal("cinematic_mode_entered"):
-		camera_controller.cinematic_mode_entered.emit()
+	# Emit signal for other components
+	cinematic_mode_changed.emit(true)
 
 func exit_cinematic_mode():
 	"""Return control to camera controller"""
 	if not is_cinematic_mode:
-		return  # Not in cinematic mode
+		return
 	
 	print("🎬 CameraResponder: Exiting cinematic mode")
 	is_cinematic_mode = false
-	auto_exit_duration = 0.0  # Clear auto-exit timer
+	auto_exit_duration = 0.0
 	
 	# Restore camera controller state
-	Input.mouse_mode = stored_mouse_mode
-	camera_controller.follow_mode = stored_follow_mode
-	camera_controller.is_mouse_captured = (stored_mouse_mode == Input.MOUSE_MODE_CAPTURED)
+	if camera_controller:
+		camera_controller.set_external_control(false, "full")
 	
-	# Optionally emit signal
-	if camera_controller.has_signal("cinematic_mode_exited"):
-		camera_controller.cinematic_mode_exited.emit()
+	# Emit signal
+	cinematic_mode_changed.emit(false)
 
 func toggle_cinematic_mode():
 	"""Toggle between cinematic and normal mode"""
@@ -212,10 +264,15 @@ func toggle_cinematic_mode():
 	else:
 		enter_cinematic_mode()
 
+# === CINEMATIC CAMERA MOVEMENTS ===
+
 func cinematic_move_to_position(target_position: Vector3, duration: float = 2.0, ease: Tween.EaseType = Tween.EASE_IN_OUT):
 	"""Move camera to specific world position (cinematic mode)"""
 	if not is_cinematic_mode:
 		enter_cinematic_mode()
+	
+	if not camera_controller:
+		return
 	
 	if current_tween:
 		current_tween.kill()
@@ -228,75 +285,23 @@ func cinematic_look_at_target(target: Node3D, duration: float = 1.5, ease: Tween
 	if not is_cinematic_mode:
 		enter_cinematic_mode()
 	
+	if not camera_controller:
+		return
+	
 	if current_tween:
 		current_tween.kill()
 	
-	# Calculate rotation to look at target
 	var look_transform = camera_controller.global_transform.looking_at(target.global_position)
 	var target_rotation = look_transform.basis.get_euler()
 	
 	current_tween = create_tween()
 	current_tween.tween_property(camera_controller, "rotation", target_rotation, duration).set_ease(ease)
 
-func cinematic_orbit_around_target(target: Node3D, radius: float, height: float, orbit_duration: float, revolutions: float = 1.0):
-	"""Orbit camera around a target (cinematic mode)"""
-	if not is_cinematic_mode:
-		enter_cinematic_mode()
-	
-	if current_tween:
-		current_tween.kill()
-	
-	current_tween = create_tween()
-	
-	# Create orbital motion
-	var steps = 60  # Smooth orbit
-	var angle_step = (2 * PI * revolutions) / steps
-	var time_step = orbit_duration / steps
-	
-	for i in steps:
-		var angle = angle_step * i
-		var orbit_pos = target.global_position + Vector3(
-			cos(angle) * radius,
-			height,
-			sin(angle) * radius
-		)
-		
-		current_tween.tween_property(camera_controller, "global_position", orbit_pos, time_step)
-		current_tween.parallel().tween_method(
-			func(pos): camera_controller.look_at(target.global_position),
-			0, 1, time_step
-		)
-
-func cinematic_sequence(sequence_data: Array):
-	"""Execute a sequence of cinematic moves"""
-	if not is_cinematic_mode:
-		enter_cinematic_mode()
-	
-	if current_tween:
-		current_tween.kill()
-	
-	current_tween = create_tween()
-	
-	for step in sequence_data:
-		match step.type:
-			"move":
-				current_tween.tween_property(camera_controller, "global_position", step.position, step.duration)
-			"look_at":
-				var target_rot = camera_controller.global_transform.looking_at(step.target.global_position).basis.get_euler()
-				current_tween.parallel().tween_property(camera_controller, "rotation", target_rot, step.duration)
-			"fov":
-				current_tween.parallel().tween_property(camera, "fov", step.fov, step.duration)
-			"wait":
-				current_tween.tween_delay(step.duration)
-			"callback":
-				current_tween.tween_callback(step.function)
-	
-	# Auto-exit cinematic mode when sequence ends (optional)
-	if sequence_data.back().get("auto_exit", true):
-		current_tween.tween_callback(exit_cinematic_mode)
-
 func camera_dramatic_zoom(target_fov: float, hold_duration: float = 0.5, return_duration: float = 0.3):
 	"""Dramatic zoom effect for special moves/impacts"""
+	if not camera:
+		return
+	
 	if current_tween:
 		current_tween.kill()
 	
@@ -310,26 +315,14 @@ func camera_dramatic_zoom(target_fov: float, hold_duration: float = 0.5, return_
 	# Return
 	current_tween.tween_property(camera, "fov", original_fov, return_duration).set_ease(Tween.EASE_OUT)
 
-func camera_impact_shake(intensity: float = 0.5, duration: float = 0.2):
-	"""Screen shake for impacts - can be called directly from character states"""
-	# Implementation depends on your shake system
-	# This is a placeholder
-	print("📹 Camera shake: intensity=", intensity, " duration=", duration)
-
-func camera_follow_projectile(projectile: Node3D, return_speed: float = 1.0):
-	"""Follow a projectile then return to character"""
-	if current_tween:
-		current_tween.kill()
-	
-	current_tween = create_tween()
-	# This would need more complex logic to actually follow the projectile
-	# Placeholder for the concept
-	print("📹 Following projectile")
-
-# === SPECIAL CAMERA EFFECTS (for fighting game moments) ===
+# === DEBUG AND TESTING ===
 
 func test_all_states():
 	"""Test camera responses for all states"""
+	if not enable_responder:
+		print("❌ CameraResponder: Cannot test - responder disabled")
+		return
+	
 	var states = ["idle", "walking", "running", "jumping", "airborne", "landing"]
 	for state in states:
 		await get_tree().create_timer(1.0).timeout
@@ -338,9 +331,15 @@ func test_all_states():
 
 func get_debug_info() -> Dictionary:
 	"""Get debug information"""
-	return {
+	var connection_status = get_connection_status()
+	
+	var debug_info = {
 		"current_fov": camera.fov if camera else 0.0,
 		"current_distance": spring_arm.spring_length if spring_arm else 0.0,
-		"current_offset": camera_controller.camera_offset if camera_controller else Vector3.ZERO,
-		"has_active_tween": current_tween != null and current_tween.is_valid()
+		"has_active_tween": current_tween != null and current_tween.is_valid(),
+		"cinematic_mode": is_cinematic_mode,
+		"auto_exit_timer": auto_exit_timer
 	}
+	
+	debug_info.merge(connection_status)
+	return debug_info

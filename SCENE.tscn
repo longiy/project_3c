@@ -130,7 +130,6 @@ script = ExtResource("4_0er5f")
 camera = NodePath("../../CAMERARIG/SpringArm3D/Camera3D")
 destination_marker = NodePath("../../CURSOR")
 camera_responder = NodePath("../../CAMERARIG/CameraResponder")
-disable_in_cinematic_mode = false
 
 [node name="AnimationController" type="Node" parent="CHARACTER" node_paths=PackedStringArray("animation_tree")]
 script = ExtResource("5_gbv5d")
