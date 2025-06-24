@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="CharacterStateGroundedResource" load_steps=2 format=3 uid="uid://bjjnr8sj2pu70"]
 
-[ext_resource type="Script" uid="uid://ctfi1nxwrgjpb" path="res://Scripts/CharacterStateMachine/CharacterStates/Resources/CharacterStateGroundedResource.gd" id="1_ijuci"]
+[ext_resource type="Script" uid="uid://ctfi1nxwrgjpb" path="res://Scripts/CharacterStateMachine/CharacterStates/CharaterStateResource/CharacterStateGroundedResource.gd" id="1_ijuci"]
 
 [resource]
 script = ExtResource("1_ijuci")

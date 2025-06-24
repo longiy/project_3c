@@ -1,4 +1,4 @@
-extends CharacterStateResource  
+extends CharacterState
 class_name CharacterStateAirborneResource
 
 @export_group("Airborne Specific")

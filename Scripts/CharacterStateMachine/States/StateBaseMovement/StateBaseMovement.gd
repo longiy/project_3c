@@ -3,7 +3,7 @@ extends State
 class_name StateBaseMovement
 
 # ADD THIS: Resource support
-var state_resource: CharacterStateResource
+var state_resource: CharacterState
 
 # Cache character reference for performance
 var character: CharacterBody3D

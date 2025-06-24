@@ -36,7 +36,7 @@ func build_resource_lookup():
 		print("📋 Registered airborne state resource: ", airborne_state_resource.display_name)
 
 # ADD THIS: Method for states to get their resources
-func get_state_resource(state_name: String) -> CharacterStateResource:
+func get_state_resource(state_name: String) -> CharacterState:
 	"""Get resource for a specific state"""
 	return state_resources.get(state_name, null)
 func _on_character_state_changed(old_state: String, new_state: String):

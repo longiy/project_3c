@@ -1,4 +1,4 @@
-extends CharacterStateResource
+extends CharacterState
 class_name CharacterStateGroundedResource
 
 @export_group("Grounded Specific")

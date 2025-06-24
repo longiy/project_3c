@@ -1,6 +1,6 @@
 # Base resource for all character states
 extends Resource
-class_name CharacterStateResource
+class_name CharacterState
 
 @export_group("State Identity")
 @export var state_name: String = ""
