@@ -9,7 +9,7 @@ signal cinematic_effect_completed(effect_name: String)
 
 @export_group("References")
 @export var camera_controller: Node3D
-@export var camera_responder: CameraResponder
+@export var camera_responder: CameraStateMachine  # ← Updated reference
 @export var camera: Camera3D
 @export var spring_arm: SpringArm3D
 

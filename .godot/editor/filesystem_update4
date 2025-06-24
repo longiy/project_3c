@@ -7,3 +7,12 @@ res://Scripts/CameraRig/CameraResponder.gd
 res://Scripts/CameraRig/CinematicController.gd
 res://Scripts/CameraRig/CameraCinema.gd
 res://Scripts/InputComponents/ClickNavigationComponent.gd
+res://Scripts/Camera/CameraStateMachine.gd
+res://Scripts/Camera/CameraResponseBase.gd
+res://Scripts/Camera/Responses/CameraResponseIdle.gd
+res://Scripts/Camera/Responses/CameraResponseAirborne.gd
+res://Scripts/Camera/Responses/CameraResponseJumping.gd
+res://Scripts/Camera/Responses/CameraResponseLanding.gd
+res://Scripts/Camera/Responses/CameraResponseRunning.gd
+res://Scripts/Camera/Responses/CameraResponseWalking.gd
+res://Scripts/Camera/old/CameraCinema.gd
