@@ -21,7 +21,6 @@ signal drag_mode_changed(is_dragging: bool)
 
 @export_group("Component Control")
 @export var enable_click_navigation = true
-@export var auto_connect_to_camera = true
 @export var respect_cinematic_mode = true
 
 @export_group("External Dependencies")
@@ -61,21 +60,6 @@ func setup_connections():
 	if not character:
 		push_error("ClickNavigationComponent must be child of CharacterBody3D")
 		return
-	
-	# Setup camera connection
-	if auto_connect_to_camera and not camera:
-		var possible_paths = [
-			"../../CAMERARIG/SpringArm3D/Camera3D",
-			"../CAMERARIG/SpringArm3D/Camera3D",
-			"/root/Scene/CAMERARIG/SpringArm3D/Camera3D"
-		]
-		
-		for path in possible_paths:
-			var found_camera = get_node_or_null(path) as Camera3D
-			if found_camera:
-				camera = found_camera
-				print("✅ ClickNav: Auto-found camera at: ", path)
-				break
 	
 	if not camera:
 		push_error("Camera must be assigned or auto-found for ClickNavigationComponent")

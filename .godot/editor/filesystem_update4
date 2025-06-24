@@ -3,3 +3,7 @@ res://AnimationTreeMove1d.tres
 res://Scripts/Controllers/ControllerCamera.gd
 res://Assets/ps_character_gurl.tscn
 res://Scripts/CameraResponder.gd
+res://Scripts/CameraRig/CameraResponder.gd
+res://Scripts/CameraRig/CinematicController.gd
+res://Scripts/CameraRig/CameraCinema.gd
+res://Scripts/InputComponents/ClickNavigationComponent.gd
