@@ -102,7 +102,6 @@ func get_connection_status() -> Dictionary:
 		"has_spring_arm": spring_arm != null,
 		"enabled": enable_responder
 	}
-
 # === SIGNAL HANDLERS ===
 
 func _on_camera_state_changed(_state_data: Dictionary):
@@ -142,13 +141,13 @@ func respond_to_state(state_name: String):
 	# Define camera responses for each state
 	match state_name:
 		"idle":
-			tween_camera_properties(65.0, 4.0, Vector3.ZERO, transition_speed)
+			tween_camera_properties(50.0, 4.0, Vector3.ZERO, transition_speed)
 		
 		"walking":
-			tween_camera_properties(65.0, 4.0, Vector3(0, 0, 0), transition_speed)
+			tween_camera_properties(60.0, 4.0, Vector3(0, 1, 0), transition_speed)
 		
 		"running":
-			tween_camera_properties(65.0, 4.0, Vector3(0, 0, 0), transition_speed, Tween.EASE_OUT)
+			tween_camera_properties(70.0, 4.0, Vector3(0, 2, 0), transition_speed, Tween.EASE_OUT)
 		
 		"jumping":
 			tween_camera_properties(85.0, 4.8, Vector3(0, 0.3, 0), fast_transition_speed)
