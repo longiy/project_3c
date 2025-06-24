@@ -19,3 +19,14 @@ res://Scripts/CharacterStateMachine/CharacterStates/CharaterStateResource/Resour
 res://Scripts/CharacterStateMachine/CharacterStates/CharaterStateResource/Resource/GroundedDefault.tres
 res://Scripts/CharacterStateMachine/StateMachineCharacter.gd
 res://Scripts/CharacterStateMachine/States/StateBaseMovement.gd
+res://Scripts/CharacterStateMachine/CharacterStates.gd
+res://Scripts/CharacterStateMachine/CharacterStateMachine.gd
+res://Scripts/_Debug/DebugUI.gd
+res://Scripts/CharacterStateMachine/States/NEW/CharacterStates.gd
+res://Scripts/CharacterStateMachine/States/NEW/StateIdle.gd
+res://Scripts/CharacterStateMachine/States/NEW/StateJumping.gd
+res://Scripts/CharacterStateMachine/States/NEW/StateRunning.gd
+res://Scripts/CharacterStateMachine/States/NEW/StateWalking.gd
+res://Scripts/CharacterStateMachine/States/NEW/StateAirborne.gd
+res://Scripts/CharacterStateMachine/States/NEW/StateLanding.gd
+res://Scripts/CharacterStateMachine/States/StateBaseMovement/State/StateAirborne.gd

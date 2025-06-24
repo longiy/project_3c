@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3 uid="uid://dngafe0y2nx5b"]
+[gd_scene load_steps=24 format=3 uid="uid://dngafe0y2nx5b"]
 
 [ext_resource type="Script" uid="uid://dt54n1ktg7wqr" path="res://Scripts/Controllers/ControllerCharacter.gd" id="1_5si1x"]
 [ext_resource type="Script" uid="uid://cms4l0nes10tn" path="res://Scripts/Controllers/ControllerCamera.gd" id="2_caybs"]
@@ -14,9 +14,6 @@
 [ext_resource type="Resource" uid="uid://djaibnhwg08cc" path="res://Scripts/CameraStateMachine/CameraStates/Airborne.tres" id="7_t5ir1"]
 [ext_resource type="PackedScene" uid="uid://bsprrm672tx2s" path="res://MARKER.tscn" id="7_w862e"]
 [ext_resource type="Resource" uid="uid://mvqgue1snc2x" path="res://Scripts/CameraStateMachine/CameraStates/Idle.tres" id="8_eyrhl"]
-[ext_resource type="Script" uid="uid://do2lvkxccp61u" path="res://Scripts/CharacterStateMachine/StateMachineCharacter.gd" id="13_patvt"]
-[ext_resource type="Resource" uid="uid://bjjnr8sj2pu70" path="res://Scripts/CharacterStateMachine/CharacterStates/CharaterStateResource/Resource/GroundedDefault.tres" id="14_lcrxd"]
-[ext_resource type="Resource" uid="uid://c5g4kl1ajwas6" path="res://Scripts/CharacterStateMachine/CharacterStates/CharaterStateResource/Resource/AirborneDefault.tres" id="15_ltj0m"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_3a8dd"]
 
@@ -33,6 +30,46 @@ data = PackedVector3Array(1, 0, 1, -1, 0, 1, 1, 0, -1, -1, 0, 1, -1, 0, -1, 1, 0
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_0er5f"]
 radius = 0.01
+
+[sub_resource type="GDScript" id="GDScript_eyrhl"]
+script/source = "# StateAirborne.gd - Character is falling or in air
+extends CharacterStateBase
+class_name StateAirborne
+
+func enter():
+	super.enter()
+
+func update(delta: float):
+	super.update(delta)
+	
+	character.apply_gravity(delta)
+	handle_air_movement(delta)
+	handle_air_jump_input()
+	handle_common_input()
+	
+	character.move_and_slide()
+	check_transitions()
+
+func handle_air_movement(delta: float):
+	\"\"\"Handle air control while airborne\"\"\"
+	if character.should_process_input():
+		var input = character.get_smoothed_input()
+		var movement_vector = character.calculate_movement_vector(input)
+		var air_speed = character.get_target_speed() * character.air_speed_multiplier
+		var air_acceleration = character.air_acceleration
+		
+		character.apply_movement(movement_vector, air_speed, air_acceleration, delta)
+
+func handle_air_jump_input():
+	\"\"\"Handle air jumping while airborne\"\"\"
+	if character.try_consume_jump_buffer() and character.can_air_jump():
+		character.perform_jump(character.jump_height * 0.8)  # Slightly weaker air jump
+
+func check_transitions():
+	\"\"\"Check for landing\"\"\"
+	if character.is_on_floor():
+		change_to(\"landing\")
+"
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_tcevt"]
 radius = 0.287885
@@ -114,13 +151,28 @@ camera_states = Array[ExtResource("4_3ag1n")]([ExtResource("8_eyrhl"), ExtResour
 collision_layer = 2
 slide_on_ceiling = false
 script = ExtResource("1_5si1x")
+reset_position = null
+reset_rotation = null
 animation_controller = NodePath("AnimationController")
 camera = NodePath("../CAMERARIG/SpringArm3D/Camera3D")
 state_machine = NodePath("CharacterStateMachine")
 slow_walk_speed = 1.0
 walk_speed = 2.0
+run_speed = null
+slow_walk_acceleration = null
+walk_acceleration = null
+run_acceleration = null
+deceleration = null
+gravity_multiplier = null
+input_deadzone = null
+min_input_duration = null
 input_smoothing = 40.0
 rotation_speed = 16
+camera_relative_movement = null
+jump_velocity = null
+max_jumps = null
+coyote_time = null
+ground_check_distance = null
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="CHARACTER"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
@@ -139,9 +191,7 @@ script = ExtResource("5_gbv5d")
 animation_tree = NodePath("../PS_Character_Gurl/AnimationTree")
 
 [node name="CharacterStateMachine" type="Node" parent="CHARACTER"]
-script = ExtResource("13_patvt")
-grounded_state_resource = ExtResource("14_lcrxd")
-airborne_state_resource = ExtResource("15_ltj0m")
+script = SubResource("GDScript_eyrhl")
 
 [node name="PS_Character_Gurl" parent="CHARACTER" instance=ExtResource("3_aeafk")]
 
