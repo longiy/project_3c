@@ -1,5 +1,7 @@
+res://Scripts/CharacterStateMachine/State.gd
+res://Scripts/Controllers/ControllerCharacter.gd
 res://SCENE.tscn
 res://AnimationTreeMove1d.tres
-res://Scripts/Controllers/ControllerCharacter.gd
-res://Scripts/CharacterStateMachine/States/StateIdle.gd
+res://Scripts/CharacterStateMachine/CharacterStateMachine.gd
 res://Assets/ps_character_gurl.tscn
+res://Scripts/CharacterStateMachine/CharacterStatesBase.gd

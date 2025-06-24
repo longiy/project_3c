@@ -8,7 +8,7 @@ var character: CharacterBody3D
 
 func enter():
 	super.enter()
-	character = owner as CharacterBody3D
+	character = owner_node as CharacterBody3D
 	if not character:
 		push_error("CharacterState requires CharacterBody3D owner")
 

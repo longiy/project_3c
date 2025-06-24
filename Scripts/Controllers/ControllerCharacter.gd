@@ -1,4 +1,4 @@
-# ControllerCharacter.gd - Streamlined with inspector parameters
+# ControllerCharacter.gd - Updated to use node-based state machine
 extends CharacterBody3D
 
 # === INSPECTOR CONFIGURATION ===
@@ -54,25 +54,13 @@ var raw_input_direction = Vector2.ZERO
 var is_slow_walking = false
 var is_running = false
 
-# State machine
+# State machine - now a child node instead of created in code
 var state_machine: CharacterStateMachine
 var input_components: Array[Node] = []
 
 func _ready():
 	setup_character()
 	setup_state_machine()
-	
-	# Debug input components
-	print("=== INPUT COMPONENT DEBUG ===")
-	for child in get_children():
-		print("Child: ", child.name, " Type: ", child.get_class())
-		if child.has_method("get_movement_input"):
-			print("  ✓ Has get_movement_input")
-		if child.has_method("is_active"):
-			print("  ✓ Has is_active")
-		if child.has_method("cancel_input"):
-			print("  ✓ Has cancel_input")
-	
 	find_input_components()
 
 func setup_character():
@@ -84,32 +72,35 @@ func setup_character():
 		push_warning("No Camera assigned - movement will not be camera-relative")
 
 func setup_state_machine():
-	"""Create and configure all character states"""
-	state_machine = CharacterStateMachine.new()
-	add_child(state_machine)
+	"""Find and initialize the state machine"""
+	# Look for CharacterStateMachine child node
+	state_machine = get_node("CharacterStateMachine") as CharacterStateMachine
 	
-	# Create focused states
-	state_machine.add_state("idle", StateIdle.new())
-	state_machine.add_state("walking", StateWalking.new()) 
-	state_machine.add_state("running", StateRunning.new())
-	state_machine.add_state("jumping", StateJumping.new())
-	state_machine.add_state("airborne", StateAirborne.new())
-	state_machine.add_state("landing", StateLanding.new())
+	if not state_machine:
+		push_error("No CharacterStateMachine child node found! Please add one to the scene.")
+		return
 	
-	# Start in appropriate state
-	if is_on_floor():
-		state_machine.change_state("idle")
-	else:
-		state_machine.change_state("airborne")
+	# Validate the state machine setup
+	if not state_machine.validate_state_setup():
+		push_error("State machine validation failed!")
+		return
 	
 	if enable_debug_logging:
-		print("✅ Character: State machine initialized with ", state_machine.states.size(), " states")
+		print("✅ Character: Using node-based state machine with ", state_machine.states.size(), " states")
+		
+		# Print state node information
+		for state_name in state_machine.states.keys():
+			var state_node = state_machine.get_state_node(state_name)
+			if state_node:
+				print("  📝 ", state_name, " → ", state_node.name)
+			else:
+				print("  ⚠️ ", state_name, " → No node")
 
 func find_input_components():
 	"""Automatically find input components"""
 	input_components.clear()
 	for child in get_children():
-		if child == null:
+		if child == null or child == state_machine:
 			continue
 		# Check if it's an input component (has the required methods)
 		if child.has_method("get_movement_input"):
@@ -305,6 +296,10 @@ func should_process_input() -> bool:
 		get_movement_speed() > 0.5
 	)
 
+func get_current_input_direction() -> Vector2:
+	"""Get current input direction for animation blend spaces"""
+	return smoothed_input
+
 # === JUMP HELPERS ===
 
 func can_jump() -> bool:
@@ -380,5 +375,7 @@ func get_debug_info() -> Dictionary:
 		"is_running": is_running,
 		"is_slow_walking": is_slow_walking,
 		"smoothed_input": smoothed_input,
-		"raw_input": raw_input_direction
+		"raw_input": raw_input_direction,
+		"state_machine_valid": state_machine != null,
+		"current_state_node": state_machine.get_current_state_node().name if state_machine and state_machine.get_current_state_node() else "None"
 	}

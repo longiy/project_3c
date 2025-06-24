@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=3 uid="uid://dngafe0y2nx5b"]
+[gd_scene load_steps=30 format=3 uid="uid://dngafe0y2nx5b"]
 
 [ext_resource type="Script" uid="uid://dt54n1ktg7wqr" path="res://Scripts/Controllers/ControllerCharacter.gd" id="1_5si1x"]
 [ext_resource type="Script" uid="uid://cms4l0nes10tn" path="res://Scripts/Controllers/ControllerCamera.gd" id="2_caybs"]
@@ -15,6 +15,12 @@
 [ext_resource type="PackedScene" uid="uid://bsprrm672tx2s" path="res://MARKER.tscn" id="7_w862e"]
 [ext_resource type="Resource" uid="uid://mvqgue1snc2x" path="res://Scripts/CameraStateMachine/CameraStates/Idle.tres" id="8_eyrhl"]
 [ext_resource type="Script" uid="uid://deibi5xmtfs1h" path="res://Scripts/CharacterStateMachine/CharacterStateMachine.gd" id="13_n01k3"]
+[ext_resource type="Script" uid="uid://mwfti1hv45ue" path="res://Scripts/CharacterStateMachine/States/StateIdle.gd" id="14_8x7ek"]
+[ext_resource type="Script" uid="uid://1uqst38ejbn3" path="res://Scripts/CharacterStateMachine/States/StateAirborne.gd" id="15_16ayq"]
+[ext_resource type="Script" uid="uid://c7v6qfkst2sfh" path="res://Scripts/CharacterStateMachine/States/StateJumping.gd" id="16_xcjh0"]
+[ext_resource type="Script" uid="uid://dvxh1oyh11gby" path="res://Scripts/CharacterStateMachine/States/StateLanding.gd" id="17_msfgm"]
+[ext_resource type="Script" uid="uid://dg7vpc6xymvpp" path="res://Scripts/CharacterStateMachine/States/StateRunning.gd" id="18_fuc0d"]
+[ext_resource type="Script" uid="uid://chw8f4cb3xd47" path="res://Scripts/CharacterStateMachine/States/StateWalking.gd" id="19_sjx82"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_3a8dd"]
 
@@ -134,8 +140,27 @@ destination_marker = NodePath("../../CURSOR")
 script = ExtResource("5_gbv5d")
 animation_tree = NodePath("../PS_Character_Gurl/AnimationTree")
 
-[node name="CharacterStateMachine" type="Node" parent="CHARACTER"]
+[node name="CharacterStateMachine" type="Node" parent="CHARACTER" node_paths=PackedStringArray("state_nodes")]
 script = ExtResource("13_n01k3")
+state_nodes = [NodePath("Idle"), NodePath("Airborne"), NodePath("Jumping"), NodePath("Landing"), NodePath("Running"), NodePath("Walking")]
+
+[node name="Idle" type="Node" parent="CHARACTER/CharacterStateMachine"]
+script = ExtResource("14_8x7ek")
+
+[node name="Airborne" type="Node" parent="CHARACTER/CharacterStateMachine"]
+script = ExtResource("15_16ayq")
+
+[node name="Jumping" type="Node" parent="CHARACTER/CharacterStateMachine"]
+script = ExtResource("16_xcjh0")
+
+[node name="Landing" type="Node" parent="CHARACTER/CharacterStateMachine"]
+script = ExtResource("17_msfgm")
+
+[node name="Running" type="Node" parent="CHARACTER/CharacterStateMachine"]
+script = ExtResource("18_fuc0d")
+
+[node name="Walking" type="Node" parent="CHARACTER/CharacterStateMachine"]
+script = ExtResource("19_sjx82")
 
 [node name="PS_Character_Gurl" parent="CHARACTER" instance=ExtResource("3_aeafk")]
 
