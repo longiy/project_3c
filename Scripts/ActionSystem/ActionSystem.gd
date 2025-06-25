@@ -78,8 +78,13 @@ func clear_expired_actions():
 	var original_count = pending_actions.size()
 	pending_actions = pending_actions.filter(func(action): return not action.is_expired())
 	
+	if executed_actions.size() > max_history_size * 2:
+		executed_actions = executed_actions.slice(-max_history_size)
+		
 	if enable_debug_logging and pending_actions.size() != original_count:
 		print("🕐 Cleared ", original_count - pending_actions.size(), " expired actions")
+		
+
 
 func cancel_all_actions():
 	pending_actions.clear()

@@ -13,6 +13,15 @@ func _init(action_name: String, action_context: Dictionary = {}, buffer_time: fl
 	context = action_context
 	timestamp = Time.get_ticks_msec() / 1000.0
 	expiry_time = timestamp + buffer_time
+	
+	if buffer_time < 0:
+		buffer_time = get_default_buffer_time(action_name)
+
+func get_default_buffer_time(action_name: String) -> float:
+	match action_name:
+		"jump": return 0.1
+		"sprint_start", "sprint_end": return 0.05
+		_: return 0.15
 
 func is_expired() -> bool:
 	return Time.get_ticks_msec() / 1000.0 > expiry_time
