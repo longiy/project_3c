@@ -199,31 +199,19 @@ func build_performance_section_from_helper(info: Dictionary) -> String:
 	return text
 
 func build_camera_section() -> String:
-	"""Build camera debug information for new system"""
+	"""Build camera debug information"""
 	var text = "=== CAMERA ===\n"
 	
 	var camera_rig = get_node_or_null("../CAMERARIG")
-	if camera_rig and camera_rig.has_method("get_debug_info"):
-		var cam_info = camera_rig.get_debug_info()
-		text += "Mode: " + cam_info.get("current_mode", "unknown") + "\n"
-		text += "Input: " + cam_info.get("input_mode", "unknown") + "\n"
-		text += "Active Component: " + cam_info.get("active_component", "none") + "\n"
-		text += "External Control: " + str(cam_info.get("externally_controlled", false)) + "\n"
-		
-		var props = cam_info.get("properties", {})
-		if props.has("fov"):
-			text += "FOV: " + str(props.fov).pad_decimals(1) + "°\n"
-		if props.has("distance"):
-			text += "Distance: " + str(props.distance).pad_decimals(1) + "\n"
-		
-		# Show available modes
-		var modes = cam_info.get("available_modes", [])
-		if modes.size() > 0:
-			text += "Available: " + ", ".join(modes) + "\n"
+	if camera_rig and camera_rig.has_method("get_camera_debug_info"):
+		var cam_info = camera_rig.get_camera_debug_info()
+		text += "Follow Mode: " + str(cam_info.get("follow_mode", "Unknown")) + "\n"
+		text += "Following: " + str(cam_info.get("is_following", false)) + "\n"
+		text += "Mouse Captured: " + str(cam_info.get("mouse_captured", false)) + "\n"
+		text += "Distance: " + str(cam_info.get("current_distance", 0.0)).pad_decimals(1) + "\n"
+		text += "External Control: " + str(cam_info.get("external_control", false)) + "\n"
 	else:
-		text += "New Camera System Not Found\n"
-		# Fallback to old camera info if still exists
-		text += "Checking for old system...\n"
+		text += "No Camera Info Available\n"
 	
 	text += "\n"
 	return text
@@ -349,4 +337,4 @@ func get_debug_summary() -> String:
 			var delay = info.actions.get("input_to_animation_delay", "Unknown")
 			action_status = "Sync: " + str(delay)
 	
-	return "%s | %.1f u/s | %s | %s" % [state, speed, "Ground" if grounded else "Air", action_status]	
+	return "%s | %.1f u/s | %s | %s" % [state, speed, "Ground" if grounded else "Air", action_status]
