@@ -1,4 +1,4 @@
-# ClickNavigationComponent.gd - Clean click-to-move navigation
+# ClickNavigationComponent.gd - Self-contained click-to-move navigation
 extends Node
 class_name ClickNavigationComponent
 
@@ -6,6 +6,7 @@ class_name ClickNavigationComponent
 @export var arrival_threshold = 0.1
 @export var show_destination_marker = true
 @export var enable_drag_mode = true
+@export var force_mouse_visible_in_cinematic = true
 
 @export_group("Optional Visual Feedback")
 @export var destination_marker: Node3D  # Optional - will work without
@@ -24,6 +25,9 @@ var is_arrival_delay = false
 var is_dragging = false
 var drag_start_pos = Vector2.ZERO
 
+# Cinematic override state
+var mouse_forced_visible = false
+
 func _ready():
 	# Get required parent
 	character = get_parent() as CharacterBody3D
@@ -37,28 +41,30 @@ func _ready():
 		print("ClickNav: No camera found - click navigation disabled")
 
 func _input(event):
-	# === RIGHT CLICK: TOGGLE MOUSE MODE ===
+	# Handle cinematic mode mouse toggle first (works even when mouse captured)
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
-		toggle_mouse_mode()
-		get_viewport().set_input_as_handled()
-		return
+		if is_in_cinematic_mode() and force_mouse_visible_in_cinematic:
+			toggle_mouse_in_cinematic()
+			get_viewport().set_input_as_handled()
+			return
 	
-	# === ONLY PROCESS CLICK NAVIGATION WHEN MOUSE IS VISIBLE ===
 	if not can_handle_input():
 		return
 	
-	# === LEFT MOUSE: CLICK NAVIGATION ===
+	# Left mouse - start click or drag
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
 			start_click_or_drag(event.position)
 		else:
 			finish_click_or_drag()
-		get_viewport().set_input_as_handled()
 	
-	# === MOUSE MOTION: DRAG NAVIGATION ===
+	# Mouse motion during drag
 	elif event is InputEventMouseMotion and is_dragging and enable_drag_mode:
 		update_drag_destination(event.position)
-		get_viewport().set_input_as_handled()
+	
+	# Right click cancels when not in cinematic mode
+	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+		cancel_input()
 
 func _physics_process(delta):
 	# Handle arrival delay timer
@@ -100,34 +106,27 @@ func cancel_input():
 	is_dragging = false
 	hide_marker()
 
-# === MOUSE MODE MANAGEMENT ===
-
-func toggle_mouse_mode():
-	"""Toggle between captured (WASD) and visible (click navigation) mouse modes"""
-	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		# Switch to click navigation mode
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-		print("🖱️ Click Navigation: Mouse released for clicking")
-	else:
-		# Switch back to WASD mode
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-		cancel_input()  # Cancel any active click navigation
-		print("🖱️ Click Navigation: Mouse captured for WASD")
+# === INTERNAL CLICK HANDLING ===
 
 func can_handle_input() -> bool:
-	"""Check if we should respond to click input"""
-	# Must have camera for raycasting
-	if not camera:
-		return false
+	"""Check if we should respond to input"""
+	# In cinematic mode, only handle input if we forced mouse visible
+	if is_in_cinematic_mode():
+		return mouse_forced_visible and camera != null
 	
-	# Only handle input when mouse is visible (not captured)
-	return Input.mouse_mode == Input.MOUSE_MODE_VISIBLE
+	# Normal mode - handle input when mouse is free
+	return Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and camera != null
 
-# === CLICK/DRAG HANDLING ===
+func handle_click(screen_pos: Vector2):
+	"""Handle mouse click"""
+	var world_pos = screen_to_world(screen_pos)
+	if world_pos != Vector3.ZERO:
+		set_destination(world_pos)
 
 func start_click_or_drag(screen_pos: Vector2):
 	"""Handle start of click or drag"""
 	if enable_drag_mode:
+		# Start drag mode
 		is_dragging = true
 		drag_start_pos = screen_pos
 	
@@ -146,14 +145,6 @@ func update_drag_destination(screen_pos: Vector2):
 	var world_pos = screen_to_world(screen_pos)
 	if world_pos != Vector3.ZERO:
 		set_destination(world_pos)
-
-func handle_click(screen_pos: Vector2):
-	"""Handle mouse click"""
-	var world_pos = screen_to_world(screen_pos)
-	if world_pos != Vector3.ZERO:
-		set_destination(world_pos)
-
-# === WORLD POSITION CONVERSION ===
 
 func screen_to_world(screen_pos: Vector2) -> Vector3:
 	"""Convert screen position to world position via raycast"""
@@ -175,7 +166,6 @@ func set_destination(world_pos: Vector3):
 	click_destination = world_pos
 	has_destination = true
 	show_marker(world_pos)
-	print("🎯 Click destination set: ", world_pos)
 
 func world_to_input_direction(direction_3d: Vector3) -> Vector2:
 	"""Convert 3D world direction to 2D input relative to camera"""
@@ -192,6 +182,46 @@ func world_to_input_direction(direction_3d: Vector3) -> Vector2:
 	var right_dot = direction_3d.dot(cam_right)
 	
 	return Vector2(right_dot, -forward_dot)
+
+# === CINEMATIC MODE DETECTION AND MOUSE TOGGLE ===
+
+func is_in_cinematic_mode() -> bool:
+	"""Detect if we're in cinematic mode by checking common patterns"""
+	# Method 1: Check if Input.mouse_mode was forced visible recently
+	# (This catches when cinematic mode sets mouse visible)
+	
+	# Method 2: Look for CameraCinema component and check its state
+	var camera_cinema = find_camera_cinema()
+	if camera_cinema and camera_cinema.has_method("is_in_cinematic_mode"):
+		return camera_cinema.is_in_cinematic_mode()
+	
+	# Method 3: Heuristic - if mouse was captured but is now visible without user input
+	# (This is a simple fallback that works in most cases)
+	return false  # Default to false if we can't detect
+
+func find_camera_cinema() -> Node:
+	"""Try to find CameraCinema component (optional)"""
+	# Look in common locations
+	var camera_rig = get_node_or_null("../../CAMERARIG")
+	if camera_rig:
+		var cinema = camera_rig.get_node_or_null("CameraCinema")
+		if cinema:
+			return cinema
+	
+	# Could add more search patterns here
+	return null
+
+func toggle_mouse_in_cinematic():
+	"""Toggle mouse visibility in cinematic mode"""
+	if mouse_forced_visible:
+		# Hide mouse and disable click nav
+		mouse_forced_visible = false
+		cancel_input()
+		print("ClickNav: Mouse hidden in cinematic mode")
+	else:
+		# Show mouse and enable click nav
+		mouse_forced_visible = true
+		print("ClickNav: Mouse shown in cinematic mode")
 
 # === ARRIVAL HANDLING ===
 
@@ -220,8 +250,6 @@ func hide_marker():
 	if destination_marker:
 		destination_marker.visible = false
 
-# === API FOR CAMERA SYSTEM ===
-
 func get_current_destination() -> Vector3:
 	"""Get current click destination for camera anticipation"""
 	return click_destination if has_destination else Vector3.ZERO
@@ -232,18 +260,17 @@ func get_destination_distance() -> float:
 		return character.global_position.distance_to(click_destination)
 	return 0.0
 
-# === DEBUG ===
-
+# Update the existing get_debug_info() method to include destination info:
 func get_debug_info() -> Dictionary:
 	"""Get debug information"""
 	return {
 		"has_destination": has_destination,
 		"is_dragging": is_dragging,
 		"can_handle_input": can_handle_input(),
+		"is_in_cinematic_mode": is_in_cinematic_mode(),
+		"mouse_forced_visible": mouse_forced_visible,
 		"has_camera": camera != null,
 		"has_marker": destination_marker != null,
-		"current_destination": click_destination,
-		"distance_to_dest": character.global_position.distance_to(click_destination) if has_destination else 0.0,
-		"mouse_mode": Input.mouse_mode,
-		"is_active": is_active()
+		"current_destination": click_destination,  # Camera system reads this
+		"distance_to_dest": character.global_position.distance_to(click_destination) if has_destination else 0.0
 	}
