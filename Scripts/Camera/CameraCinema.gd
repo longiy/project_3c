@@ -156,7 +156,7 @@ func toggle_cinematic_mode():
 
 # === CINEMATIC CAMERA EFFECTS ===
 
-func cinematic_move_to_position(target_position: Vector3, duration: float = 2.0, ease: Tween.EaseType = Tween.EASE_IN_OUT):
+func cinematic_move_to_position(target_position: Vector3, duration: float = 2.0, ease_type: Tween.EaseType = Tween.EASE_IN_OUT):
 	"""Move camera to specific world position"""
 	if not is_cinematic_mode:
 		enter_cinematic_mode()
@@ -171,10 +171,11 @@ func cinematic_move_to_position(target_position: Vector3, duration: float = 2.0,
 		current_effect_tween.kill()
 	
 	current_effect_tween = create_tween()
-	current_effect_tween.tween_property(camera_controller, "global_position", target_position, duration).set_ease(ease)
+	var tween_property = current_effect_tween.tween_property(camera_controller, "global_position", target_position, duration)
+	tween_property.set_ease(ease_type)
 	current_effect_tween.finished.connect(func(): cinematic_effect_completed.emit("move_to_position"))
 
-func cinematic_look_at_target(target: Node3D, duration: float = 1.5, ease: Tween.EaseType = Tween.EASE_IN_OUT):
+func cinematic_look_at_target(target: Node3D, duration: float = 1.5, ease_type: Tween.EaseType = Tween.EASE_IN_OUT):
 	"""Point camera at specific target"""
 	if not is_cinematic_mode:
 		enter_cinematic_mode()
@@ -192,8 +193,10 @@ func cinematic_look_at_target(target: Node3D, duration: float = 1.5, ease: Tween
 	var target_rotation = look_transform.basis.get_euler()
 	
 	current_effect_tween = create_tween()
-	current_effect_tween.tween_property(camera_controller, "rotation", target_rotation, duration).set_ease(ease)
+	var tween_property = current_effect_tween.tween_property(camera_controller, "rotation", target_rotation, duration)
+	tween_property.set_ease(ease_type)
 	current_effect_tween.finished.connect(func(): cinematic_effect_completed.emit("look_at_target"))
+
 
 func camera_dramatic_zoom(target_fov: float, hold_duration: float = 0.5, return_duration: float = 0.3):
 	"""Dramatic zoom effect for special moves/impacts"""
@@ -217,7 +220,7 @@ func camera_dramatic_zoom(target_fov: float, hold_duration: float = 0.5, return_
 	current_effect_tween.tween_property(camera, "fov", original_fov, return_duration).set_ease(Tween.EASE_OUT)
 	current_effect_tween.finished.connect(func(): cinematic_effect_completed.emit("dramatic_zoom"))
 
-func smooth_zoom_to_fov(target_fov: float, duration: float = 1.0, ease: Tween.EaseType = Tween.EASE_IN_OUT):
+func smooth_zoom_to_fov(target_fov: float, duration: float = 1.0, ease_type: Tween.EaseType = Tween.EASE_IN_OUT):
 	"""Smooth zoom transition to target FOV"""
 	if not camera:
 		return
@@ -228,7 +231,8 @@ func smooth_zoom_to_fov(target_fov: float, duration: float = 1.0, ease: Tween.Ea
 		current_effect_tween.kill()
 	
 	current_effect_tween = create_tween()
-	current_effect_tween.tween_property(camera, "fov", target_fov, duration).set_ease(ease)
+	var tween_property = current_effect_tween.tween_property(camera, "fov", target_fov, duration)
+	tween_property.set_ease(ease_type)
 	current_effect_tween.finished.connect(func(): cinematic_effect_completed.emit("smooth_zoom"))
 
 # === UTILITY METHODS ===

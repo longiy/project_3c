@@ -1,4 +1,3 @@
 res://SCENE.tscn
 res://AnimationTreeMove1d.tres
-res://Scripts/Camera/CameraStateMachine.gd
-res://Assets/ps_character_gurl.tscn
+res://Scripts/Camera/CameraCinema.gd

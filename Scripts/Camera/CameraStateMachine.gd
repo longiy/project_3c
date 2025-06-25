@@ -210,7 +210,7 @@ func get_response_property(response_node: Node, property_name: String, default_v
 		return response_node.get(property_name)
 	return default_value
 
-func tween_camera_properties(fov: float, distance: float, offset: Vector3, duration: float, ease_type: Tween.EaseType):
+func tween_camera_properties(fov: float, distance: float, _offset: Vector3, duration: float, ease_type: Tween.EaseType):
 	"""Tween camera properties"""
 	if not current_tween:
 		return

@@ -129,7 +129,7 @@ func build_animation_section_from_helper(info: Dictionary) -> String:
 	text += "\n"
 	return text
 
-func build_performance_section_from_helper(info: Dictionary) -> String:
+func build_performance_section_from_helper(_info: Dictionary) -> String:
 	var text = "=== PERFORMANCE ===\n"
 	if character.debug_helper:
 		var perf_info = character.debug_helper.get_performance_info()
