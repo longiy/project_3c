@@ -12,3 +12,5 @@ res://Scripts/Character/States/StateRunning.gd
 res://Scripts/Character/States/StateJumping.gd
 res://Scripts/Character/States/StateAirborne.gd
 res://Scripts/Character/States/StateLanding.gd
+res://Scripts/_Debug/CharacterDebugHelper.gd
+res://Scripts/_Debug/DebugUI.gd

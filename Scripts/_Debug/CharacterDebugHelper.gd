@@ -130,7 +130,10 @@ func get_physics_debug_info() -> Dictionary:
 func get_action_debug_info() -> Dictionary:
 	"""Get action system debug info"""
 	if action_system:
-		return action_system.get_debug_info()
+		var action_info = action_system.get_debug_info()
+		# Add some additional context
+		action_info["action_system_type"] = "Event-Driven" if action_info.get("event_driven", false) else "Frame-Based"
+		return action_info
 	else:
 		return {"error": "No ActionSystem"}
 

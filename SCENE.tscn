@@ -87,6 +87,7 @@ offset_bottom = 40.0
 script = ExtResource("2_u4csh")
 debug_label = NodePath("DebugLabel")
 character = NodePath("../CHARACTER")
+show_performance_info = true
 
 [node name="DebugLabel" type="Label" parent="DebugUI"]
 layout_mode = 0

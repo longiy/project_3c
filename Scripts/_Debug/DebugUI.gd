@@ -129,7 +129,7 @@ func build_animation_section_from_helper(info: Dictionary) -> String:
 	text += "\n"
 	return text
 
-func build_performance_section_from_helper(_info: Dictionary) -> String:
+func build_performance_section_from_helper(info: Dictionary) -> String:
 	var text = "=== PERFORMANCE ===\n"
 	if character.debug_helper:
 		var perf_info = character.debug_helper.get_performance_info()
@@ -137,6 +137,12 @@ func build_performance_section_from_helper(_info: Dictionary) -> String:
 		text += "Frame Time: " + str(perf_info.frame_time_ms).pad_decimals(1) + "ms\n"
 		text += "Physics Time: " + str(perf_info.physics_time_ms).pad_decimals(1) + "ms\n"
 		text += "Memory: " + str(perf_info.memory_usage_mb).pad_decimals(1) + "MB\n"
+		
+		# Add action system info
+		var action_info = character.debug_helper.get_action_debug_info()
+		text += "Action System: " + str(action_info.get("action_system_type", "Unknown")) + "\n"
+		text += "Event Driven: " + str(action_info.get("event_driven", false)) + "\n"
+		text += "Pending Actions: " + str(action_info.get("pending_count", 0)) + "\n"
 	text += "\n"
 	return text
 
