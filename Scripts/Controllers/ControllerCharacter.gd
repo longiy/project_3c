@@ -1,4 +1,4 @@
-# ControllerCharacter.gd - Action system version
+# ControllerCharacter.gd - Action system version (FIXED)
 extends CharacterBody3D
 
 # === INSPECTOR CONFIGURATION === (unchanged)
@@ -81,7 +81,7 @@ func setup_state_machine():
 		push_error("State machine validation failed!")
 
 func _input(event):
-	# Action system handles all input now through InputManager
+	# All input now handled by InputManager -> ActionSystem
 	pass
 
 func _physics_process(delta):
@@ -157,23 +157,45 @@ func update_ground_state():
 	if jump_system:
 		jump_system.update_ground_state()
 
-# === INPUT HELPERS === (delegated to InputManager)
-
-func get_input_duration() -> float:
-	return input_manager.get_input_duration() if input_manager else 0.0
-
-func is_input_sustained(min_duration: float = 0.3) -> bool:
-	return input_manager.is_input_sustained(min_duration) if input_manager else false
-
-func should_process_input() -> bool:
-	return input_manager.should_process_input() if input_manager else false
+# === NEW: Action-based input helpers ===
 
 func get_current_input_direction() -> Vector2:
-	"""Get current input direction for animation blend spaces"""
-	return get_smoothed_input()
+	"""Get current input direction from action system state"""
+	if state_machine and state_machine.current_state:
+		var current_state = state_machine.current_state
+		if current_state.has_method("get_current_movement_input"):
+			return current_state.get_current_movement_input()
+	return Vector2.ZERO
+
+# === LEGACY API (marked for removal) ===
+
+func get_input_duration() -> float:
+	"""LEGACY: Use state machine action state instead"""
+	if state_machine and state_machine.current_state:
+		var current_state = state_machine.current_state
+		if current_state.has_method("get_movement_duration"):
+			return current_state.get_movement_duration()
+	return 0.0
+
+func is_input_sustained(min_duration: float = 0.3) -> bool:
+	"""LEGACY: Use state machine action state instead"""
+	if state_machine and state_machine.current_state:
+		var current_state = state_machine.current_state
+		if current_state.has_method("is_input_sustained"):
+			return current_state.is_input_sustained(min_duration)
+	return false
+
+func should_process_input() -> bool:
+	"""LEGACY: Use state machine action state instead"""
+	if state_machine and state_machine.current_state:
+		var current_state = state_machine.current_state
+		if current_state.has_method("should_process_movement"):
+			return current_state.should_process_movement()
+	return false
 
 func get_smoothed_input() -> Vector2:
-	return input_manager.get_smoothed_input() if input_manager else Vector2.ZERO
+	"""LEGACY: Use get_current_input_direction() instead"""
+	return get_current_input_direction()
 
 # === JUMP HELPERS === (delegated to JumpSystem)
 
@@ -182,11 +204,6 @@ func can_jump() -> bool:
 
 func can_air_jump() -> bool:
 	return jump_system.can_air_jump() if jump_system else false
-
-# === REMOVED: Old input handling methods ===
-# handle_jump_input() - now handled by action system
-# try_consume_jump_buffer() - now handled by action system
-# cancel_all_input_components() - moved to InputManager
 
 # === UTILITY METHODS ===
 

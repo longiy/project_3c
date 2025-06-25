@@ -22,8 +22,8 @@ func update(delta: float):
 
 func on_movement_started(direction: Vector2, magnitude: float):
 	"""When movement starts in idle, transition to appropriate movement state"""
-	# Don't handle movement in idle - let the transition happen first
-	check_movement_transition()
+	print("💤 Movement started in idle: ", direction, " - transitioning to walking")
+	change_to("walking")
 
 func on_movement_updated(direction: Vector2, magnitude: float):
 	"""Movement updates in idle should trigger transition"""
@@ -77,14 +77,13 @@ func execute_action(action: Action):
 			character.perform_jump(character.jump_system.get_jump_force())
 			change_to("jumping")
 		
-		# Movement actions handled by base class, but we may want to transition
 		"move_start", "move_update":
-			super.execute_action(action)  # Let base class handle the action
-			check_movement_transition()  # Then check if we should transition
+			# Use the helper to transition and forward the action
+			transition_and_forward_action("walking", action)
 		
 		"move_end":
-			super.execute_action(action)  # Handle the action
+			super.execute_action(action)
 			# Stay in idle when movement ends
 		
 		_:
-			super.execute_action(action)  # Let base class handle everything else
+			super.execute_action(action)

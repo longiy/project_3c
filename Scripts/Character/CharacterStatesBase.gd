@@ -178,6 +178,17 @@ func handle_movement_mode_actions():
 
 # === UTILITY METHODS ===
 
+func transition_and_forward_action(new_state_name: String, action: Action):
+	"""Transition to new state and forward the action to it"""
+	change_to(new_state_name)
+	
+	# Forward action to new state after transition
+	if state_machine and state_machine.current_state:
+		var new_state = state_machine.current_state
+		if new_state != self and new_state.has_method("execute_action"):
+			print("🔄 Forwarding action ", action.name, " to new state: ", new_state_name)
+			new_state.execute_action(action)
+
 func has_action_system() -> bool:
 	return action_system != null
 
