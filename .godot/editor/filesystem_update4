@@ -7,4 +7,3 @@ res://Scripts/Camera/FollowCameraComponent.gd
 res://Scripts/Components/InputManager.gd
 res://Scripts/Camera/CameraManager.gd
 res://Scripts/InputComponents/ClickNavigationComponent.gd
-res://Scripts/Camera/ClickFollowCameraComponent.gd
