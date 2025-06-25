@@ -1,4 +1,4 @@
-# CameraStateMachine.gd - Node-based camera state responses
+# CameraStateMachine.gd - Node-based camera state responses with manual connections
 extends Node
 class_name CameraStateMachine
 
@@ -11,6 +11,9 @@ signal camera_transition_completed(state_name: String)
 @export var character: CharacterBody3D
 @export var camera: Camera3D
 @export var spring_arm: SpringArm3D
+
+@export_group("Manual Connection")
+@export var character_state_machine: CharacterStateMachine
 
 @export_group("Component Control")
 @export var enable_camera_state_machine = true
@@ -33,7 +36,7 @@ var is_external_control_active = false
 
 func _ready():
 	setup_camera_responses()
-	setup_connections()
+	setup_manual_connections()
 
 func setup_camera_responses():
 	"""Initialize camera responses from the response_nodes array"""
@@ -65,45 +68,29 @@ func setup_camera_responses():
 	
 	print("✅ Camera state machine setup complete with ", camera_responses.size(), " responses")
 
-func extract_state_name(node_name: String) -> String:
-	"""Extract clean state name from node name"""
-	var state_name = node_name.to_lower()
-	
-	# Remove common prefixes/suffixes
-	state_name = state_name.replace("camera", "")
-	state_name = state_name.replace("response", "")
-	state_name = state_name.replace("node", "")
-	state_name = state_name.strip_edges()
-	
-	# Handle empty result
-	if state_name.is_empty():
-		state_name = node_name.to_lower()
-	
-	return state_name
-
-func setup_connections():
-	"""Connect to character state machine"""
-	if not character or not enable_camera_state_machine:
+func setup_manual_connections():
+	"""Setup manually assigned connections"""
+	if not enable_camera_state_machine:
+		print("📹 CameraStateMachine: Disabled - skipping connections")
 		return
 	
-	# Connect to character state machine with delay
-	call_deferred("connect_to_character_state_machine")
-
-func connect_to_character_state_machine():
-	"""Connect to character state machine signals"""
-	if not character or not enable_camera_state_machine:
-		return
-	
-	var character_state_machine = character.get_node_or_null("CharacterStateMachine")
-	if not character_state_machine:
-		print("⚠️ CameraStateMachine: No CharacterStateMachine found")
-		return
-	
-	if character_state_machine.has_signal("state_changed"):
-		character_state_machine.state_changed.connect(_on_character_state_changed)
-		print("✅ CameraStateMachine: Connected to character state machine")
+	# Manual connection to assigned character state machine
+	if character_state_machine:
+		if character_state_machine.has_signal("state_changed"):
+			character_state_machine.state_changed.connect(_on_character_state_changed)
+			print("✅ CameraStateMachine: Manually connected to CharacterStateMachine")
+		else:
+			push_error("Assigned CharacterStateMachine has no state_changed signal")
 	else:
-		print("❌ CameraStateMachine: CharacterStateMachine has no state_changed signal")
+		print("⚠️ CameraStateMachine: No CharacterStateMachine assigned - camera won't respond to character states")
+	
+	# Validate other references
+	if not character:
+		push_warning("No character assigned")
+	if not camera:
+		push_warning("No camera assigned")
+	if not spring_arm:
+		push_warning("No spring arm assigned")
 
 # === MODULAR CONTROL API ===
 
@@ -126,6 +113,40 @@ func set_external_control_active(active: bool):
 		print("📹 CameraStateMachine: Paused due to external control")
 	else:
 		print("📹 CameraStateMachine: Resumed after external control")
+
+# === MANUAL CONNECTION HELPERS ===
+
+func connect_to_character_state_machine(state_machine: CharacterStateMachine) -> bool:
+	"""Manually connect to a character state machine"""
+	if not state_machine:
+		push_error("Cannot connect to null state machine")
+		return false
+	
+	if not state_machine.has_signal("state_changed"):
+		push_error("State machine has no state_changed signal")
+		return false
+	
+	# Disconnect existing connection if any
+	if character_state_machine and character_state_machine.state_changed.is_connected(_on_character_state_changed):
+		character_state_machine.state_changed.disconnect(_on_character_state_changed)
+	
+	# Connect to new state machine
+	character_state_machine = state_machine
+	character_state_machine.state_changed.connect(_on_character_state_changed)
+	
+	print("✅ CameraStateMachine: Connected to new CharacterStateMachine")
+	return true
+
+func disconnect_from_character_state_machine():
+	"""Manually disconnect from character state machine"""
+	if character_state_machine and character_state_machine.state_changed.is_connected(_on_character_state_changed):
+		character_state_machine.state_changed.disconnect(_on_character_state_changed)
+		character_state_machine = null
+		print("📹 CameraStateMachine: Disconnected from CharacterStateMachine")
+
+func is_connected_to_character_state_machine() -> bool:
+	"""Check if connected to character state machine"""
+	return character_state_machine != null and character_state_machine.state_changed.is_connected(_on_character_state_changed)
 
 # === SIGNAL HANDLERS ===
 
@@ -265,6 +286,9 @@ func _get_configuration_warnings() -> PackedStringArray:
 	if camera_response_nodes.is_empty():
 		warnings.append("No camera response nodes assigned. Please drag response nodes into the Camera Response Nodes array.")
 	
+	if not character_state_machine:
+		warnings.append("No CharacterStateMachine assigned. Camera will not respond to character state changes.")
+	
 	# Check each response node
 	var target_states = []
 	var duplicates = []
@@ -346,7 +370,9 @@ func get_debug_info() -> Dictionary:
 		"has_spring_arm": spring_arm != null,
 		"has_active_tween": current_tween != null and current_tween.is_valid(),
 		"current_fov": camera.fov if camera else 0.0,
-		"current_distance": spring_arm.spring_length if spring_arm else 0.0
+		"current_distance": spring_arm.spring_length if spring_arm else 0.0,
+		"connected_to_char_sm": is_connected_to_character_state_machine(),
+		"char_sm_assigned": character_state_machine != null
 	}
 
 func get_camera_response_summary() -> Dictionary:

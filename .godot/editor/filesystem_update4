@@ -1,11 +1,4 @@
 res://SCENE.tscn
 res://AnimationTreeMove1d.tres
-res://Scripts/InputManager.gd
-res://Scripts/Controllers/ControllerCharacter.gd
-res://Scripts/_Debug/DebugUI.gd
+res://Scripts/Camera/CameraStateMachine.gd
 res://Assets/ps_character_gurl.tscn
-res://Scripts/Components/InputManager.gd
-res://Scripts/Components/JumpSystem.gd
-res://Scripts/Character/States/StateAirborne.gd
-res://Scripts/Character/States/StateJumping.gd
-res://Scripts/_Debug/CharacterDebugHelper.gd
