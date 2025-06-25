@@ -5,7 +5,7 @@ extends Node
 signal action_requested(action: Action)
 signal action_executed(action: Action)
 signal action_failed(action: Action, reason: String)
-signal action_ready(action: Action)  # NEW: Immediate processing signal
+signal action_ready(action: Action) # Immediate processing signal
 
 var executed_actions: Array[Action] = []
 var character: CharacterBody3D
@@ -18,9 +18,13 @@ func _ready():
 	if not character:
 		push_error("ActionSystem must be child of CharacterBody3D")
 		return
+	
+	# Connect to our own signal for immediate processing
+	action_ready.connect(_on_action_ready)
+	print("🎯 ActionSystem: Using event-driven processing")
 
 func _physics_process(delta):
-	# Only keep cleanup - no more frame-based processing
+	# Only keep cleanup for executed actions history
 	clear_expired_actions()
 
 func request_action(action_name: String, context: Dictionary = {}) -> Action:
@@ -79,20 +83,13 @@ func fail_action_immediate(action: Action, reason: String, executor: String = "u
 	
 	if enable_debug_logging:
 		print("❌ Action failed: ", action.name, " - ", reason, " by ", executor)
-	
-	if enable_debug_logging:
-		print("❌ Action failed: ", action.name, " - ", reason, " by ", executor)
 
 # === UTILITY METHODS ===
 
 func clear_expired_actions():
-	# Remove all the pending_actions cleanup code
 	# Keep only executed actions history cleanup
 	if executed_actions.size() > max_history_size * 2:
 		executed_actions = executed_actions.slice(-max_history_size)
-	
-	if enable_debug_logging:
-		print("🚫 All pending actions cancelled")
 
 func get_debug_info() -> Dictionary:
 	return {
