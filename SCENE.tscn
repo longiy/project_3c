@@ -87,12 +87,6 @@ offset_bottom = 40.0
 script = ExtResource("2_u4csh")
 debug_label = NodePath("DebugLabel")
 character = NodePath("../CHARACTER")
-show_state_info = false
-show_movement_info = false
-show_input_info = false
-show_physics_info = false
-show_animation_info = false
-show_camera_info = false
 show_performance_info = true
 
 [node name="DebugLabel" type="Label" parent="DebugUI"]

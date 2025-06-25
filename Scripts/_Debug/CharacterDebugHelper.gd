@@ -1,4 +1,4 @@
-# CharacterDebugHelper.gd - Updated for action system
+# CharacterDebugHelper.gd - Updated for action-based animation system
 extends Node
 class_name CharacterDebugHelper
 
@@ -73,7 +73,7 @@ func get_comprehensive_debug_info() -> Dictionary:
 		"state": get_state_debug_info(),
 		"animation": get_animation_debug_info(),
 		"physics": get_physics_debug_info(),
-		"actions": get_action_debug_info()  # NEW
+		"actions": get_action_debug_info()
 	}
 	
 	return debug_info
@@ -111,9 +111,16 @@ func get_state_debug_info() -> Dictionary:
 		return {"error": "No StateMachine"}
 
 func get_animation_debug_info() -> Dictionary:
-	"""Get animation system debug info"""
+	"""Get NEW action-based animation system debug info"""
 	if character.animation_controller:
-		return character.animation_controller.get_debug_info()
+		var anim_debug = character.animation_controller.get_debug_info()
+		
+		# Add action-based specific information
+		anim_debug["system_type"] = "Action-Based"
+		anim_debug["sync_status"] = get_animation_sync_status()
+		anim_debug["recent_animation_actions"] = get_recent_animation_actions()
+		
+		return anim_debug
 	else:
 		return {"error": "No AnimationController"}
 
@@ -128,14 +135,109 @@ func get_physics_debug_info() -> Dictionary:
 	}
 
 func get_action_debug_info() -> Dictionary:
-	"""Get action system debug info"""
+	"""Get action system debug info with animation focus"""
 	if action_system:
 		var action_info = action_system.get_debug_info()
-		# Add some additional context
-		action_info["action_system_type"] = "Event-Driven" if action_info.get("event_driven", false) else "Frame-Based"
+		
+		# Add animation-specific action tracking
+		action_info["recent_movement_actions"] = get_recent_movement_actions()
+		action_info["animation_actions_count"] = count_animation_actions()
+		action_info["input_to_animation_delay"] = measure_input_animation_delay()
+		
 		return action_info
 	else:
 		return {"error": "No ActionSystem"}
+
+# === NEW ANIMATION SYSTEM HELPERS ===
+
+func get_animation_sync_status() -> String:
+	"""Check if animation system is in sync with character state"""
+	if not character.animation_controller or not character.state_machine:
+		return "Unknown - Missing Components"
+	
+	var anim_info = character.animation_controller.get_debug_info()
+	var state_info = character.state_machine.get_state_transition_summary()
+	
+	var anim_active = anim_info.get("is_movement_active", false)
+	var char_moving = character.get_movement_speed() > 0.1
+	var current_state = state_info.get("current_state", "unknown")
+	var is_movement_state = current_state in ["walking", "running"]
+	
+	if anim_active == is_movement_state:
+		return "✅ Synced"
+	else:
+		return "❌ Desync - Anim:" + str(anim_active) + " State:" + str(is_movement_state)
+
+func get_recent_animation_actions() -> Array[String]:
+	"""Get recent animation-specific actions"""
+	if not action_system:
+		return []
+	
+	var animation_actions: Array[String] = []
+	var recent_actions = action_system.executed_actions.slice(-10)
+	
+	for action in recent_actions:
+		if action.is_animation_action():
+			animation_actions.append(action.name + "(" + str(action.get_age()).pad_decimals(2) + "s ago)")
+	
+	return animation_actions
+
+func get_recent_movement_actions() -> Array[String]:
+	"""Get recent movement actions that trigger animations"""
+	if not action_system:
+		return []
+	
+	var movement_actions: Array[String] = []
+	var recent_actions = action_system.executed_actions.slice(-5)
+	
+	for action in recent_actions:
+		if action.is_movement_action():
+			movement_actions.append(action.name + "(" + str(action.get_age()).pad_decimals(2) + "s ago)")
+	
+	return movement_actions
+
+func count_animation_actions() -> int:
+	"""Count how many animation actions have been executed"""
+	if not action_system:
+		return 0
+	
+	var count = 0
+	for action in action_system.executed_actions:
+		if action.is_animation_action():
+			count += 1
+	
+	return count
+
+func measure_input_animation_delay() -> String:
+	"""Measure delay between input and animation response"""
+	if not action_system or action_system.executed_actions.size() < 2:
+		return "No data"
+	
+	var recent_actions = action_system.executed_actions.slice(-10)
+	var last_movement_action = null
+	var last_animation_action = null
+	
+	# Find the most recent movement and animation actions
+	for i in range(recent_actions.size() - 1, -1, -1):
+		var action = recent_actions[i]
+		if action.is_movement_action() and last_movement_action == null:
+			last_movement_action = action
+		if action.is_animation_action() and last_animation_action == null:
+			last_animation_action = action
+		
+		if last_movement_action and last_animation_action:
+			break
+	
+	if last_movement_action and last_animation_action:
+		var delay = last_animation_action.timestamp - last_movement_action.timestamp
+		if delay < 0.001:
+			return "✅ Same frame"
+		elif delay < 0.02:
+			return "⚡ " + str(delay * 1000).pad_decimals(1) + "ms"
+		else:
+			return "⚠️ " + str(delay * 1000).pad_decimals(1) + "ms"
+	
+	return "No recent data"
 
 # === VALIDATION HELPERS ===
 
@@ -148,7 +250,7 @@ func validate_character_setup() -> Dictionary:
 		"state_machine": character.state_machine != null if character else false,
 		"animation_controller": character.animation_controller != null if character else false,
 		"camera": character.camera != null if character else false,
-		"action_system": action_system != null  # NEW
+		"action_system": action_system != null
 	}
 	
 	var missing_components = []
@@ -218,6 +320,32 @@ func force_action(action_name: String, context: Dictionary = {}):
 	else:
 		print("❌ Debug: No action system found")
 
+# === NEW DEBUG COMMANDS ===
 
+func test_animation_sync():
+	"""Test animation synchronization with various inputs"""
+	print("🧪 Testing animation sync...")
+	
+	# Test immediate response
+	action_system.request_action("move_start", {"direction": Vector2(1, 0), "magnitude": 1.0})
+	await get_tree().process_frame
+	
+	var sync_status = get_animation_sync_status()
+	print("🎬 Animation sync after move_start: ", sync_status)
+	
+	await get_tree().create_timer(0.5).timeout
+	
+	action_system.request_action("move_end")
+	await get_tree().process_frame
+	
+	sync_status = get_animation_sync_status()
+	print("🎬 Animation sync after move_end: ", sync_status)
 
-# Rest of the methods remain the same...
+func print_action_animation_summary():
+	"""Print summary of action-animation relationship"""
+	print("=== ACTION-ANIMATION SUMMARY ===")
+	print("Recent Movement Actions: ", get_recent_movement_actions())
+	print("Recent Animation Actions: ", get_recent_animation_actions())
+	print("Animation Actions Count: ", count_animation_actions())
+	print("Input→Animation Delay: ", measure_input_animation_delay())
+	print("Sync Status: ", get_animation_sync_status())

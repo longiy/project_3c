@@ -1,4 +1,4 @@
-# Action.gd - Expanded for all input types
+# Action.gd - Enhanced for animation actions
 class_name Action
 extends RefCounted
 
@@ -32,6 +32,9 @@ func get_default_buffer_time(action_name: String) -> float:
 		# Mode toggles - short buffer
 		"sprint_start", "sprint_end", "slow_walk_start", "slow_walk_end":
 			return 0.05
+		# Animation actions - immediate processing
+		"animation_state_change", "animation_movement_change", "animation_mode_change":
+			return 0.01
 		# Utility actions
 		"reset":
 			return 0.2
@@ -54,6 +57,9 @@ func is_look_action() -> bool:
 func is_mode_action() -> bool:
 	return name in ["sprint_start", "sprint_end", "slow_walk_start", "slow_walk_end"]
 
+func is_animation_action() -> bool:
+	return name.begins_with("animation_")
+
 func get_movement_vector() -> Vector2:
 	"""Helper to extract movement vector from context"""
 	return context.get("direction", Vector2.ZERO)
@@ -62,10 +68,15 @@ func get_look_delta() -> Vector2:
 	"""Helper to extract look delta from context"""
 	return context.get("delta", Vector2.ZERO)
 
+func get_animation_context() -> Dictionary:
+	"""Helper to extract animation context"""
+	return context
+
 func serialize() -> Dictionary:
 	return {
 		"name": name,
 		"context": context,
 		"timestamp": timestamp,
-		"age": get_age()
+		"age": get_age(),
+		"is_animation": is_animation_action()
 	}
