@@ -1,5 +1,5 @@
 # ===================================================================
-# LANDING STATE - Brief recovery after landing
+# StateLanding.gd - Action-based landing state
 # ===================================================================
 class_name StateLanding
 extends CharacterStateBase
@@ -10,7 +10,6 @@ func enter():
 	super.enter()
 	character.update_ground_state()
 	
-	# Brief landing recovery - slight speed reduction
 	character.velocity.x *= 0.8
 	character.velocity.z *= 0.8
 
@@ -19,35 +18,26 @@ func update(delta: float):
 	
 	character.apply_gravity(delta)
 	handle_landing_movement(delta)
-	handle_jump_input()
-	handle_common_input()
+	handle_movement_mode_actions()
 	
 	character.move_and_slide()
 	check_transitions()
 
 func handle_landing_movement(delta: float):
-	"""Handle limited movement during landing recovery"""
 	if character.should_process_input():
 		var input = character.get_smoothed_input()
 		var movement_vector = character.calculate_movement_vector(input)
-		var reduced_speed = character.get_target_speed() * 0.5  # Reduced during landing
+		var reduced_speed = character.get_target_speed() * 0.5
 		var acceleration = character.get_target_acceleration()
 		
 		character.apply_movement(movement_vector, reduced_speed, acceleration, delta)
 	else:
 		character.apply_deceleration(delta)
 
-func handle_jump_input():
-	"""Handle immediate jump after landing"""
-	if character.try_consume_jump_buffer() and character.can_jump():
-		change_to("jumping")
-
 func check_transitions():
-	"""Check for transitions from landing"""
 	if not character.is_on_floor():
 		change_to("airborne")
 	elif time_in_state > landing_recovery_time:
-		# Landing recovery complete - go to appropriate movement state
 		if character.should_process_input() and character.get_smoothed_input().length() > 0:
 			if character.is_running:
 				change_to("running")
@@ -56,22 +46,19 @@ func check_transitions():
 		else:
 			change_to("idle")
 
-# ===================================================================
-# FUTURE STATES (templates for expansion)
-# ===================================================================
+func can_execute_action(action: Action) -> bool:
+	match action.name:
+		"jump": return character.can_jump()
+		"sprint_start", "sprint_end", "slow_walk_start", "slow_walk_end": return true
+		_: return super.can_execute_action(action)
 
-# class_name StateSliding
-# extends CharacterStateBase
-# # For sliding down slopes or slide attacks
-
-# class_name StateDashing  
-# extends CharacterStateBase
-# # For quick dash movements
-
-# class_name StateClimbing
-# extends CharacterStateBase  
-# # For ladder/wall climbing
-
-# class_name StateSwimming
-# extends CharacterStateBase
-# # For water movement
+func execute_action(action: Action):
+	match action.name:
+		"jump":
+			character.perform_jump(character.jump_system.get_jump_force())
+			change_to("jumping")
+		"sprint_start": character.is_running = true
+		"sprint_end": character.is_running = false
+		"slow_walk_start": character.is_slow_walking = true
+		"slow_walk_end": character.is_slow_walking = false
+		_: super.execute_action(action)

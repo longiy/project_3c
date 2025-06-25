@@ -1,6 +1,8 @@
-# StateRunning.gd - Character is running (fast speed)
-extends CharacterStateBase
+# ===================================================================
+# StateRunning.gd - Action-based running state
+# ===================================================================
 class_name StateRunning
+extends CharacterStateBase
 
 func enter():
 	super.enter()
@@ -11,14 +13,12 @@ func update(delta: float):
 	
 	character.apply_gravity(delta)
 	handle_movement_input(delta)
-	handle_jump_input()
-	handle_common_input()
+	handle_movement_mode_actions()
 	
 	character.move_and_slide()
 	check_transitions()
 
 func handle_movement_input(delta: float):
-	"""Handle movement input while running"""
 	if character.should_process_input():
 		var input = character.get_smoothed_input()
 		var movement_vector = character.calculate_movement_vector(input)
@@ -27,23 +27,31 @@ func handle_movement_input(delta: float):
 		
 		character.apply_movement(movement_vector, target_speed, acceleration, delta)
 	else:
-		# No input - go to idle
 		change_to("idle")
 
-func handle_jump_input():
-	"""Handle jump input while running"""
-	if character.try_consume_jump_buffer() and character.can_jump():
-		change_to("jumping")
-
 func check_transitions():
-	"""Check for state transitions"""
 	if not character.is_on_floor():
 		change_to("airborne")
 	elif character.should_process_input():
-		# Check if we should slow down
 		if not character.is_running or character.get_target_speed() <= character.walk_speed:
 			change_to("walking")
 	else:
-		# No input - stop moving
 		if character.get_movement_speed() < 0.1:
 			change_to("idle")
+
+func can_execute_action(action: Action) -> bool:
+	match action.name:
+		"jump": return character.can_jump()
+		"sprint_start", "sprint_end", "slow_walk_start", "slow_walk_end": return true
+		_: return super.can_execute_action(action)
+
+func execute_action(action: Action):
+	match action.name:
+		"jump":
+			character.perform_jump(character.jump_system.get_jump_force())
+			change_to("jumping")
+		"sprint_start": character.is_running = true
+		"sprint_end": character.is_running = false
+		"slow_walk_start": character.is_slow_walking = true
+		"slow_walk_end": character.is_slow_walking = false
+		_: super.execute_action(action)

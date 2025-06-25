@@ -1,4 +1,4 @@
-[gd_scene load_steps=35 format=3 uid="uid://dngafe0y2nx5b"]
+[gd_scene load_steps=36 format=3 uid="uid://dngafe0y2nx5b"]
 
 [ext_resource type="Script" uid="uid://dt54n1ktg7wqr" path="res://Scripts/Controllers/ControllerCharacter.gd" id="1_5si1x"]
 [ext_resource type="Script" uid="uid://cms4l0nes10tn" path="res://Scripts/Controllers/ControllerCamera.gd" id="2_caybs"]
@@ -26,6 +26,7 @@
 [ext_resource type="Script" uid="uid://d2tq3l0s4tbth" path="res://Scripts/Components/InputManager.gd" id="22_msfgm"]
 [ext_resource type="Script" uid="uid://bb8kly3o18vto" path="res://Scripts/Components/JumpSystem.gd" id="23_fuc0d"]
 [ext_resource type="Script" uid="uid://bqw3xo0kgqhjk" path="res://Scripts/_Debug/CharacterDebugHelper.gd" id="24_sjx82"]
+[ext_resource type="Script" uid="uid://ddxgligxg0gus" path="res://Scripts/ActionSystem/ActionSystem.gd" id="25_3fkbm"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_3a8dd"]
 
@@ -196,6 +197,12 @@ max_air_jumps = 5
 
 [node name="CharacterDebugHelper" type="Node" parent="CHARACTER"]
 script = ExtResource("24_sjx82")
+enable_debug_logging = null
+reset_position = Vector3(0, 0.1, 0)
+enable_force_state_commands = null
+
+[node name="ActionSystem" type="Node" parent="CHARACTER"]
+script = ExtResource("25_3fkbm")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="CHARACTER"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)

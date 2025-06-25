@@ -1,4 +1,4 @@
-# CharacterDebugHelper.gd - Debug and testing utilities for character
+# CharacterDebugHelper.gd - Updated for action system
 extends Node
 class_name CharacterDebugHelper
 
@@ -11,12 +11,16 @@ class_name CharacterDebugHelper
 
 # Component references
 var character: CharacterBody3D
+var action_system: ActionSystem
 
 func _ready():
 	character = get_parent() as CharacterBody3D
 	if not character:
 		push_error("CharacterDebugHelper must be child of CharacterBody3D")
 		return
+	
+	# Get action system
+	action_system = character.get_node_or_null("ActionSystem")
 	
 	if enable_debug_logging:
 		print("✅ CharacterDebugHelper: Initialized")
@@ -44,45 +48,16 @@ func reset_character():
 	if character.jump_system:
 		character.jump_system.reset_jump_state()
 	
+	# Reset action system
+	if action_system:
+		action_system.cancel_all_actions()
+	
 	# Reset state machine
 	if character.state_machine:
 		character.state_machine.change_state("idle")
 	
 	if enable_debug_logging:
 		print("🔄 Character reset by DebugHelper")
-
-# === STATE TESTING ===
-
-func force_state_change(state_name: String):
-	"""Force character into specific state (for testing)"""
-	if not enable_force_state_commands:
-		print("❌ Debug: Force state commands disabled")
-		return
-	
-	if not character.state_machine:
-		print("❌ Debug: No state machine found")
-		return
-	
-	if character.state_machine.has_state(state_name):
-		character.state_machine.change_state(state_name)
-		if enable_debug_logging:
-			print("🔧 Debug: Forced state to ", state_name)
-	else:
-		print("❌ Debug: State not found: ", state_name)
-
-func test_all_states():
-	"""Cycle through all states for testing"""
-	if not enable_force_state_commands:
-		print("❌ Debug: Force state commands disabled")
-		return
-	
-	var states = ["idle", "walking", "running", "jumping", "airborne", "landing"]
-	
-	print("🧪 Testing all character states...")
-	for state in states:
-		await character.get_tree().create_timer(1.0).timeout
-		force_state_change(state)
-		print("🧪 Testing state: ", state)
 
 # === DEBUG INFO COMPILATION ===
 
@@ -97,7 +72,8 @@ func get_comprehensive_debug_info() -> Dictionary:
 		"jump": get_jump_debug_info(),
 		"state": get_state_debug_info(),
 		"animation": get_animation_debug_info(),
-		"physics": get_physics_debug_info()
+		"physics": get_physics_debug_info(),
+		"actions": get_action_debug_info()  # NEW
 	}
 	
 	return debug_info
@@ -151,6 +127,13 @@ func get_physics_debug_info() -> Dictionary:
 		"floor_angle": rad_to_deg(character.get_floor_normal().angle_to(Vector3.UP)) if character.is_on_floor() else 0.0
 	}
 
+func get_action_debug_info() -> Dictionary:
+	"""Get action system debug info"""
+	if action_system:
+		return action_system.get_debug_info()
+	else:
+		return {"error": "No ActionSystem"}
+
 # === VALIDATION HELPERS ===
 
 func validate_character_setup() -> Dictionary:
@@ -161,7 +144,8 @@ func validate_character_setup() -> Dictionary:
 		"jump_system": character.jump_system != null if character else false,
 		"state_machine": character.state_machine != null if character else false,
 		"animation_controller": character.animation_controller != null if character else false,
-		"camera": character.camera != null if character else false
+		"camera": character.camera != null if character else false,
+		"action_system": action_system != null  # NEW
 	}
 	
 	var missing_components = []
@@ -202,33 +186,33 @@ func get_performance_info() -> Dictionary:
 		"memory_usage_mb": Performance.get_monitor(Performance.MEMORY_STATIC) / 1024.0 / 1024.0
 	}
 
-# === DEBUG COMMANDS ===
+# === ACTION SYSTEM TESTING ===
 
-func enable_debug_mode():
-	"""Enable debug logging for all systems"""
-	enable_debug_logging = true
+func test_action_system():
+	"""Test action system with various actions"""
+	if not action_system:
+		print("❌ No action system to test")
+		return
 	
-	if character.jump_system:
-		character.jump_system.enable_debug_logging = true
+	print("🧪 Testing action system...")
 	
-	print("🔧 Debug mode enabled")
+	# Test jump action
+	action_system.request_action("jump")
+	await get_tree().create_timer(0.5).timeout
+	
+	# Test movement mode actions
+	action_system.request_action("sprint_start")
+	await get_tree().create_timer(1.0).timeout
+	action_system.request_action("sprint_end")
+	
+	print("🧪 Action system test complete")
 
-func disable_debug_mode():
-	"""Disable debug logging for all systems"""
-	enable_debug_logging = false
-	
-	if character.jump_system:
-		character.jump_system.enable_debug_logging = false
-	
-	print("🔧 Debug mode disabled")
+func force_action(action_name: String, context: Dictionary = {}):
+	"""Force an action for testing"""
+	if action_system:
+		action_system.request_action(action_name, context)
+		print("🔧 Debug: Forced action: ", action_name)
+	else:
+		print("❌ Debug: No action system found")
 
-# === INSPECTOR HELPERS ===
-
-func _get_configuration_warnings() -> PackedStringArray:
-	"""Provide warnings in the editor"""
-	var warnings = PackedStringArray()
-	
-	if reset_position == Vector3.ZERO:
-		warnings.append("Reset position is at origin (0,0,0) - character may fall through floor")
-	
-	return warnings
+# Rest of the methods remain the same...
