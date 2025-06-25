@@ -1,4 +1,4 @@
-# === ACTION CLASS ===
+# Action.gd - Expanded for all input types
 class_name Action
 extends RefCounted
 
@@ -8,20 +8,36 @@ var timestamp: float
 var expiry_time: float
 var failure_reason: String = ""
 
-func _init(action_name: String, action_context: Dictionary = {}, buffer_time: float = 0.15):
+func _init(action_name: String, action_context: Dictionary = {}, buffer_time: float = -1):
 	name = action_name
 	context = action_context
 	timestamp = Time.get_ticks_msec() / 1000.0
-	expiry_time = timestamp + buffer_time
 	
 	if buffer_time < 0:
 		buffer_time = get_default_buffer_time(action_name)
+	
+	expiry_time = timestamp + buffer_time
 
 func get_default_buffer_time(action_name: String) -> float:
 	match action_name:
-		"jump": return 0.1
-		"sprint_start", "sprint_end": return 0.05
-		_: return 0.15
+		# Movement actions - very short buffer (need immediate response)
+		"move_start", "move_update", "move_end":
+			return 0.02
+		# Look actions - no buffer (immediate)
+		"look_delta":
+			return 0.01
+		# Jump actions - standard buffer for timing
+		"jump":
+			return 0.1
+		# Mode toggles - short buffer
+		"sprint_start", "sprint_end", "slow_walk_start", "slow_walk_end":
+			return 0.05
+		# Utility actions
+		"reset":
+			return 0.2
+		# Default for new action types
+		_:
+			return 0.15
 
 func is_expired() -> bool:
 	return Time.get_ticks_msec() / 1000.0 > expiry_time
@@ -29,9 +45,27 @@ func is_expired() -> bool:
 func get_age() -> float:
 	return Time.get_ticks_msec() / 1000.0 - timestamp
 
+func is_movement_action() -> bool:
+	return name in ["move_start", "move_update", "move_end"]
+
+func is_look_action() -> bool:
+	return name in ["look_delta"]
+
+func is_mode_action() -> bool:
+	return name in ["sprint_start", "sprint_end", "slow_walk_start", "slow_walk_end"]
+
+func get_movement_vector() -> Vector2:
+	"""Helper to extract movement vector from context"""
+	return context.get("direction", Vector2.ZERO)
+
+func get_look_delta() -> Vector2:
+	"""Helper to extract look delta from context"""
+	return context.get("delta", Vector2.ZERO)
+
 func serialize() -> Dictionary:
 	return {
 		"name": name,
 		"context": context,
-		"timestamp": timestamp
+		"timestamp": timestamp,
+		"age": get_age()
 	}

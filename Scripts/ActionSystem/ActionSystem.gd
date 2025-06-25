@@ -34,23 +34,46 @@ func request_action(action_name: String, context: Dictionary = {}) -> Action:
 	return action
 
 func process_pending_actions(_delta):
-	for action in pending_actions.duplicate():  # Duplicate to avoid modification during iteration
+	# Process high-priority actions immediately (movement, look)
+	for action in pending_actions.duplicate():
 		if action.is_expired():
+			pending_actions.erase(action)
 			continue
 		
-		# Let current state handle the action
-		if character.state_machine and character.state_machine.current_state:
-			var current_state = character.state_machine.current_state
-			
-			if current_state.has_method("can_execute_action") and current_state.can_execute_action(action):
-				if current_state.has_method("execute_action"):
-					current_state.execute_action(action)
-					execute_action(action, current_state.state_name)
-				else:
-					fail_action(action, "State has no execute_action method", current_state.state_name)
+		# Movement and look actions need immediate processing
+		if action.is_movement_action() or action.is_look_action():
+			process_action_immediately(action)
+		else:
+			# Other actions can wait for next frame if state can't handle them
+			attempt_action_execution(action)
+
+func process_action_immediately(action: Action):
+	"""Process high-priority actions that need immediate execution"""
+	if character.state_machine and character.state_machine.current_state:
+		var current_state = character.state_machine.current_state
+		
+		if current_state.has_method("can_execute_action") and current_state.can_execute_action(action):
+			if current_state.has_method("execute_action"):
+				current_state.execute_action(action)
+				execute_action(action, current_state.state_name)
 			else:
-				# Don't fail immediately - action might become valid next frame
-				pass
+				fail_action(action, "State has no execute_action method", current_state.state_name)
+		else:
+			# Movement actions that can't be handled should be dropped
+			fail_action(action, "State cannot handle immediate action", current_state.state_name)
+
+func attempt_action_execution(action: Action):
+	"""Attempt to execute action, but don't fail if state can't handle it yet"""
+	if character.state_machine and character.state_machine.current_state:
+		var current_state = character.state_machine.current_state
+		
+		if current_state.has_method("can_execute_action") and current_state.can_execute_action(action):
+			if current_state.has_method("execute_action"):
+				current_state.execute_action(action)
+				execute_action(action, current_state.state_name)
+			else:
+				fail_action(action, "State has no execute_action method", current_state.state_name)
+		# Don't fail non-immediate actions - they might become valid next frame
 
 func execute_action(action: Action, executor: String = "unknown"):
 	pending_actions.erase(action)

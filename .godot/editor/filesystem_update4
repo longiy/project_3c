@@ -1,8 +1,8 @@
 res://SCENE.tscn
 res://AnimationTreeMove1d.tres
 res://Assets/ps_character_gurl.tscn
-res://Scripts/Controllers/ControllerCharacter.gd
-res://Scripts/Components/InputManager.gd
-res://Scripts/ActionSystem/ActionSystem.gd
 res://Scripts/ActionSystem/Action.gd
-res://Scripts/_Debug/CharacterDebugHelper.gd
+res://Scripts/Components/InputManager.gd
+res://Scripts/Character/CharacterStatesBase.gd
+res://Scripts/Character/States/StateIdle.gd
+res://Scripts/ActionSystem/ActionSystem.gd

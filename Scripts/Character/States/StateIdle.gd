@@ -10,26 +10,40 @@ func update(delta: float):
 	super.update(delta)
 	
 	character.apply_gravity(delta)
-	handle_movement_input(delta)
-	handle_movement_mode_actions()  # Process sprint/walk mode changes
+	
+	# Apply deceleration if no movement action is active
+	if not is_movement_active:
+		character.apply_deceleration(delta)
 	
 	character.move_and_slide()
 	check_transitions()
 
-func handle_movement_input(delta: float):
-	"""Handle movement input while idle"""
-	if character.should_process_input():
-		var input = character.get_smoothed_input()
-		if input.length() > 0:
-			var target_speed = character.get_target_speed()
-			if target_speed <= character.slow_walk_speed:
-				change_to("walking")
-			elif character.is_running:
-				change_to("running")
-			else:
-				change_to("walking")
-	else:
-		character.apply_deceleration(delta)
+# === MOVEMENT ACTION OVERRIDES ===
+
+func on_movement_started(direction: Vector2, magnitude: float):
+	"""When movement starts in idle, transition to appropriate movement state"""
+	# Don't handle movement in idle - let the transition happen first
+	check_movement_transition()
+
+func on_movement_updated(direction: Vector2, magnitude: float):
+	"""Movement updates in idle should trigger transition"""
+	check_movement_transition()
+
+func on_movement_ended():
+	"""Movement ended - stay in idle"""
+	pass
+
+func check_movement_transition():
+	"""Check if we should transition to a movement state"""
+	if is_movement_active and current_movement_vector.length() > 0:
+		var target_speed = character.get_target_speed()
+		
+		if character.is_running:
+			change_to("running")
+		elif target_speed <= character.slow_walk_speed:
+			change_to("walking")
+		else:
+			change_to("walking")
 
 func check_transitions():
 	"""Check for state transitions"""
@@ -43,8 +57,14 @@ func can_execute_action(action: Action) -> bool:
 	match action.name:
 		"jump":
 			return character.can_jump()
+		"move_start", "move_update":
+			return true  # Can start movement from idle
+		"move_end":
+			return true  # Can end movement (though shouldn't happen)
 		"sprint_start", "sprint_end", "slow_walk_start", "slow_walk_end":
 			return true  # Movement modes always available
+		"look_delta":
+			return true  # Can look around while idle
 		"reset":
 			return true
 		_:
@@ -56,13 +76,15 @@ func execute_action(action: Action):
 		"jump":
 			character.perform_jump(character.jump_system.get_jump_force())
 			change_to("jumping")
-		"sprint_start":
-			character.is_running = true
-		"sprint_end":
-			character.is_running = false
-		"slow_walk_start":
-			character.is_slow_walking = true
-		"slow_walk_end":
-			character.is_slow_walking = false
+		
+		# Movement actions handled by base class, but we may want to transition
+		"move_start", "move_update":
+			super.execute_action(action)  # Let base class handle the action
+			check_movement_transition()  # Then check if we should transition
+		
+		"move_end":
+			super.execute_action(action)  # Handle the action
+			# Stay in idle when movement ends
+		
 		_:
-			super.execute_action(action)
+			super.execute_action(action)  # Let base class handle everything else
