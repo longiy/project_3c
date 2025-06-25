@@ -1,3 +1,6 @@
 res://SCENE.tscn
 res://AnimationTreeMove1d.tres
 res://Scripts/Camera/CameraCinema.gd
+res://Scripts/Character/States/StateAirborne.gd
+res://Scripts/Controllers/ControllerCharacter.gd
+res://Assets/ps_character_gurl.tscn

@@ -206,7 +206,7 @@ func can_air_jump() -> bool:
 func handle_jump_input():
 	"""Handle jump input with buffering - delegated to JumpSystem"""
 	if jump_system:
-		jump_system.handle_jump_input()
+		jump_system.handle_jump_input()  # ADD THIS LINE
 
 func try_consume_jump_buffer() -> bool:
 	"""Try to consume jump buffer - delegated to JumpSystem"""
