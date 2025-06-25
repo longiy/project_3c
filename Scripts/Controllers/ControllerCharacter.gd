@@ -33,10 +33,14 @@ extends CharacterBody3D
 @export_group("Components")
 @export var animation_controller: AnimationController
 @export var camera: Camera3D
+@export var input_manager: InputManager  # NEW
+
 
 @export_group("Debug")
 @export var enable_debug_logging = false
 @export var reset_position = Vector3(0, 1, 0)
+
+
 
 # === RUNTIME VARIABLES ===
 var base_gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
@@ -44,32 +48,27 @@ var coyote_timer = 0.0
 var jump_buffer_timer = 0.0
 var jumps_remaining = 0
 
-# Input tracking
-var input_start_time = 0.0
-var is_input_active = false
-var smoothed_input = Vector2.ZERO
-var raw_input_direction = Vector2.ZERO
-
 # Movement modes
 var is_slow_walking = false
 var is_running = false
 
 # State machine - now a child node instead of created in code
 var state_machine: CharacterStateMachine
-var input_components: Array[Node] = []
 
 func _ready():
 	setup_character()
 	setup_state_machine()
-	find_input_components()
 
+# === UPDATE setup_character() ===
 func setup_character():
 	"""Initialize character properties"""
-	jumps_remaining = max_air_jumps + 1  # +1 for ground jump
+	jumps_remaining = max_air_jumps + 1
 	if not animation_controller:
 		push_warning("No AnimationController assigned")
 	if not camera:
 		push_warning("No Camera assigned - movement will not be camera-relative")
+	if not input_manager:
+		push_warning("No InputManager assigned - input will not work")
 
 func setup_state_machine():
 	"""Find and initialize the state machine"""
@@ -96,51 +95,15 @@ func setup_state_machine():
 			else:
 				print("  ⚠️ ", state_name, " → No node")
 
-func find_input_components():
-	"""Automatically find input components"""
-	input_components.clear()
-	for child in get_children():
-		if child == null or child == state_machine:
-			continue
-		# Check if it's an input component (has the required methods)
-		if child.has_method("get_movement_input"):
-			input_components.append(child)
-			if enable_debug_logging:
-				print("📝 Found input component: ", child.name)
-	
-	if enable_debug_logging:
-		print("📝 Total input components: ", input_components.size())
-
 func _input(event):
 	if state_machine:
 		state_machine.handle_input(event)
 
 func _physics_process(delta):
-	update_input_tracking(delta)
 	update_timers(delta)
 	
 	if state_machine:
 		state_machine.update(delta)
-
-func update_input_tracking(delta):
-	"""Track input duration and smoothing"""
-	raw_input_direction = get_current_input()
-	var has_input_now = raw_input_direction.length() > input_deadzone
-	
-	# Track input duration
-	if has_input_now and not is_input_active:
-		input_start_time = Time.get_ticks_msec() / 1000.0
-		is_input_active = true
-	elif not has_input_now and is_input_active:
-		is_input_active = false
-	
-	# Apply smoothing
-	if raw_input_direction.length() < input_deadzone:
-		raw_input_direction = Vector2.ZERO
-	
-	smoothed_input = smoothed_input.lerp(raw_input_direction, input_smoothing * delta)
-	if smoothed_input.length() < input_deadzone:
-		smoothed_input = Vector2.ZERO
 
 func update_timers(delta):
 	"""Update jump-related timers"""
@@ -148,38 +111,15 @@ func update_timers(delta):
 	jump_buffer_timer = max(0.0, jump_buffer_timer - delta)
 
 func get_current_input() -> Vector2:
-	"""Input arbitration - WASD wins, then components"""
-	# Check WASD first
-	var wasd_input = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
-	if wasd_input.length() > input_deadzone:
-		cancel_all_input_components()
-		return wasd_input
-	
-	# Check input components safely
-	for component in input_components:
-		if component == null or not is_instance_valid(component):
-			continue
-		
-		# Check if component is active
-		var is_active = false
-		if component.has_method("is_active"):
-			is_active = component.is_active()
-		elif component.has_method("get_movement_input"):
-			# Fallback: if no is_active method, check if it returns non-zero input
-			var test_input = component.get_movement_input()
-			is_active = test_input.length() > input_deadzone
-		
-		if is_active and component.has_method("get_movement_input"):
-			return component.get_movement_input()
-	
-	return Vector2.ZERO
+	"""Get current input - delegated to InputManager"""
+	return input_manager.get_current_input() if input_manager else Vector2.ZERO
 
+# === UPDATE cancel_all_input_components() ===
 func cancel_all_input_components():
-	"""Cancel all active input components"""
-	for component in input_components:
-		if component.has_method("cancel_input"):
-			component.cancel_input()
-
+	"""Cancel all active input components - delegated to InputManager"""
+	if input_manager:
+		input_manager.cancel_all_input_components()
+		
 # === MOVEMENT CALCULATION ===
 
 func calculate_movement_vector(input_dir: Vector2) -> Vector3:
@@ -280,25 +220,21 @@ func was_grounded_last_frame() -> bool:
 # === INPUT HELPERS ===
 
 func get_input_duration() -> float:
-	"""Get how long current input has been active"""
-	if is_input_active:
-		return (Time.get_ticks_msec() / 1000.0) - input_start_time
-	return 0.0
-
+	"""Get how long current input has been active - delegated to InputManager"""
+	return input_manager.get_input_duration() if input_manager else 0.0
+	
 func is_input_sustained(min_duration: float = 0.3) -> bool:
-	"""Check if input has been sustained for minimum duration"""
-	return get_input_duration() >= min_duration
+	"""Check if input has been sustained for minimum duration - delegated to InputManager"""
+	return input_manager.is_input_sustained(min_duration) if input_manager else false
 
 func should_process_input() -> bool:
-	"""Check if input should be processed (respects minimum duration)"""
-	return is_input_active and (
-		get_input_duration() >= min_input_duration or 
-		get_movement_speed() > 0.5
-	)
+	"""Check if input should be processed - delegated to InputManager"""
+	return input_manager.should_process_input() if input_manager else false
 
+# === UPDATE get_current_input_direction() ===
 func get_current_input_direction() -> Vector2:
 	"""Get current input direction for animation blend spaces"""
-	return smoothed_input
+	return get_smoothed_input()  # Now uses InputManager
 
 # === JUMP HELPERS ===
 
@@ -329,14 +265,13 @@ func get_movement_speed() -> float:
 	return Vector3(velocity.x, 0, velocity.z).length()
 
 func get_smoothed_input() -> Vector2:
-	"""Get current smoothed input"""
-	return smoothed_input
+	"""Get current smoothed input - delegated to InputManager"""
+	return input_manager.get_smoothed_input() if input_manager else Vector2.ZERO
 
 func reset_character():
 	"""Reset character to initial state"""
 	global_position = reset_position
 	velocity = Vector3.ZERO
-	smoothed_input = Vector2.ZERO
 	jumps_remaining = max_air_jumps + 1
 	coyote_timer = 0.0
 	jump_buffer_timer = 0.0
@@ -363,19 +298,31 @@ func force_state_change(state_name: String):
 	if state_machine and state_machine.has_state(state_name):
 		state_machine.change_state(state_name)
 
+# === UPDATE get_debug_info() ===
 func get_debug_info() -> Dictionary:
 	"""Get comprehensive debug information"""
-	return {
+	var base_info = {
 		"current_state": get_current_state_name(),
 		"movement_speed": get_movement_speed(),
 		"is_grounded": is_on_floor(),
 		"jumps_remaining": jumps_remaining,
 		"coyote_timer": coyote_timer,
-		"input_duration": get_input_duration(),
 		"is_running": is_running,
 		"is_slow_walking": is_slow_walking,
-		"smoothed_input": smoothed_input,
-		"raw_input": raw_input_direction,
 		"state_machine_valid": state_machine != null,
 		"current_state_node": state_machine.get_current_state_node().name if state_machine and state_machine.get_current_state_node() else "None"
 	}
+# Add input info from InputManager
+	if input_manager:
+		var input_info = input_manager.get_debug_info()
+		base_info["input_duration"] = input_info.input_duration
+		base_info["smoothed_input"] = input_info.smoothed_input
+		base_info["raw_input"] = input_info.raw_input
+		base_info["input_active"] = input_info.is_active
+	else:
+		base_info["input_duration"] = 0.0
+		base_info["smoothed_input"] = Vector2.ZERO
+		base_info["raw_input"] = Vector2.ZERO
+		base_info["input_active"] = false
+	
+	return base_info

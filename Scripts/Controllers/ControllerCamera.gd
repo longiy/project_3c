@@ -8,7 +8,7 @@ signal follow_mode_changed(mode: int)
 
 @export_group("Target & Following")
 @export var target_character: CharacterBody3D
-@export var camera_height = 2.0
+@export var camera_height = 1.6
 @export var follow_smoothing = 8.0
 
 @export_subgroup("Follow Behavior")

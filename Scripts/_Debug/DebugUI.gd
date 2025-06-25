@@ -94,24 +94,22 @@ func build_input_section() -> String:
 	"""Build input debug information"""
 	var text = "=== INPUT ===\n"
 	
-	var raw_input = character.raw_input_direction
-	var smoothed_input = character.get_smoothed_input()
-	
-	text += "Raw: " + str(raw_input.round()) + "\n"
-	text += "Smoothed: " + str(smoothed_input.round()) + "\n"
-	text += "Duration: " + str(character.get_input_duration()).pad_decimals(2) + "s\n"
-	text += "Sustained: " + str(character.is_input_sustained()) + "\n"
-	
-	# Input components
-	var active_components = []
-	for component in character.input_components:
-		if component.has_method("is_active") and component.is_active():
-			active_components.append(component.get_class())
-	
-	if active_components.size() > 0:
-		text += "Active: " + ", ".join(active_components) + "\n"
+	# Get input info from InputManager if available
+	if character.input_manager:
+		var input_info = character.input_manager.get_debug_info()
+		text += "Raw: " + str(input_info.raw_input.round()) + "\n"
+		text += "Smoothed: " + str(input_info.smoothed_input.round()) + "\n"
+		text += "Duration: " + str(input_info.input_duration).pad_decimals(2) + "s\n"
+		text += "Sustained: " + str(input_info.sustained) + "\n"
+		
+		# Active components
+		if input_info.active_components.size() > 0:
+			text += "Active: " + ", ".join(input_info.active_components) + "\n"
+		else:
+			text += "Active: WASD\n"
 	else:
-		text += "Active: WASD\n"
+		# Fallback if no InputManager
+		text += "No InputManager found\n"
 	
 	text += "\n"
 	return text
