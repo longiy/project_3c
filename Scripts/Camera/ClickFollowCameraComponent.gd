@@ -23,6 +23,7 @@ func _ready():
 func create_default_properties() -> CameraProperties:
 	"""Create click follow camera properties"""
 	var props = CameraProperties.create_click_follow_preset()
+	props.distance = 4.0  # Match follow camera distance
 	props.anticipation = anticipation_strength
 	return props
 

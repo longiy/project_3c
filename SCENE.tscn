@@ -99,10 +99,11 @@ camera_components = [NodePath("FollowCamera"), NodePath("ClickFollowCamera")]
 
 [node name="FollowCamera" type="Node" parent="CAMERARIG"]
 script = ExtResource("3_16ayq")
+camera_height = 2.0
 
 [node name="ClickFollowCamera" type="Node" parent="CAMERARIG"]
 script = ExtResource("4_xcjh0")
-camera_height = 1.6
+camera_height = 2.0
 
 [node name="SpringArm3D" type="SpringArm3D" parent="CAMERARIG"]
 spring_length = 2.0
