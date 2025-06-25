@@ -250,8 +250,17 @@ func hide_marker():
 	if destination_marker:
 		destination_marker.visible = false
 
-# === DEBUG ===
+func get_current_destination() -> Vector3:
+	"""Get current click destination for camera anticipation"""
+	return click_destination if has_destination else Vector3.ZERO
 
+func get_destination_distance() -> float:
+	"""Get distance to current destination"""
+	if has_destination and character:
+		return character.global_position.distance_to(click_destination)
+	return 0.0
+
+# Update the existing get_debug_info() method to include destination info:
 func get_debug_info() -> Dictionary:
 	"""Get debug information"""
 	return {
@@ -262,6 +271,6 @@ func get_debug_info() -> Dictionary:
 		"mouse_forced_visible": mouse_forced_visible,
 		"has_camera": camera != null,
 		"has_marker": destination_marker != null,
-		"current_destination": click_destination,
+		"current_destination": click_destination,  # Camera system reads this
 		"distance_to_dest": character.global_position.distance_to(click_destination) if has_destination else 0.0
 	}

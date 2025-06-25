@@ -1,4 +1,4 @@
-# CinematicController.gd - Manual camera control and cinematic effects
+# CameraCinema.gd - Updated for new camera system integration
 extends Node
 class_name CameraCinema
 
@@ -8,8 +8,7 @@ signal cinematic_effect_started(effect_name: String)
 signal cinematic_effect_completed(effect_name: String)
 
 @export_group("References")
-@export var camera_controller: Node3D
-@export var camera_responder: CameraStateMachine  # ← Updated reference
+@export var camera_manager: CameraManager
 @export var camera: Camera3D
 @export var spring_arm: SpringArm3D
 
@@ -52,9 +51,9 @@ func _physics_process(delta):
 			exit_cinematic_mode()
 
 func setup_connections():
-	"""Setup connections to other components"""
-	if not camera_responder:
-		print("⚠️ CinematicController: No CameraResponder assigned")
+	"""Setup connections to camera manager"""
+	if not camera_manager:
+		print("⚠️ CinematicController: No CameraManager assigned")
 
 # === MODULAR CONTROL API ===
 
@@ -78,19 +77,15 @@ func enter_cinematic_mode(auto_exit_after: float = 0.0):
 	print("🎬 CinematicController: Entering cinematic mode")
 	is_cinematic_mode = true
 	
-	# Pause camera responder
-	if camera_responder:
-		camera_responder.set_external_control_active(true)
-	
-	# Store current camera controller state
-	if camera_controller:
-		stored_camera_state = camera_controller.get_control_status() if camera_controller.has_method("get_control_status") else {}
+	# Store current camera manager state
+	if camera_manager:
+		stored_camera_state = camera_manager.get_debug_info()
 		stored_camera_state["mouse_mode"] = Input.mouse_mode
 		stored_camera_state["mouse_captured"] = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 		print("🎬 Stored state: ", stored_camera_state)
 		
-		if camera_controller.has_method("set_external_control"):
-			camera_controller.set_external_control(true, "full")
+		# Tell camera manager we're taking control
+		camera_manager.set_external_control(true, "CameraCinema")
 	
 	# Release mouse for cinematic control
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -108,7 +103,7 @@ func enter_cinematic_mode(auto_exit_after: float = 0.0):
 	cinematic_mode_changed.emit(true)
 
 func exit_cinematic_mode():
-	"""Return control to camera controller"""
+	"""Return control to camera manager"""
 	if not is_cinematic_mode:
 		return
 	
@@ -129,16 +124,9 @@ func exit_cinematic_mode():
 	# Wait a frame for input processing
 	await get_tree().process_frame
 	
-	# Restore camera controller state
-	if camera_controller and camera_controller.has_method("set_external_control"):
-		camera_controller.set_external_control(false, "full")
-		
-		if camera_controller.has_method("refresh_mouse_state"):
-			camera_controller.refresh_mouse_state()
-	
-	# Resume camera responder
-	if camera_responder:
-		camera_responder.set_external_control_active(false)
+	# Return control to camera manager
+	if camera_manager:
+		camera_manager.set_external_control(false, "CameraCinema")
 	
 	# Clear stored state
 	stored_camera_state.clear()
@@ -161,8 +149,8 @@ func cinematic_move_to_position(target_position: Vector3, duration: float = 2.0,
 	if not is_cinematic_mode:
 		enter_cinematic_mode()
 	
-	if not camera_controller:
-		print("❌ CinematicController: No camera controller for movement")
+	if not camera_manager:
+		print("❌ CinematicController: No camera manager for movement")
 		return
 	
 	cinematic_effect_started.emit("move_to_position")
@@ -171,7 +159,7 @@ func cinematic_move_to_position(target_position: Vector3, duration: float = 2.0,
 		current_effect_tween.kill()
 	
 	current_effect_tween = create_tween()
-	var tween_property = current_effect_tween.tween_property(camera_controller, "global_position", target_position, duration)
+	var tween_property = current_effect_tween.tween_property(camera_manager, "global_position", target_position, duration)
 	tween_property.set_ease(ease_type)
 	current_effect_tween.finished.connect(func(): cinematic_effect_completed.emit("move_to_position"))
 
@@ -180,8 +168,8 @@ func cinematic_look_at_target(target: Node3D, duration: float = 1.5, ease_type: 
 	if not is_cinematic_mode:
 		enter_cinematic_mode()
 	
-	if not camera_controller or not target:
-		print("❌ CinematicController: Missing camera controller or target")
+	if not camera_manager or not target:
+		print("❌ CinematicController: Missing camera manager or target")
 		return
 	
 	cinematic_effect_started.emit("look_at_target")
@@ -189,14 +177,13 @@ func cinematic_look_at_target(target: Node3D, duration: float = 1.5, ease_type: 
 	if current_effect_tween:
 		current_effect_tween.kill()
 	
-	var look_transform = camera_controller.global_transform.looking_at(target.global_position)
+	var look_transform = camera_manager.global_transform.looking_at(target.global_position)
 	var target_rotation = look_transform.basis.get_euler()
 	
 	current_effect_tween = create_tween()
-	var tween_property = current_effect_tween.tween_property(camera_controller, "rotation", target_rotation, duration)
+	var tween_property = current_effect_tween.tween_property(camera_manager, "rotation", target_rotation, duration)
 	tween_property.set_ease(ease_type)
 	current_effect_tween.finished.connect(func(): cinematic_effect_completed.emit("look_at_target"))
-
 
 func camera_dramatic_zoom(target_fov: float, hold_duration: float = 0.5, return_duration: float = 0.3):
 	"""Dramatic zoom effect for special moves/impacts"""
@@ -243,8 +230,7 @@ func is_in_cinematic_mode() -> bool:
 func get_connection_status() -> Dictionary:
 	"""Get connection status for debugging"""
 	return {
-		"has_camera_controller": camera_controller != null,
-		"has_camera_responder": camera_responder != null,
+		"has_camera_manager": camera_manager != null,
 		"has_camera": camera != null,
 		"has_spring_arm": spring_arm != null,
 		"enabled": enable_cinematic_controller
