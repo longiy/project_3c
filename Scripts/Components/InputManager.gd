@@ -139,17 +139,25 @@ func handle_movement_input(delta: float):
 
 # === MOUSE LOOK HANDLING ===
 
+
 func handle_mouse_look(event: InputEvent):
 	"""Convert mouse movement to look actions"""
-	if event is InputEventMouseMotion:
-		# Check if mouse should be captured (delegate to camera system)
-		var should_process_look = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
-		
-		if should_process_look:
-			action_system.request_action("look_delta", {
-				"delta": event.relative,
-				"sensitivity": 1.0  # Let camera handle sensitivity
-			})
+	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		action_system.request_action("look_delta", {
+			"delta": event.relative,
+			"sensitivity": 1.0
+		})
+#func handle_mouse_look(event: InputEvent):
+	#"""Convert mouse movement to look actions"""
+	#if event is InputEventMouseMotion:
+		## Check if mouse should be captured (delegate to camera system)
+		#var should_process_look = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+		#
+		#if should_process_look:
+			#action_system.request_action("look_delta", {
+				#"delta": event.relative,
+				#"sensitivity": 1.0  # Let camera handle sensitivity
+			#})
 
 # === INPUT SOURCE MANAGEMENT ===
 

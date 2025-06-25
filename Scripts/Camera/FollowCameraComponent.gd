@@ -41,15 +41,23 @@ func update_position(delta: float):
 	update_follow_position(delta, target_pos)
 
 func handle_input():
-	"""Handle mouse look input"""
+	"""Handle mouse look input directly"""
+	# Handle mouse look directly - don't rely on action system for this
 	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		# Mouse delta is handled by action system, we get it from last executed action
-		var action_system = character.get_node_or_null("ActionSystem")
-		if action_system and action_system.executed_actions.size() > 0:
-			var last_action = action_system.executed_actions[-1]
-			if last_action.name == "look_delta":
-				var mouse_delta = last_action.get_look_delta()
-				handle_mouse_look(mouse_delta)
+		# This will be updated by _input events directly
+		pass
+
+func on_action_executed(action):
+	"""Respond to character actions"""
+	match action.name:
+		"look_delta":
+			# Handle mouse look immediately when action is executed
+			var mouse_delta = action.get_look_delta()
+			handle_mouse_look(mouse_delta)
+		"move_start", "move_update":
+			# Could add subtle camera anticipation here
+			if camera_properties.anticipation > 0:
+				modify_anticipation_for_movement(action)
 
 func on_character_state_changed(old_state: String, new_state: String):
 	"""Respond to character state changes"""
@@ -67,16 +75,6 @@ func on_character_state_changed(old_state: String, new_state: String):
 		camera_properties = state_props
 		print("📹 Follow camera responding to state: ", new_state)
 
-func on_action_executed(action):
-	"""Respond to character actions"""
-	match action.name:
-		"look_delta":
-			# Mouse look is handled in update_component
-			pass
-		"move_start", "move_update":
-			# Could add subtle camera anticipation here
-			if camera_properties.anticipation > 0:
-				modify_anticipation_for_movement(action)
 
 func modify_anticipation_for_movement(action):
 	"""Adjust camera anticipation based on movement"""

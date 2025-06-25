@@ -162,19 +162,17 @@ func update_input_mode_detection():
 
 func detect_input_mode() -> String:
 	"""Detect what input mode is currently active"""
-	# Check for cinematic mode first
-	var cinema = get_cinema_component()
-	if cinema and cinema.is_in_cinematic_mode():
-		return "cinematic"
+	# Check if mouse is captured (WASD mode)
+	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		return "wasd"
 	
-	# Check for click navigation
-	var click_nav = get_click_navigation_component()
-	if click_nav and click_nav.is_active():
-		return "click"
-	
-	# Check for disabled input (mouse captured for UI, etc.)
-	if Input.mouse_mode == Input.MOUSE_MODE_VISIBLE and not cinema:
-		return "disabled"
+	# Check for click navigation ONLY if mouse is visible AND component is active
+	if Input.mouse_mode == Input.MOUSE_MODE_VISIBLE:
+		var click_nav = get_click_navigation_component()
+		if click_nav and click_nav.is_active():
+			return "click"
+		else:
+			return "disabled"  # Mouse visible but no click navigation
 	
 	# Default to WASD
 	return "wasd"
@@ -188,19 +186,12 @@ func switch_input_mode(new_mode: String):
 			set_camera_mode("follow")
 		"click":
 			set_camera_mode("click_follow")
-		"cinematic":
-			# Cinema component handles its own camera
-			pass
 		"disabled":
 			set_camera_mode("follow")  # Stay in follow but may be less responsive
 	
 	input_mode_changed.emit(new_mode)
 
 # === COMPONENT INTEGRATION ===
-
-func get_cinema_component() -> Node:
-	"""Get cinema component if available"""
-	return get_node_or_null("../CameraCinema")
 
 func get_click_navigation_component() -> Node:
 	"""Get click navigation component from character"""
