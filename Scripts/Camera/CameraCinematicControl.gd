@@ -25,9 +25,33 @@ var stored_camera_state: Dictionary = {}
 var auto_exit_timer = 0.0
 var auto_exit_duration = 0.0
 
-# Effect management
+# Cinematic control flags
+var following_disabled = false
+var mouse_look_disabled = false
+
+# Effect management  
 var current_effect_tween: Tween
 var stored_mouse_mode: Input.MouseMode
+
+func disable_camera_following():
+	"""Disable camera following target"""
+	following_disabled = true
+	# Camera stays at current position, doesn't follow character
+	camera_rig.set_camera_position_override(camera_rig.global_position)
+
+func restore_camera_following():
+	"""Restore camera following target"""
+	following_disabled = false
+	camera_rig.clear_position_override()
+
+func disable_mouse_look():
+	"""Disable mouse look rotation"""
+	mouse_look_disabled = true
+	# Camera rotation frozen at current angles
+
+func restore_mouse_look():
+	"""Restore mouse look rotation"""
+	mouse_look_disabled = false
 
 func _ready():
 	camera_rig = get_parent() as CameraRig
@@ -89,10 +113,12 @@ func enter_cinematic_mode(auto_exit_after: float = 0.0):
 	# Store current camera state
 	store_camera_state()
 	
-	# Take control of camera rig
-	camera_rig._on_external_control_requested(true, "CinemaController")
+	# Take partial control - only disable following and mouse look
+	# Character can still move normally
+	disable_camera_following()
+	disable_mouse_look()
 	
-	# Store and release mouse
+	# Store and release mouse for free cursor
 	stored_mouse_mode = Input.mouse_mode
 	camera_rig.force_mouse_mode(false)
 	
@@ -105,6 +131,7 @@ func enter_cinematic_mode(auto_exit_after: float = 0.0):
 		auto_exit_duration = 0.0
 	
 	cinematic_mode_changed.emit(true)
+	print("🎬 Cinematic mode: Camera frozen, mouse free, character can move")
 
 func exit_cinematic_mode():
 	"""Exit cinematic mode - return camera control"""
@@ -119,8 +146,9 @@ func exit_cinematic_mode():
 	if current_effect_tween:
 		current_effect_tween.kill()
 	
-	# Restore camera control
-	camera_rig._on_external_control_requested(false, "CinemaController")
+	# Restore camera systems
+	restore_camera_following()
+	restore_mouse_look()
 	
 	# Restore mouse mode
 	Input.mouse_mode = stored_mouse_mode
@@ -131,7 +159,7 @@ func exit_cinematic_mode():
 	stored_camera_state.clear()
 	
 	cinematic_mode_changed.emit(false)
-	print("🎬 Cinematic mode exit complete")
+	print("🎬 Cinematic mode exit: Camera following/mouse look restored")
 
 func toggle_cinematic_mode():
 	"""Toggle cinematic mode"""

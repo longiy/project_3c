@@ -129,6 +129,10 @@ func _on_look_input(delta: Vector2, sensitivity_multiplier: float = 1.0):
 	if not mouse_captured:
 		return
 	
+	# Check if mouse look is disabled by cinematic controller
+	if is_mouse_look_disabled():
+		return
+	
 	var effective_sensitivity = mouse_sensitivity * sensitivity_multiplier
 	var look_delta = delta * effective_sensitivity
 	
@@ -230,8 +234,12 @@ func clear_position_override():
 func update_target_following(delta: float):
 	"""Update camera position to follow target"""
 	if is_externally_controlled and use_position_override:
-		# Use override position
+		# Use override position (for cinematic effects)
 		global_position = global_position.lerp(follow_target_override, follow_smoothing * delta)
+		return
+	
+	# Check if following is disabled by cinematic controller
+	if is_following_disabled():
 		return
 	
 	if not target_node:
@@ -279,6 +287,20 @@ func has_yaw_limits() -> bool:
 func has_pitch_limits() -> bool:
 	"""Check if pitch rotation has limits"""
 	return use_rotation_limits and pitch_limit_min != pitch_limit_max
+
+func is_following_disabled() -> bool:
+	"""Check if following is disabled by cinematic controller"""
+	var cinema_controller = get_node_or_null("CameraCinemaController")
+	if cinema_controller and cinema_controller.has_method("get") and "following_disabled" in cinema_controller:
+		return cinema_controller.following_disabled
+	return false
+
+func is_mouse_look_disabled() -> bool:
+	"""Check if mouse look is disabled by cinematic controller"""
+	var cinema_controller = get_node_or_null("CameraCinemaController")
+	if cinema_controller and cinema_controller.has_method("get") and "mouse_look_disabled" in cinema_controller:
+		return cinema_controller.mouse_look_disabled
+	return false
 
 # === PUBLIC API ===
 
