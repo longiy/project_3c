@@ -31,7 +31,7 @@ func handle_air_movement(delta: float):
 func handle_air_jump_input():
 	"""Handle air jumping while airborne"""
 	if character.try_consume_jump_buffer() and character.can_air_jump():
-		character.perform_jump(character.jump_height * 0.8)  # Slightly weaker air jump
+		character.perform_jump(character.jump_system.get_air_jump_force())  # Slightly weaker air jump
 
 func check_transitions():
 	"""Check for landing"""

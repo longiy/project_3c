@@ -8,12 +8,6 @@ extends CharacterBody3D
 @export var slow_walk_speed = 1.5
 @export var air_speed_multiplier = 0.6
 
-@export_group("Jump Properties")
-@export var jump_height = 6.0
-@export var max_air_jumps = 1
-@export var coyote_time = 0.15
-@export var jump_buffer_time = 0.1
-
 @export_group("Physics")
 @export var ground_acceleration = 15.0
 @export var air_acceleration = 8.0
@@ -34,19 +28,15 @@ extends CharacterBody3D
 @export var animation_controller: AnimationController
 @export var camera: Camera3D
 @export var input_manager: InputManager  # NEW
+@export var jump_system: JumpSystem  # NEW
 
 
 @export_group("Debug")
 @export var enable_debug_logging = false
 @export var reset_position = Vector3(0, 1, 0)
 
-
-
 # === RUNTIME VARIABLES ===
 var base_gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
-var coyote_timer = 0.0
-var jump_buffer_timer = 0.0
-var jumps_remaining = 0
 
 # Movement modes
 var is_slow_walking = false
@@ -62,13 +52,14 @@ func _ready():
 # === UPDATE setup_character() ===
 func setup_character():
 	"""Initialize character properties"""
-	jumps_remaining = max_air_jumps + 1
 	if not animation_controller:
 		push_warning("No AnimationController assigned")
 	if not camera:
 		push_warning("No Camera assigned - movement will not be camera-relative")
 	if not input_manager:
 		push_warning("No InputManager assigned - input will not work")
+	if not jump_system:
+		push_warning("No JumpSystem assigned - jumping will not work")
 
 func setup_state_machine():
 	"""Find and initialize the state machine"""
@@ -100,15 +91,9 @@ func _input(event):
 		state_machine.handle_input(event)
 
 func _physics_process(delta):
-	update_timers(delta)
 	
 	if state_machine:
 		state_machine.update(delta)
-
-func update_timers(delta):
-	"""Update jump-related timers"""
-	coyote_timer = max(0.0, coyote_timer - delta)
-	jump_buffer_timer = max(0.0, jump_buffer_timer - delta)
 
 func get_current_input() -> Vector2:
 	"""Get current input - delegated to InputManager"""
@@ -190,32 +175,16 @@ func rotate_toward_movement(movement_direction: Vector3, delta: float):
 		rotation.y = lerp_angle(rotation.y, target_rotation, rotation_speed * delta)
 
 func perform_jump(jump_force: float):
-	"""Execute a jump with given force"""
-	velocity.y = jump_force
-	if jumps_remaining > 0:
-		jumps_remaining -= 1
-	
-	if enable_debug_logging:
-		print("🦘 Jump! Force: ", jump_force, " Remaining: ", jumps_remaining)
+	"""Execute a jump - delegated to JumpSystem"""
+	if jump_system:
+		jump_system.perform_jump(jump_force)
 
 # === GROUND STATE MANAGEMENT ===
 
 func update_ground_state():
-	"""Update ground-related timers and jump counts"""
-	if is_on_floor():
-		coyote_timer = coyote_time
-		jumps_remaining = max_air_jumps + 1  # Reset jumps
-	elif coyote_timer > 0 and was_grounded_last_frame():
-		# Still in coyote time
-		pass
-	else:
-		# Fully airborne
-		pass
-
-func was_grounded_last_frame() -> bool:
-	"""Check if character was grounded in previous frame"""
-	# This would need to be tracked, for now return false
-	return false
+	"""Update ground-related timers and jump counts - delegated to JumpSystem"""
+	if jump_system:
+		jump_system.update_ground_state()
 
 # === INPUT HELPERS ===
 
@@ -239,24 +208,22 @@ func get_current_input_direction() -> Vector2:
 # === JUMP HELPERS ===
 
 func can_jump() -> bool:
-	"""Check if character can jump"""
-	return (is_on_floor() or coyote_timer > 0) and jumps_remaining > 0
+	"""Check if character can jump - delegated to JumpSystem"""
+	return jump_system.can_jump() if jump_system else false
 
 func can_air_jump() -> bool:
-	"""Check if character can air jump"""
-	return not is_on_floor() and jumps_remaining > 0
+	"""Check if character can air jump - delegated to JumpSystem"""
+	return jump_system.can_air_jump() if jump_system else false
+
 
 func handle_jump_input():
-	"""Handle jump input with buffering"""
-	if Input.is_action_just_pressed("jump"):
-		jump_buffer_timer = jump_buffer_time
+	"""Handle jump input with buffering - delegated to JumpSystem"""
+	if jump_system:
+		jump_system.handle_jump_input()
 
 func try_consume_jump_buffer() -> bool:
-	"""Try to consume jump buffer if conditions are met"""
-	if jump_buffer_timer > 0 and can_jump():
-		jump_buffer_timer = 0.0
-		return true
-	return false
+	"""Try to consume jump buffer - delegated to JumpSystem"""
+	return jump_system.try_consume_jump_buffer() if jump_system else false
 
 # === UTILITY METHODS ===
 
@@ -272,10 +239,11 @@ func reset_character():
 	"""Reset character to initial state"""
 	global_position = reset_position
 	velocity = Vector3.ZERO
-	jumps_remaining = max_air_jumps + 1
-	coyote_timer = 0.0
-	jump_buffer_timer = 0.0
 	cancel_all_input_components()
+	
+	# Reset jump system
+	if jump_system:
+		jump_system.reset_jump_state()
 	
 	if state_machine:
 		state_machine.change_state("idle")
@@ -305,14 +273,13 @@ func get_debug_info() -> Dictionary:
 		"current_state": get_current_state_name(),
 		"movement_speed": get_movement_speed(),
 		"is_grounded": is_on_floor(),
-		"jumps_remaining": jumps_remaining,
-		"coyote_timer": coyote_timer,
 		"is_running": is_running,
 		"is_slow_walking": is_slow_walking,
 		"state_machine_valid": state_machine != null,
 		"current_state_node": state_machine.get_current_state_node().name if state_machine and state_machine.get_current_state_node() else "None"
 	}
-# Add input info from InputManager
+	
+	# Add input info from InputManager
 	if input_manager:
 		var input_info = input_manager.get_debug_info()
 		base_info["input_duration"] = input_info.input_duration
@@ -324,5 +291,20 @@ func get_debug_info() -> Dictionary:
 		base_info["smoothed_input"] = Vector2.ZERO
 		base_info["raw_input"] = Vector2.ZERO
 		base_info["input_active"] = false
+	
+	# Add jump info from JumpSystem
+	if jump_system:
+		var jump_info = jump_system.get_debug_info()
+		base_info["jumps_remaining"] = jump_info.jumps_remaining
+		base_info["coyote_timer"] = jump_info.coyote_timer
+		base_info["jump_buffer_timer"] = jump_info.jump_buffer_timer
+		base_info["can_jump"] = jump_info.can_jump
+		base_info["can_air_jump"] = jump_info.can_air_jump
+	else:
+		base_info["jumps_remaining"] = 0
+		base_info["coyote_timer"] = 0.0
+		base_info["jump_buffer_timer"] = 0.0
+		base_info["can_jump"] = false
+		base_info["can_air_jump"] = false
 	
 	return base_info

@@ -9,7 +9,7 @@ var jump_grace_time = 0.05  # Brief window to apply jump force
 func enter():
 	super.enter()
 	# Apply jump force immediately
-	character.perform_jump(character.jump_height)
+	character.perform_jump(character.jump_system.get_jump_force())
 
 func update(delta: float):
 	super.update(delta)

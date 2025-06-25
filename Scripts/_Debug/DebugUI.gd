@@ -122,13 +122,16 @@ func build_physics_section() -> String:
 	text += "On Wall: " + str(character.is_on_wall()) + "\n"
 	text += "On Ceiling: " + str(character.is_on_ceiling()) + "\n"
 	
-	# Jump information
-	text += "Jumps Left: " + str(character.jumps_remaining) + "/" + str(character.max_air_jumps + 1) + "\n"
-	text += "Coyote Timer: " + str(character.coyote_timer).pad_decimals(2) + "\n"
-	text += "Jump Buffer: " + str(character.jump_buffer_timer).pad_decimals(2) + "\n"
-	
-	text += "Can Jump: " + str(character.can_jump()) + "\n"
-	text += "Can Air Jump: " + str(character.can_air_jump()) + "\n"
+	# Jump information from JumpSystem
+	if character.jump_system:
+		var jump_info = character.jump_system.get_debug_info()
+		text += "Jumps Left: " + str(jump_info.jumps_remaining) + "/" + str(jump_info.max_air_jumps + 1) + "\n"
+		text += "Coyote Timer: " + str(jump_info.coyote_timer).pad_decimals(2) + "\n"
+		text += "Jump Buffer: " + str(jump_info.jump_buffer_timer).pad_decimals(2) + "\n"
+		text += "Can Jump: " + str(jump_info.can_jump) + "\n"
+		text += "Can Air Jump: " + str(jump_info.can_air_jump) + "\n"
+	else:
+		text += "No JumpSystem found\n"
 	
 	# Floor properties
 	if character.is_on_floor():

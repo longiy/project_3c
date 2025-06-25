@@ -5,3 +5,6 @@ res://Scripts/Controllers/ControllerCharacter.gd
 res://Scripts/_Debug/DebugUI.gd
 res://Assets/ps_character_gurl.tscn
 res://Scripts/Components/InputManager.gd
+res://Scripts/Components/JumpSystem.gd
+res://Scripts/Character/States/StateAirborne.gd
+res://Scripts/Character/States/StateJumping.gd
