@@ -21,28 +21,124 @@ func update_debug_display():
 	"""Update the debug display with organized information"""
 	var debug_text = ""
 	
-	if show_state_info:
-		debug_text += build_state_section()
-	
-	if show_movement_info:
-		debug_text += build_movement_section()
-	
-	if show_input_info:
-		debug_text += build_input_section()
-	
-	if show_physics_info:
-		debug_text += build_physics_section()
-	
-	if show_animation_info:
-		debug_text += build_animation_section()
-	
-	if show_camera_info:
-		debug_text += build_camera_section()
-	
-	if show_performance_info:
-		debug_text += build_performance_section()
+	# Use DebugHelper if available for comprehensive info
+	if character.debug_helper:
+		var comprehensive_info = character.debug_helper.get_comprehensive_debug_info()
+		
+		if show_state_info:
+			debug_text += build_state_section_from_helper(comprehensive_info)
+		
+		if show_movement_info:
+			debug_text += build_movement_section_from_helper(comprehensive_info)
+		
+		if show_input_info:
+			debug_text += build_input_section_from_helper(comprehensive_info)
+		
+		if show_physics_info:
+			debug_text += build_physics_section_from_helper(comprehensive_info)
+		
+		if show_animation_info:
+			debug_text += build_animation_section_from_helper(comprehensive_info)
+		
+		if show_camera_info:
+			debug_text += build_camera_section()
+		
+		if show_performance_info:
+			debug_text += build_performance_section_from_helper(comprehensive_info)
+	else:
+		# Fallback to original methods if no DebugHelper
+		debug_text += "⚠️ No DebugHelper - Limited info available\n\n"
+		
+		if show_state_info:
+			debug_text += build_state_section()
+		
+		if show_movement_info:
+			debug_text += build_movement_section()
 	
 	debug_label.text = debug_text
+
+func build_state_section_from_helper(info: Dictionary) -> String:
+	var text = "=== CHARACTER STATE ===\n"
+	if info.has("state"):
+		var state_info = info.state
+		text += "Current: " + str(state_info.get("current_state", "unknown")) + "\n"
+		text += "Previous: " + str(state_info.get("previous_state", "unknown")) + "\n"
+		text += "Transitions: " + str(state_info.get("total_transitions", 0)) + "\n"
+		text += "Time in State: " + str(state_info.get("time_in_current", 0.0)).pad_decimals(2) + "s\n"
+	text += "\n"
+	return text
+
+func build_movement_section_from_helper(info: Dictionary) -> String:
+	var text = "=== MOVEMENT ===\n"
+	if info.has("character"):
+		var char_info = info.character
+		text += "Speed: " + str(char_info.get("movement_speed", 0.0)).pad_decimals(2) + "\n"
+		text += "Grounded: " + str(char_info.get("is_grounded", false)) + "\n"
+		text += "Running: " + str(char_info.get("is_running", false)) + "\n"
+		text += "Slow Walk: " + str(char_info.get("is_slow_walking", false)) + "\n"
+	text += "\n"
+	return text
+
+func build_input_section_from_helper(info: Dictionary) -> String:
+	var text = "=== INPUT ===\n"
+	if info.has("input"):
+		var input_info = info.input
+		if input_info.has("error"):
+			text += "Error: " + str(input_info.error) + "\n"
+		else:
+			text += "Raw: " + str(input_info.get("raw_input", Vector2.ZERO).round()) + "\n"
+			text += "Smoothed: " + str(input_info.get("smoothed_input", Vector2.ZERO).round()) + "\n"
+			text += "Duration: " + str(input_info.get("input_duration", 0.0)).pad_decimals(2) + "s\n"
+			text += "Active: " + str(input_info.get("is_active", false)) + "\n"
+	text += "\n"
+	return text
+
+func build_physics_section_from_helper(info: Dictionary) -> String:
+	var text = "=== PHYSICS ===\n"
+	
+	# Physics info
+	if info.has("physics"):
+		var physics_info = info.physics
+		text += "On Floor: " + str(physics_info.get("on_floor", false)) + "\n"
+		text += "On Wall: " + str(physics_info.get("on_wall", false)) + "\n"
+		text += "On Ceiling: " + str(physics_info.get("on_ceiling", false)) + "\n"
+	
+	# Jump info
+	if info.has("jump"):
+		var jump_info = info.jump
+		if jump_info.has("error"):
+			text += "Jump Error: " + str(jump_info.error) + "\n"
+		else:
+			text += "Jumps Left: " + str(jump_info.get("jumps_remaining", 0)) + "\n"
+			text += "Can Jump: " + str(jump_info.get("can_jump", false)) + "\n"
+			text += "Coyote Timer: " + str(jump_info.get("coyote_timer", 0.0)).pad_decimals(2) + "\n"
+	
+	text += "\n"
+	return text
+
+func build_animation_section_from_helper(info: Dictionary) -> String:
+	var text = "=== ANIMATION ===\n"
+	if info.has("animation"):
+		var anim_info = info.animation
+		if anim_info.has("error"):
+			text += "Error: " + str(anim_info.error) + "\n"
+		else:
+			text += "Movement Speed: " + str(anim_info.get("movement_speed", 0.0)).pad_decimals(2) + "\n"
+			if anim_info.has("blend_1d"):
+				text += "Blend 1D: " + str(anim_info.blend_1d).pad_decimals(2) + "\n"
+	text += "\n"
+	return text
+
+func build_performance_section_from_helper(info: Dictionary) -> String:
+	var text = "=== PERFORMANCE ===\n"
+	if character.debug_helper:
+		var perf_info = character.debug_helper.get_performance_info()
+		text += "FPS: " + str(perf_info.fps) + "\n"
+		text += "Frame Time: " + str(perf_info.frame_time_ms).pad_decimals(1) + "ms\n"
+		text += "Physics Time: " + str(perf_info.physics_time_ms).pad_decimals(1) + "ms\n"
+		text += "Memory: " + str(perf_info.memory_usage_mb).pad_decimals(1) + "MB\n"
+	text += "\n"
+	return text
 
 func build_state_section() -> String:
 	"""Build state machine debug information"""

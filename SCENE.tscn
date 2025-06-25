@@ -1,4 +1,4 @@
-[gd_scene load_steps=34 format=3 uid="uid://dngafe0y2nx5b"]
+[gd_scene load_steps=35 format=3 uid="uid://dngafe0y2nx5b"]
 
 [ext_resource type="Script" uid="uid://dt54n1ktg7wqr" path="res://Scripts/Controllers/ControllerCharacter.gd" id="1_5si1x"]
 [ext_resource type="Script" uid="uid://cms4l0nes10tn" path="res://Scripts/Controllers/ControllerCamera.gd" id="2_caybs"]
@@ -25,6 +25,7 @@
 [ext_resource type="Script" uid="uid://chw8f4cb3xd47" path="res://Scripts/Character/States/StateWalking.gd" id="19_sjx82"]
 [ext_resource type="Script" uid="uid://d2tq3l0s4tbth" path="res://Scripts/Components/InputManager.gd" id="22_msfgm"]
 [ext_resource type="Script" uid="uid://bb8kly3o18vto" path="res://Scripts/Components/JumpSystem.gd" id="23_fuc0d"]
+[ext_resource type="Script" uid="uid://bqw3xo0kgqhjk" path="res://Scripts/_Debug/CharacterDebugHelper.gd" id="24_sjx82"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_3a8dd"]
 
@@ -142,7 +143,7 @@ spring_length = 2.0
 [node name="Camera3D" type="Camera3D" parent="CAMERARIG/SpringArm3D"]
 transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 0, 0, 0)
 
-[node name="CHARACTER" type="CharacterBody3D" parent="." node_paths=PackedStringArray("animation_controller", "camera", "input_manager", "jump_system")]
+[node name="CHARACTER" type="CharacterBody3D" parent="." node_paths=PackedStringArray("animation_controller", "camera", "input_manager", "jump_system", "debug_helper")]
 collision_layer = 2
 slide_on_ceiling = false
 script = ExtResource("1_5si1x")
@@ -150,6 +151,7 @@ animation_controller = NodePath("AnimationController")
 camera = NodePath("../CAMERARIG/SpringArm3D/Camera3D")
 input_manager = NodePath("InputManager")
 jump_system = NodePath("JumpSystem")
+debug_helper = NodePath("CharacterDebugHelper")
 
 [node name="CharacterStateMachine" type="Node" parent="CHARACTER" node_paths=PackedStringArray("state_nodes")]
 script = ExtResource("13_n01k3")
@@ -190,6 +192,9 @@ script = ExtResource("22_msfgm")
 [node name="JumpSystem" type="Node" parent="CHARACTER"]
 script = ExtResource("23_fuc0d")
 max_air_jumps = 5
+
+[node name="CharacterDebugHelper" type="Node" parent="CHARACTER"]
+script = ExtResource("24_sjx82")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="CHARACTER"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)

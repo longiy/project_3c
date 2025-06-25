@@ -29,11 +29,7 @@ extends CharacterBody3D
 @export var camera: Camera3D
 @export var input_manager: InputManager  # NEW
 @export var jump_system: JumpSystem  # NEW
-
-
-@export_group("Debug")
-@export var enable_debug_logging = false
-@export var reset_position = Vector3(0, 1, 0)
+@export var debug_helper: CharacterDebugHelper  # NEW (optional)
 
 # === RUNTIME VARIABLES ===
 var base_gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
@@ -60,6 +56,8 @@ func setup_character():
 		push_warning("No InputManager assigned - input will not work")
 	if not jump_system:
 		push_warning("No JumpSystem assigned - jumping will not work")
+	# Note: DebugHelper is optional, no warning needed
+
 
 func setup_state_machine():
 	"""Find and initialize the state machine"""
@@ -74,17 +72,6 @@ func setup_state_machine():
 	if not state_machine.validate_state_setup():
 		push_error("State machine validation failed!")
 		return
-	
-	if enable_debug_logging:
-		print("✅ Character: Using node-based state machine with ", state_machine.states.size(), " states")
-		
-		# Print state node information
-		for state_name in state_machine.states.keys():
-			var state_node = state_machine.get_state_node(state_name)
-			if state_node:
-				print("  📝 ", state_name, " → ", state_node.name)
-			else:
-				print("  ⚠️ ", state_name, " → No node")
 
 func _input(event):
 	if state_machine:
@@ -234,23 +221,6 @@ func get_movement_speed() -> float:
 func get_smoothed_input() -> Vector2:
 	"""Get current smoothed input - delegated to InputManager"""
 	return input_manager.get_smoothed_input() if input_manager else Vector2.ZERO
-
-func reset_character():
-	"""Reset character to initial state"""
-	global_position = reset_position
-	velocity = Vector3.ZERO
-	cancel_all_input_components()
-	
-	# Reset jump system
-	if jump_system:
-		jump_system.reset_jump_state()
-	
-	if state_machine:
-		state_machine.change_state("idle")
-	
-	if enable_debug_logging:
-		print("🔄 Character reset")
-
 # === PUBLIC API ===
 
 func get_current_state_name() -> String:
@@ -261,50 +231,16 @@ func get_previous_state_name() -> String:
 	"""Get previous state name"""
 	return state_machine.get_previous_state_name() if state_machine else "none"
 
-func force_state_change(state_name: String):
-	"""Force change to specific state (for debugging)"""
-	if state_machine and state_machine.has_state(state_name):
-		state_machine.change_state(state_name)
-
-# === UPDATE get_debug_info() ===
+# === SIMPLIFIED get_debug_info() ===
 func get_debug_info() -> Dictionary:
-	"""Get comprehensive debug information"""
-	var base_info = {
-		"current_state": get_current_state_name(),
-		"movement_speed": get_movement_speed(),
-		"is_grounded": is_on_floor(),
-		"is_running": is_running,
-		"is_slow_walking": is_slow_walking,
-		"state_machine_valid": state_machine != null,
-		"current_state_node": state_machine.get_current_state_node().name if state_machine and state_machine.get_current_state_node() else "None"
-	}
-	
-	# Add input info from InputManager
-	if input_manager:
-		var input_info = input_manager.get_debug_info()
-		base_info["input_duration"] = input_info.input_duration
-		base_info["smoothed_input"] = input_info.smoothed_input
-		base_info["raw_input"] = input_info.raw_input
-		base_info["input_active"] = input_info.is_active
+	"""Get basic debug information - use DebugHelper for comprehensive info"""
+	if debug_helper:
+		return debug_helper.get_comprehensive_debug_info()
 	else:
-		base_info["input_duration"] = 0.0
-		base_info["smoothed_input"] = Vector2.ZERO
-		base_info["raw_input"] = Vector2.ZERO
-		base_info["input_active"] = false
-	
-	# Add jump info from JumpSystem
-	if jump_system:
-		var jump_info = jump_system.get_debug_info()
-		base_info["jumps_remaining"] = jump_info.jumps_remaining
-		base_info["coyote_timer"] = jump_info.coyote_timer
-		base_info["jump_buffer_timer"] = jump_info.jump_buffer_timer
-		base_info["can_jump"] = jump_info.can_jump
-		base_info["can_air_jump"] = jump_info.can_air_jump
-	else:
-		base_info["jumps_remaining"] = 0
-		base_info["coyote_timer"] = 0.0
-		base_info["jump_buffer_timer"] = 0.0
-		base_info["can_jump"] = false
-		base_info["can_air_jump"] = false
-	
-	return base_info
+		# Fallback minimal info
+		return {
+			"current_state": get_current_state_name(),
+			"movement_speed": get_movement_speed(),
+			"is_grounded": is_on_floor(),
+			"debug_helper_missing": true
+		}

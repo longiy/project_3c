@@ -8,3 +8,4 @@ res://Scripts/Components/InputManager.gd
 res://Scripts/Components/JumpSystem.gd
 res://Scripts/Character/States/StateAirborne.gd
 res://Scripts/Character/States/StateJumping.gd
+res://Scripts/_Debug/CharacterDebugHelper.gd
