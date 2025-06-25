@@ -1,4 +1,4 @@
-# CharacterStateMachine.gd - Node-based state system with drag-and-drop configuration
+# CharacterStateMachine.gd - Node-based state system with camera signal integration
 extends Node
 class_name CharacterStateMachine
 
@@ -6,6 +6,9 @@ class_name CharacterStateMachine
 signal state_changed(old_state_name: String, new_state_name: String)
 signal state_entered(state_name: String)
 signal state_exited(state_name: String)
+
+# NEW: Camera integration signal
+signal character_state_changed(old_state: String, new_state: String)
 
 var current_state: State = null
 var previous_state: State = null
@@ -165,6 +168,9 @@ func change_state(new_state_name: String):
 	# Emit signals
 	state_entered.emit(new_state_name)
 	state_changed.emit(old_state_name, new_state_name)
+	
+	# NEW: Emit camera integration signal
+	character_state_changed.emit(old_state_name, new_state_name)
 	
 	if old_state_name != new_state_name:
 		transition_count += 1
