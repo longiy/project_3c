@@ -1,4 +1,4 @@
-# CharacterDebugHelper.gd - Updated for action-based animation system
+# CharacterDebugHelper.gd - Fixed for pure signal-driven animation system
 extends Node
 class_name CharacterDebugHelper
 
@@ -111,14 +111,13 @@ func get_state_debug_info() -> Dictionary:
 		return {"error": "No StateMachine"}
 
 func get_animation_debug_info() -> Dictionary:
-	"""Get NEW action-based animation system debug info"""
+	"""Get PURE signal-driven animation system debug info"""
 	if character.animation_controller:
 		var anim_debug = character.animation_controller.get_debug_info()
 		
-		# Add action-based specific information
-		anim_debug["system_type"] = "Action-Based"
+		# Add signal-based specific information
+		anim_debug["system_type"] = "Pure Signal-Driven"
 		anim_debug["sync_status"] = get_animation_sync_status()
-		anim_debug["recent_animation_actions"] = get_recent_animation_actions()
 		
 		return anim_debug
 	else:
@@ -135,20 +134,20 @@ func get_physics_debug_info() -> Dictionary:
 	}
 
 func get_action_debug_info() -> Dictionary:
-	"""Get action system debug info with animation focus"""
+	"""Get action system debug info"""
 	if action_system:
 		var action_info = action_system.get_debug_info()
 		
-		# Add animation-specific action tracking
+		# Add action tracking
 		action_info["recent_movement_actions"] = get_recent_movement_actions()
-		action_info["animation_actions_count"] = count_animation_actions()
-		action_info["input_to_animation_delay"] = measure_input_animation_delay()
+		action_info["recent_camera_actions"] = get_recent_camera_actions()
+		action_info["input_to_signal_delay"] = measure_input_signal_delay()
 		
 		return action_info
 	else:
 		return {"error": "No ActionSystem"}
 
-# === NEW ANIMATION SYSTEM HELPERS ===
+# === SIGNAL-DRIVEN ANIMATION HELPERS ===
 
 func get_animation_sync_status() -> String:
 	"""Check if animation system is in sync with character state"""
@@ -168,22 +167,8 @@ func get_animation_sync_status() -> String:
 	else:
 		return "❌ Desync - Anim:" + str(anim_active) + " State:" + str(is_movement_state)
 
-func get_recent_animation_actions() -> Array[String]:
-	"""Get recent animation-specific actions"""
-	if not action_system:
-		return []
-	
-	var animation_actions: Array[String] = []
-	var recent_actions = action_system.executed_actions.slice(-10)
-	
-	for action in recent_actions:
-		if action.is_animation_action():
-			animation_actions.append(action.name + "(" + str(action.get_age()).pad_decimals(2) + "s ago)")
-	
-	return animation_actions
-
 func get_recent_movement_actions() -> Array[String]:
-	"""Get recent movement actions that trigger animations"""
+	"""Get recent movement actions"""
 	if not action_system:
 		return []
 	
@@ -196,40 +181,37 @@ func get_recent_movement_actions() -> Array[String]:
 	
 	return movement_actions
 
-func count_animation_actions() -> int:
-	"""Count how many animation actions have been executed"""
+func get_recent_camera_actions() -> Array[String]:
+	"""Get recent camera actions"""
 	if not action_system:
-		return 0
+		return []
 	
-	var count = 0
-	for action in action_system.executed_actions:
-		if action.is_animation_action():
-			count += 1
+	var camera_actions: Array[String] = []
+	var recent_actions = action_system.executed_actions.slice(-5)
 	
-	return count
+	for action in recent_actions:
+		if action.is_camera_action():
+			camera_actions.append(action.name + "(" + str(action.get_age()).pad_decimals(2) + "s ago)")
+	
+	return camera_actions
 
-func measure_input_animation_delay() -> String:
-	"""Measure delay between input and animation response"""
+func measure_input_signal_delay() -> String:
+	"""Measure delay between input and signal response"""
 	if not action_system or action_system.executed_actions.size() < 2:
 		return "No data"
 	
 	var recent_actions = action_system.executed_actions.slice(-10)
 	var last_movement_action = null
-	var last_animation_action = null
 	
-	# Find the most recent movement and animation actions
+	# Find the most recent movement action
 	for i in range(recent_actions.size() - 1, -1, -1):
 		var action = recent_actions[i]
 		if action.is_movement_action() and last_movement_action == null:
 			last_movement_action = action
-		if action.is_animation_action() and last_animation_action == null:
-			last_animation_action = action
-		
-		if last_movement_action and last_animation_action:
 			break
 	
-	if last_movement_action and last_animation_action:
-		var delay = last_animation_action.timestamp - last_movement_action.timestamp
+	if last_movement_action:
+		var delay = last_movement_action.get_age()
 		if delay < 0.001:
 			return "✅ Same frame"
 		elif delay < 0.02:
@@ -320,32 +302,26 @@ func force_action(action_name: String, context: Dictionary = {}):
 	else:
 		print("❌ Debug: No action system found")
 
-# === NEW DEBUG COMMANDS ===
+# === SIGNAL TESTING ===
 
-func test_animation_sync():
-	"""Test animation synchronization with various inputs"""
-	print("🧪 Testing animation sync...")
+func test_signal_sync():
+	"""Test signal synchronization"""
+	print("🧪 Testing signal sync...")
 	
 	# Test immediate response
-	action_system.request_action("move_start", {"direction": Vector2(1, 0), "magnitude": 1.0})
-	await get_tree().process_frame
-	
-	var sync_status = get_animation_sync_status()
-	print("🎬 Animation sync after move_start: ", sync_status)
-	
-	await get_tree().create_timer(0.5).timeout
-	
-	action_system.request_action("move_end")
-	await get_tree().process_frame
-	
-	sync_status = get_animation_sync_status()
-	print("🎬 Animation sync after move_end: ", sync_status)
+	if character.has_signal("movement_state_changed"):
+		character.movement_state_changed.emit(true, Vector2(1, 0), 1.0)
+		await get_tree().process_frame
+		
+		var sync_status = get_animation_sync_status()
+		print("🎬 Signal sync test: ", sync_status)
+	else:
+		print("❌ Character missing movement_state_changed signal")
 
-func print_action_animation_summary():
-	"""Print summary of action-animation relationship"""
-	print("=== ACTION-ANIMATION SUMMARY ===")
+func print_signal_summary():
+	"""Print summary of signal-animation relationship"""
+	print("=== SIGNAL-ANIMATION SUMMARY ===")
 	print("Recent Movement Actions: ", get_recent_movement_actions())
-	print("Recent Animation Actions: ", get_recent_animation_actions())
-	print("Animation Actions Count: ", count_animation_actions())
-	print("Input→Animation Delay: ", measure_input_animation_delay())
+	print("Recent Camera Actions: ", get_recent_camera_actions())
+	print("Input→Signal Delay: ", measure_input_signal_delay())
 	print("Sync Status: ", get_animation_sync_status())

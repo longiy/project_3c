@@ -1,9 +1,8 @@
-# CameraActionReceiver.gd - Bridges action system to camera signals
+# CameraActionReceiver.gd - Pure action-based (NO DIRECT INPUT)
 extends Node
 class_name CameraActionReceiver
 
-@export_group("Input Settings")
-@export var scroll_zoom_speed = 0.5
+@export_group("Camera Settings")
 @export var enable_action_processing = true
 @export var action_system_node: NodePath = ""  # Set in inspector
 
@@ -20,24 +19,9 @@ func _ready():
 	# Find action system in scene
 	find_and_connect_action_system()
 	
-	print("📹 CameraActionReceiver: Initialized")
+	print("📹 CameraActionReceiver: Pure action-based (no direct input)")
 
-func _input(event):
-	"""Handle direct input events that need immediate processing"""
-	if not enable_action_processing:
-		return
-		
-	# Handle scroll wheel for zoom (immediate response needed)
-	if event is InputEventMouseButton and event.pressed:
-		match event.button_index:
-			MOUSE_BUTTON_WHEEL_UP:
-				camera_rig._on_zoom_input(-scroll_zoom_speed)
-			MOUSE_BUTTON_WHEEL_DOWN:
-				camera_rig._on_zoom_input(scroll_zoom_speed)
-	
-	# Handle mouse toggle (immediate response needed)
-	if event.is_action_pressed("toggle_mouse_look"):
-		camera_rig._on_mouse_toggle()
+# REMOVED: _input() function - no more direct input handling
 
 func connect_to_action_system():
 	"""Connect to action system"""
@@ -69,8 +53,7 @@ func find_and_connect_action_system():
 	
 	print("⚠️ CameraActionReceiver: No ActionSystem found - set action_system_node path")
 
-
-# === ACTION PROCESSING ===
+# === ACTION PROCESSING (Enhanced with new actions) ===
 
 func _on_action_executed(action: Action):
 	"""Process camera-related actions"""
@@ -90,19 +73,19 @@ func _on_action_executed(action: Action):
 			handle_distance_action(action)
 
 func handle_look_action(action: Action):
-	"""Handle look_delta action"""
+	"""Handle look_delta action (FROM InputManager now)"""
 	var delta = action.get_look_delta()
 	var sensitivity = action.context.get("sensitivity", 1.0)
 	
 	camera_rig._on_look_input(delta, sensitivity)
 
 func handle_zoom_action(action: Action):
-	"""Handle camera zoom action"""
+	"""Handle camera zoom action (FROM InputManager now)"""
 	var zoom_delta = action.context.get("zoom_delta", 0.0)
 	camera_rig._on_zoom_input(zoom_delta)
 
 func handle_mouse_toggle_action(action: Action):
-	"""Handle mouse toggle action"""
+	"""Handle mouse toggle action (FROM InputManager now)"""
 	camera_rig._on_mouse_toggle()
 
 func handle_fov_action(action: Action):
@@ -146,5 +129,6 @@ func get_debug_info() -> Dictionary:
 		"enabled": enable_action_processing,
 		"action_system_connected": action_system != null,
 		"action_system_path": action_system.get_path() if action_system else "None",
-		"scroll_zoom_speed": scroll_zoom_speed
+		"input_handling": "ACTIONS_ONLY",
+		"direct_input_removed": true
 	}
