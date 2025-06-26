@@ -72,4 +72,4 @@ states/Move/node = SubResource("AnimationNodeBlendSpace1D_8iigs")
 states/Move/position = Vector2(950.582, 200.318)
 states/Start/position = Vector2(614.4, 322.4)
 transitions = ["Start", "Idle", SubResource("AnimationNodeStateMachineTransition_o8mde"), "Airborne", "Land", SubResource("AnimationNodeStateMachineTransition_xyta0"), "Land", "Idle", SubResource("AnimationNodeStateMachineTransition_ly3n2"), "Idle", "Airborne", SubResource("AnimationNodeStateMachineTransition_f3nvh"), "Idle", "Move", SubResource("AnimationNodeStateMachineTransition_ivj5s"), "Move", "Idle", SubResource("AnimationNodeStateMachineTransition_uvmue"), "Move", "Airborne", SubResource("AnimationNodeStateMachineTransition_3ii0w"), "Land", "Move", SubResource("AnimationNodeStateMachineTransition_bfelf")]
-graph_offset = Vector2(53.1648, 60.7675)
+graph_offset = Vector2(56.1648, 137.768)
