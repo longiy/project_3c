@@ -1,4 +1,4 @@
-# ===== StateAirborne.gd - Debug Cleaned =====
+# StateAirborne.gd - Action-based airborne state
 class_name StateAirborne
 extends CharacterStateBase
 
@@ -24,6 +24,20 @@ func update(delta: float):
 func check_transitions():
 	if character.is_on_floor():
 		change_to("landing")
+
+# === MOVEMENT ACTION OVERRIDES ===
+
+func on_movement_started(direction: Vector2, magnitude: float):
+	"""Movement started while airborne"""
+	pass
+
+func on_movement_updated(direction: Vector2, magnitude: float):
+	"""Movement updated while airborne"""
+	pass
+
+func on_movement_ended():
+	"""Movement ended while airborne"""
+	pass
 
 # === ACTION SYSTEM INTERFACE ===
 

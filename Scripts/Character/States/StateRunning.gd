@@ -1,4 +1,4 @@
-# ===== StateRunning.gd - Debug Cleaned =====
+# StateRunning.gd - Action-based running state
 class_name StateRunning
 extends CharacterStateBase
 

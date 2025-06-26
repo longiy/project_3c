@@ -1,4 +1,4 @@
-# CharacterStateMachine.gd - Debug cleaned version
+# CharacterStateMachine.gd - Node-based state system with camera signal integration
 extends Node
 class_name CharacterStateMachine
 
@@ -7,7 +7,7 @@ signal state_changed(old_state_name: String, new_state_name: String)
 signal state_entered(state_name: String)
 signal state_exited(state_name: String)
 
-# Camera integration signal
+# NEW: Camera integration signal
 signal character_state_changed(old_state: String, new_state: String)
 
 var current_state: State = null
@@ -135,6 +135,9 @@ func add_state(state_name: String, state: State):
 	state.owner_node = owner_node
 	state.state_name = state_name
 	states_created += 1
+	
+	if enable_debug_transitions:
+		print("➕ Added state: ", state_name, " (Total: ", states_created, ")")
 
 func change_state(new_state_name: String):
 	"""Change to a different state with transition counting"""
@@ -166,20 +169,12 @@ func change_state(new_state_name: String):
 	state_entered.emit(new_state_name)
 	state_changed.emit(old_state_name, new_state_name)
 	
-	# Emit camera integration signal
+	# NEW: Emit camera integration signal
 	character_state_changed.emit(old_state_name, new_state_name)
 	
 	if old_state_name != new_state_name:
 		transition_count += 1
-		# Only print if debug enabled or this is important transition
-		if enable_debug_transitions or should_log_transition(old_state_name, new_state_name):
-			print("🔄 ", old_state_name, " → ", new_state_name)
-
-func should_log_transition(old_state: String, new_state: String) -> bool:
-	"""Determine if transition should be logged even without debug mode"""
-	# Log important transitions like landing, jumping, or errors
-	var important_states = ["jumping", "landing", "airborne"]
-	return new_state in important_states or old_state in important_states
+		print("🔄 ", old_state_name, " → ", new_state_name)
 
 # === STATE NODE ACCESS ===
 
@@ -328,6 +323,9 @@ func force_state_refresh():
 		var state_name = current_state.state_name
 		current_state.exit()
 		current_state.enter()
+		
+		if enable_debug_transitions:
+			print("🔄 Force refreshed state: ", state_name)
 
 func get_debug_overlay_info() -> Dictionary:
 	"""Get formatted info for debug overlay"""

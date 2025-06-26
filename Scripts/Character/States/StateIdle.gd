@@ -1,4 +1,4 @@
-# ===== StateIdle.gd - Debug Cleaned =====
+# StateIdle.gd - Action-based idle state
 class_name StateIdle
 extends CharacterStateBase
 
@@ -22,6 +22,7 @@ func update(delta: float):
 
 func on_movement_started(direction: Vector2, magnitude: float):
 	"""When movement starts in idle, transition to appropriate movement state"""
+	print("💤 Movement started in idle: ", direction, " - transitioning to walking")
 	change_to("walking")
 
 func on_movement_updated(direction: Vector2, magnitude: float):
@@ -35,8 +36,12 @@ func on_movement_ended():
 func check_movement_transition():
 	"""Check if we should transition to a movement state"""
 	if is_movement_active and current_movement_vector.length() > 0:
+		var target_speed = character.get_target_speed()
+		
 		if character.is_running:
 			change_to("running")
+		elif target_speed <= character.slow_walk_speed:
+			change_to("walking")
 		else:
 			change_to("walking")
 

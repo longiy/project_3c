@@ -1,4 +1,4 @@
-# AnimationController.gd - Debug cleaned version
+# AnimationController.gd - Pure signal-driven version (NO ACTION SYSTEM)
 extends Node
 class_name AnimationController
 
@@ -12,9 +12,6 @@ class_name AnimationController
 @export var idle_threshold = 0.3
 @export var walk_speed_reference = 3.0
 @export var run_speed_reference = 6.0
-
-@export_group("Debug")
-@export var enable_debug_logging = false
 
 # Character reference (keep for validation only)
 var character: CharacterBody3D
@@ -55,18 +52,15 @@ func connect_to_character_signals():
 	# Connect to movement signals
 	if character.has_signal("movement_state_changed"):
 		character.movement_state_changed.connect(_on_movement_state_changed)
-		if enable_debug_logging:
-			print("✅ Animation: Connected to movement_state_changed")
+		print("✅ Animation: Connected to movement_state_changed")
 	
 	if character.has_signal("movement_mode_changed"):
 		character.movement_mode_changed.connect(_on_movement_mode_changed)
-		if enable_debug_logging:
-			print("✅ Animation: Connected to movement_mode_changed")
+		print("✅ Animation: Connected to movement_mode_changed")
 	
 	if character.has_signal("speed_changed"):
 		character.speed_changed.connect(_on_speed_changed)
-		if enable_debug_logging:
-			print("✅ Animation: Connected to speed_changed")
+		print("✅ Animation: Connected to speed_changed")
 
 func _physics_process(delta):
 	# Handle blend smoothing only
@@ -80,8 +74,7 @@ func _on_movement_state_changed(is_moving: bool, direction: Vector2, magnitude: 
 	received_is_movement_active = is_moving
 	received_input_direction = direction
 	
-	if enable_debug_logging:
-		print("🎬 Animation: Movement signal - Active:", is_moving, " Direction:", direction)
+	print("🎬 Animation: Movement signal - Active:", is_moving, " Direction:", direction)
 	update_animation_immediately()
 
 func _on_movement_mode_changed(is_running: bool, is_slow_walking: bool):
@@ -89,16 +82,14 @@ func _on_movement_mode_changed(is_running: bool, is_slow_walking: bool):
 	received_is_running = is_running
 	received_is_slow_walking = is_slow_walking
 	
-	if enable_debug_logging:
-		print("🎬 Animation: Mode signal - Running:", is_running, " SlowWalk:", is_slow_walking)
+	print("🎬 Animation: Mode signal - Running:", is_running, " SlowWalk:", is_slow_walking)
 	update_animation_immediately()
 
 func _on_speed_changed(new_speed: float):
 	"""Handle speed changes via signal"""
 	received_movement_speed = new_speed
 	
-	if enable_debug_logging:
-		print("🎬 Animation: Speed signal - Speed:", new_speed)
+	print("🎬 Animation: Speed signal - Speed:", new_speed)
 	update_animation_immediately()
 
 func update_animation_immediately():
@@ -130,8 +121,7 @@ func calculate_1d_blend_target():
 	else:
 		target_blend_value = -0.2  # Normal walk animation
 	
-	if enable_debug_logging:
-		print("🎬 1D Blend calculated: ", target_blend_value, " (Signal Running: ", received_is_running, ", Slow: ", received_is_slow_walking, ")")
+	print("🎬 1D Blend calculated: ", target_blend_value, " (Signal Running: ", received_is_running, ", Slow: ", received_is_slow_walking, ")")
 
 func calculate_2d_blend_target():
 	"""Calculate 2D blend target based on SIGNAL data"""
@@ -157,8 +147,7 @@ func calculate_2d_blend_target():
 	else:
 		target_blend_vector *= 1.0  # Normal walk intensity
 	
-	if enable_debug_logging:
-		print("🎬 2D Blend calculated: ", target_blend_vector, " from signal input: ", received_input_direction)
+	print("🎬 2D Blend calculated: ", target_blend_vector, " from signal input: ", received_input_direction)
 
 func update_blend_smoothing(delta: float):
 	"""Apply smoothing to blend transitions"""

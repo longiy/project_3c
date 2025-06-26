@@ -1,4 +1,4 @@
-# ControllerCharacter.gd - Debug cleaned version
+# ControllerCharacter.gd - Pure signal-driven version (FIXED)
 extends CharacterBody3D
 
 # === INSPECTOR CONFIGURATION ===
@@ -32,7 +32,6 @@ extends CharacterBody3D
 @export var debug_helper: CharacterDebugHelper
 
 @export var enable_debug_logging = false
-
 # === SIGNAL DEFINITIONS ===
 signal movement_mode_changed(is_running: bool, is_slow_walking: bool)
 signal speed_changed(new_speed: float)
@@ -60,23 +59,19 @@ var action_system: ActionSystem
 func _ready():
 	setup_character()
 	setup_state_machine()
-	# Connect to own signals for verification (only if debug enabled)
-	if enable_debug_logging:
-		movement_mode_changed.connect(_on_movement_mode_changed)
-		speed_changed.connect(_on_speed_changed)
-		ground_state_changed.connect(_on_ground_state_changed)
+	# Connect to own signals for verification
+	movement_mode_changed.connect(_on_movement_mode_changed)
+	speed_changed.connect(_on_speed_changed)
+	ground_state_changed.connect(_on_ground_state_changed)
 
 func _on_movement_mode_changed(running: bool, slow_walking: bool):
-	if enable_debug_logging:
-		print("🏃 Mode changed: Running=", running, " SlowWalk=", slow_walking)
+	print("🏃 Mode changed: Running=", running, " SlowWalk=", slow_walking)
 
 func _on_speed_changed(speed: float):
-	if enable_debug_logging:
-		print("💨 Speed changed: ", speed)
+	print("💨 Speed changed: ", speed)
 
 func _on_ground_state_changed(grounded: bool):
-	if enable_debug_logging:
-		print("🌍 Ground state: ", grounded)
+	print("🌍 Ground state: ", grounded)
 
 func setup_character():
 	"""Initialize character properties"""
@@ -153,9 +148,13 @@ func emit_movement_mode_changes():
 		last_emitted_running = is_running
 		last_emitted_slow_walking = is_slow_walking
 		movement_mode_changed.emit(is_running, is_slow_walking)
+		
+		if enable_debug_logging:
+			print("🏃 Mode signal emitted: Running=", is_running, " SlowWalk=", is_slow_walking)
 
 # === PROPERTY SETTERS WITH SIGNAL EMISSIONS ===
 
+# Fix the existing setters to use emit_movement_mode_changes()
 func set_running(value: bool):
 	"""Set running state and emit signal"""
 	if is_running != value:

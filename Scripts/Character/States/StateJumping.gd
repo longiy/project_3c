@@ -1,4 +1,4 @@
-# ===== StateJumping.gd - Debug Cleaned =====
+# StateJumping.gd - Action-based jumping state
 class_name StateJumping
 extends CharacterStateBase
 
@@ -27,6 +27,20 @@ func update(delta: float):
 func check_transitions():
 	if time_in_state > jump_grace_time:
 		change_to("airborne")
+
+# === MOVEMENT ACTION OVERRIDES ===
+
+func on_movement_started(direction: Vector2, magnitude: float):
+	"""Movement started while jumping"""
+	pass
+
+func on_movement_updated(direction: Vector2, magnitude: float):
+	"""Movement updated while jumping"""
+	pass
+
+func on_movement_ended():
+	"""Movement ended while jumping"""
+	pass
 
 # === ACTION SYSTEM INTERFACE ===
 
