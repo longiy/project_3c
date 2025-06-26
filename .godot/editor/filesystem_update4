@@ -3,6 +3,3 @@ res://AnimationTreeMove1d.tres
 res://Scripts/Components/InputManager.gd
 res://Assets/ps_character_gurl.tscn
 res://Scripts/ActionSystem/ActionSystem.gd
-res://Scripts/Character/CharacterStatesBase.gd
-res://Scripts/Character/CharacterStateBase.gd
-res://Scripts/Controllers/ControllerCharacter.gd

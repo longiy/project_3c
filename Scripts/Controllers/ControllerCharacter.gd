@@ -31,7 +31,6 @@ extends CharacterBody3D
 @export var jump_system: JumpSystem
 @export var debug_helper: CharacterDebugHelper
 
-@export var enable_debug_logging = false
 # === SIGNAL DEFINITIONS ===
 signal movement_mode_changed(is_running: bool, is_slow_walking: bool)
 signal speed_changed(new_speed: float)
@@ -148,13 +147,9 @@ func emit_movement_mode_changes():
 		last_emitted_running = is_running
 		last_emitted_slow_walking = is_slow_walking
 		movement_mode_changed.emit(is_running, is_slow_walking)
-		
-		if enable_debug_logging:
-			print("🏃 Mode signal emitted: Running=", is_running, " SlowWalk=", is_slow_walking)
 
 # === PROPERTY SETTERS WITH SIGNAL EMISSIONS ===
 
-# Fix the existing setters to use emit_movement_mode_changes()
 func set_running(value: bool):
 	"""Set running state and emit signal"""
 	if is_running != value:
