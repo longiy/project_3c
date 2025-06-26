@@ -79,18 +79,22 @@ func execute_action(action: Action):
 		"move_end":
 			handle_move_end_action(action)
 		
-		# Mode actions
+		# Mode actions - ADD SIGNAL EMISSIONS
 		"sprint_start":
 			character.is_running = true
+			character.emit_movement_mode_changes()  # NEW
 			request_animation_mode_change()
 		"sprint_end":
 			character.is_running = false
+			character.emit_movement_mode_changes()  # NEW
 			request_animation_mode_change()
 		"slow_walk_start":
 			character.is_slow_walking = true
+			character.emit_movement_mode_changes()  # NEW
 			request_animation_mode_change()
 		"slow_walk_end":
 			character.is_slow_walking = false
+			character.emit_movement_mode_changes()  # NEW
 			request_animation_mode_change()
 		
 		# Look actions
@@ -106,12 +110,16 @@ func execute_action(action: Action):
 
 # === MOVEMENT ACTION HANDLERS (Enhanced) ===
 
+# === MODIFY EXISTING handle_move_start_action ===
 func handle_move_start_action(action: Action):
 	"""Handle start of movement input"""
 	current_movement_vector = action.get_movement_vector()
 	movement_magnitude = action.context.get("magnitude", current_movement_vector.length())
 	movement_start_time = Time.get_ticks_msec() / 1000.0
 	is_movement_active = true
+	
+	# NEW: Emit movement state change
+	character.movement_state_changed.emit(true, current_movement_vector, movement_magnitude)
 	
 	# Request immediate animation update
 	request_animation_movement_change()
@@ -135,6 +143,9 @@ func handle_move_end_action(action: Action):
 	current_movement_vector = Vector2.ZERO
 	movement_magnitude = 0.0
 	is_movement_active = false
+	
+	# NEW: Emit movement state change
+	character.movement_state_changed.emit(false, Vector2.ZERO, 0.0)
 	
 	# Request immediate animation update
 	request_animation_movement_change()

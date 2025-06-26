@@ -31,6 +31,19 @@ extends CharacterBody3D
 @export var jump_system: JumpSystem
 @export var debug_helper: CharacterDebugHelper
 
+# === NEW SIGNALS (Add after existing exports) ===
+signal movement_mode_changed(is_running: bool, is_slow_walking: bool)
+signal speed_changed(new_speed: float)
+signal ground_state_changed(is_grounded: bool)
+signal movement_state_changed(is_moving: bool, direction: Vector2, magnitude: float)
+signal jump_performed(jump_force: float, is_air_jump: bool)
+
+# === TRACKING VARIABLES (Add to runtime variables section) ===
+var last_emitted_speed: float = 0.0
+var last_emitted_grounded: bool = true
+var last_emitted_running: bool = false
+var last_emitted_slow_walking: bool = false
+
 # === RUNTIME VARIABLES ===
 var base_gravity: float
 
@@ -45,6 +58,19 @@ var action_system: ActionSystem
 func _ready():
 	setup_character()
 	setup_state_machine()
+	# TEST: Connect to own signals to verify they work
+	movement_mode_changed.connect(_on_movement_mode_changed)
+	speed_changed.connect(_on_speed_changed)
+	ground_state_changed.connect(_on_ground_state_changed)
+
+func _on_movement_mode_changed(running: bool, slow_walking: bool):
+	print("🏃 Mode changed: Running=", running, " SlowWalk=", slow_walking)
+
+func _on_speed_changed(speed: float):
+	print("💨 Speed changed: ", speed)
+
+func _on_ground_state_changed(grounded: bool):
+	print("🌍 Ground state: ", grounded)
 
 func setup_character():
 	"""Initialize character properties"""
@@ -61,6 +87,12 @@ func setup_character():
 		push_warning("No InputManager assigned - input will not work")
 	if not jump_system:
 		push_warning("No JumpSystem assigned - jumping will not work")
+
+		# NEW: Initialize tracking variables
+	last_emitted_speed = 0.0
+	last_emitted_grounded = is_on_floor()
+	last_emitted_running = is_running
+	last_emitted_slow_walking = is_slow_walking
 
 func setup_state_machine():
 	"""Find and initialize the state machine and action system"""
@@ -84,9 +116,39 @@ func _input(event):
 	# All input now handled by InputManager -> ActionSystem
 	pass
 
+# === MODIFY EXISTING _physics_process ===
 func _physics_process(delta):
 	if state_machine:
 		state_machine.update(delta)
+	
+	# NEW: Emit speed changes
+	emit_speed_changes()
+	
+	# NEW: Emit ground state changes  
+	emit_ground_state_changes()
+
+# === NEW EMISSION METHODS ===
+
+func emit_speed_changes():
+	"""Emit speed changes when movement speed changes significantly"""
+	var current_speed = get_movement_speed()
+	if abs(current_speed - last_emitted_speed) > 0.5:  # Threshold to avoid spam
+		last_emitted_speed = current_speed
+		speed_changed.emit(current_speed)
+
+func emit_ground_state_changes():
+	"""Emit ground state changes when character lands/leaves ground"""
+	var current_grounded = is_on_floor()
+	if current_grounded != last_emitted_grounded:
+		last_emitted_grounded = current_grounded
+		ground_state_changed.emit(current_grounded)
+
+func emit_movement_mode_changes():
+	"""Emit mode changes when sprint/walk modes change"""
+	if is_running != last_emitted_running or is_slow_walking != last_emitted_slow_walking:
+		last_emitted_running = is_running
+		last_emitted_slow_walking = is_slow_walking
+		movement_mode_changed.emit(is_running, is_slow_walking)
 
 # === MOVEMENT CALCULATION === (unchanged)
 
@@ -148,7 +210,11 @@ func rotate_toward_movement(movement_direction: Vector3, delta: float):
 func perform_jump(jump_force: float):
 	"""Execute a jump - delegated to JumpSystem"""
 	if jump_system:
+		var was_grounded = is_on_floor()
 		jump_system.perform_jump(jump_force)
+		
+		# NEW: Emit jump event
+		jump_performed.emit(jump_force, not was_grounded)
 
 # === GROUND STATE MANAGEMENT ===
 
