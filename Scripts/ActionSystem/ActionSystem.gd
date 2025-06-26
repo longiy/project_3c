@@ -47,12 +47,10 @@ func _on_action_ready(action: Action):
 			print("⏰ Action expired before processing: ", action.name)
 		return
 	
-	# Handle animation actions specially
-	if action.name.begins_with("animation_"):
-		handle_animation_action(action)
-		return
+	# REMOVED: Animation action handling - signals handle this now
+	# Animation actions are no longer needed since AnimationController is signal-driven
 	
-	# Regular action processing
+	# Regular action processing only
 	if character.state_machine and character.state_machine.current_state:
 		var current_state = character.state_machine.current_state
 		
@@ -66,6 +64,12 @@ func _on_action_ready(action: Action):
 			# For movement actions, failing to execute immediately is normal
 			if not action.is_movement_action():
 				fail_action_immediate(action, "State cannot handle action", current_state.state_name)
+
+# REMOVE THESE METHODS (comment out or delete):
+# - handle_animation_action()
+# - handle_animation_state_change()
+# - handle_animation_movement_change()
+# - handle_animation_mode_change()
 
 func handle_animation_action(action: Action):
 	"""Handle animation-specific actions"""

@@ -1,4 +1,4 @@
-# AnimationController.gd - Debug Fix for Walk Detection
+# AnimationController.gd - Signal-driven version (REPLACE existing)
 extends Node
 class_name AnimationController
 
@@ -13,24 +13,21 @@ class_name AnimationController
 @export var walk_speed_reference = 3.0
 @export var run_speed_reference = 6.0
 
-# Character and action system references
+# Character reference (keep for validation)
 var character: CharacterBody3D
-var action_system: ActionSystem
 
-# Animation state tracking
+# Animation state tracking - NOW SIGNAL-DRIVEN
 var current_blend_value = 0.0  # For 1D
 var current_blend_vector = Vector2.ZERO  # For 2D
 var target_blend_value = 0.0
 var target_blend_vector = Vector2.ZERO
 
-# Action-based state
-var current_movement_speed = 0.0
-var current_input_direction = Vector2.ZERO
-var is_movement_active = false
-
-# DEBUG: Track state for debugging
-var debug_last_speed = 0.0
-var debug_last_input = Vector2.ZERO
+# Signal-driven state (NO MORE DIRECT READS)
+var received_movement_speed = 0.0
+var received_input_direction = Vector2.ZERO
+var received_is_movement_active = false
+var received_is_running = false
+var received_is_slow_walking = false
 
 func _ready():
 	character = get_parent() as CharacterBody3D
@@ -43,150 +40,114 @@ func _ready():
 		push_error("AnimationTree not assigned to AnimationController")
 		return
 	
-	# Find action system
-	action_system = character.get_node_or_null("ActionSystem")
-	if not action_system:
-		push_error("ActionSystem not found - animations will not sync properly")
-		return
-	
 	animation_tree.active = true
-	setup_action_listeners()
-	print("✅ AnimationController: Action-based system initialized")
+	
+	# CONNECT TO CHARACTER SIGNALS
+	connect_to_character_signals()
+	
+	print("✅ AnimationController: Signal-driven system initialized")
+
+func connect_to_character_signals():
+	"""Connect to character signals for data"""
+	# Connect to movement signals
+	if character.has_signal("movement_state_changed"):
+		character.movement_state_changed.connect(_on_movement_state_changed)
+		print("✅ Animation: Connected to movement_state_changed")
+	
+	if character.has_signal("movement_mode_changed"):
+		character.movement_mode_changed.connect(_on_movement_mode_changed)
+		print("✅ Animation: Connected to movement_mode_changed")
+	
+	if character.has_signal("speed_changed"):
+		character.speed_changed.connect(_on_speed_changed)
+		print("✅ Animation: Connected to speed_changed")
 
 func _physics_process(delta):
-	# Handle blend smoothing and debug info
+	# Handle blend smoothing only
 	if animation_tree:
 		update_blend_smoothing(delta)
-		
-		# DEBUG: Print when values change significantly
-		var speed_changed = abs(current_movement_speed - debug_last_speed) > 0.1
-		var input_changed = current_input_direction.distance_to(debug_last_input) > 0.1
-		
-		if speed_changed or input_changed:
-			print("🎬 Animation Debug: Speed=", current_movement_speed, " Input=", current_input_direction, " Active=", is_movement_active, " Blend=", current_blend_value)
-			debug_last_speed = current_movement_speed
-			debug_last_input = current_input_direction
 
-func setup_action_listeners():
-	"""Connect to action system for immediate animation updates"""
-	if not action_system:
-		return
-	
-	# Listen to action execution for immediate updates
-	action_system.action_executed.connect(_on_action_executed)
-	print("✅ AnimationController: Connected to action system")
+# === SIGNAL HANDLERS (REPLACE ACTION SYSTEM HANDLERS) ===
 
-# === ACTION SYSTEM INTEGRATION ===
-
-func _on_action_executed(action: Action):
-	"""Handle executed actions and update animations immediately"""
-	match action.name:
-		"move_start":
-			handle_movement_start(action)
-		"move_update":
-			handle_movement_update(action)
-		"move_end":
-			handle_movement_end(action)
-		"sprint_start", "sprint_end", "slow_walk_start", "slow_walk_end":
-			handle_mode_change(action)
-
-func handle_movement_start(action: Action):
-	"""Handle start of movement - immediate animation response"""
-	is_movement_active = true
-	current_input_direction = action.get_movement_vector()
+func _on_movement_state_changed(is_moving: bool, direction: Vector2, magnitude: float):
+	"""Handle movement state changes via signal"""
+	received_is_movement_active = is_moving
+	received_input_direction = direction
 	
-	# FORCE immediate speed update from character
-	current_movement_speed = character.get_movement_speed()
-	
-	# If speed is still zero, use a minimum value to trigger animation
-	if current_movement_speed < 0.1:
-		current_movement_speed = 1.0  # Force minimum speed for animation
-	
-	update_animation_immediately()
-	print("🎬 Animation: Movement started - Input:", current_input_direction, " Speed:", current_movement_speed)
-
-func handle_movement_update(action: Action):
-	"""Handle movement updates - smooth animation transitions"""
-	current_input_direction = action.get_movement_vector()
-	current_movement_speed = character.get_movement_speed()
-	
-	# Ensure we have movement speed when input is active
-	if is_movement_active and current_movement_speed < 0.1:
-		current_movement_speed = 1.0
-	
+	print("🎬 Animation: Movement signal - Active:", is_moving, " Direction:", direction)
 	update_animation_immediately()
 
-func handle_movement_end(_action: Action):
-	"""Handle end of movement - return to idle"""
-	is_movement_active = false
-	current_input_direction = Vector2.ZERO
-	current_movement_speed = 0.0
+func _on_movement_mode_changed(is_running: bool, is_slow_walking: bool):
+	"""Handle movement mode changes via signal"""
+	received_is_running = is_running
+	received_is_slow_walking = is_slow_walking
+	
+	print("🎬 Animation: Mode signal - Running:", is_running, " SlowWalk:", is_slow_walking)
 	update_animation_immediately()
-	print("🎬 Animation: Movement ended - returning to idle")
 
-func handle_mode_change(_action: Action):
-	"""Handle movement mode changes (sprint/walk)"""
-	current_movement_speed = character.get_movement_speed()
+func _on_speed_changed(new_speed: float):
+	"""Handle speed changes via signal"""
+	received_movement_speed = new_speed
+	
+	print("🎬 Animation: Speed signal - Speed:", new_speed)
 	update_animation_immediately()
 
 func update_animation_immediately():
-	"""Update animation targets immediately based on current action state"""
+	"""Update animation targets based on RECEIVED signal data"""
 	if is_using_1d_blend_space():
 		calculate_1d_blend_target()
 	else:
 		calculate_2d_blend_target()
 
-# === BLEND SPACE CALCULATION (FIXED) ===
+# === BLEND SPACE CALCULATION (SIGNAL-DRIVEN) ===
 
 func calculate_1d_blend_target():
-	"""Calculate 1D blend target based on action state"""
-	if not is_movement_active:
+	"""Calculate 1D blend target based on SIGNAL data"""
+	if not received_is_movement_active:
 		target_blend_value = 0.0
 		return
 	
-	# FIXED: Use input magnitude instead of relying on character speed
-	var input_magnitude = current_input_direction.length()
+	var input_magnitude = received_input_direction.length()
 	
 	if input_magnitude < 0.1:
 		target_blend_value = 0.0
 		return
 	
-	# Use character mode to determine animation
-	if character.is_running:
+	# Use RECEIVED mode data instead of reading character
+	if received_is_running:
 		target_blend_value = 0.5  # Run animation
-	elif character.is_slow_walking:
+	elif received_is_slow_walking:
 		target_blend_value = -0.5  # Slow walk animation
 	else:
 		target_blend_value = -0.2  # Normal walk animation
 	
-	print("🎬 1D Blend calculated: ", target_blend_value, " (Running: ", character.is_running, ", Slow: ", character.is_slow_walking, ")")
+	print("🎬 1D Blend calculated: ", target_blend_value, " (Signal Running: ", received_is_running, ", Slow: ", received_is_slow_walking, ")")
 
 func calculate_2d_blend_target():
-	"""Calculate 2D blend target based on action state"""
-	if not is_movement_active:
+	"""Calculate 2D blend target based on SIGNAL data"""
+	if not received_is_movement_active:
 		target_blend_vector = Vector2.ZERO
 		return
 	
-	# FIXED: Use input direction directly
-	var input_magnitude = current_input_direction.length()
+	var input_magnitude = received_input_direction.length()
 	
 	if input_magnitude < 0.1:
 		target_blend_vector = Vector2.ZERO
 		return
 	
 	# Map input to blend space coordinates
-	target_blend_vector.x = current_input_direction.x * 1.0  # Strafe amount
-	target_blend_vector.y = -current_input_direction.y * 1.0  # Forward/back amount
+	target_blend_vector.x = received_input_direction.x * 1.0  # Strafe amount
+	target_blend_vector.y = -received_input_direction.y * 1.0  # Forward/back amount
 	
-	# Scale by movement mode
-	if character.is_running:
+	# Scale by RECEIVED mode data
+	if received_is_running:
 		target_blend_vector *= 1.5  # Running intensity
-	elif character.is_slow_walking:
+	elif received_is_slow_walking:
 		target_blend_vector *= 0.5  # Slow walk intensity
 	else:
 		target_blend_vector *= 1.0  # Normal walk intensity
 	
-	print("🎬 2D Blend calculated: ", target_blend_vector, " from input: ", current_input_direction)
+	print("🎬 2D Blend calculated: ", target_blend_vector, " from signal input: ", received_input_direction)
 
 func update_blend_smoothing(delta: float):
 	"""Apply smoothing to blend transitions"""
@@ -206,35 +167,26 @@ func is_using_1d_blend_space() -> bool:
 	var current_value = animation_tree.get(move_blend_param)
 	return current_value is float
 
-# === PUBLIC API FOR EXPRESSIONS (Enhanced for debugging) ===
+# === REMOVED: All direct character property access ===
+# NO MORE: get_movement_speed(), is_on_floor(), character.is_running
 
-func get_movement_speed() -> float:
-	"""Public API for AnimationTree expressions"""
-	var speed = current_movement_speed
-	# DEBUG: Log when expressions ask for movement speed
-	if speed > 0.1:
-		print("📊 Expression queried movement_speed: ", speed)
-	return speed
-
-func is_on_floor() -> bool:
-	return character.is_on_floor() if character else false
-
-func is_grounded() -> bool:
-	return is_on_floor()
+# === PUBLIC API FOR EXPRESSIONS (REMOVED) ===
+# Animation expressions should NOT query character properties
+# If needed, create separate signal for grounded state
 
 # === DEBUG INFO ===
 
 func get_debug_info() -> Dictionary:
 	return {
-		"movement_speed": current_movement_speed,
-		"input_direction": current_input_direction,
-		"is_movement_active": is_movement_active,
+		"movement_speed": received_movement_speed,
+		"input_direction": received_input_direction,
+		"is_movement_active": received_is_movement_active,
+		"is_running": received_is_running,
+		"is_slow_walking": received_is_slow_walking,
 		"blend_1d": current_blend_value,
 		"blend_2d": current_blend_vector,
 		"target_1d": target_blend_value,
 		"target_2d": target_blend_vector,
 		"is_1d_mode": is_using_1d_blend_space(),
-		"action_system_connected": action_system != null,
-		"character_running": character.is_running if character else false,
-		"character_slow_walking": character.is_slow_walking if character else false
+		"signal_driven": true
 	}

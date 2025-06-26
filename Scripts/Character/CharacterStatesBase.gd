@@ -23,8 +23,12 @@ func enter():
 	if not action_system:
 		push_warning("No ActionSystem found - actions will not work")
 	
-	# Notify animation system of state change
-	request_animation_update()
+	# REMOVED: request_animation_update() - signals handle this automatically
+
+# REMOVE OR COMMENT OUT THESE METHODS:
+# - request_animation_update()
+# - request_animation_movement_change()  
+# - request_animation_mode_change()
 
 func update(delta: float):
 	super.update(delta)
@@ -83,19 +87,19 @@ func execute_action(action: Action):
 		"sprint_start":
 			character.is_running = true
 			character.emit_movement_mode_changes()  # NEW
-			request_animation_mode_change()
+			
 		"sprint_end":
 			character.is_running = false
 			character.emit_movement_mode_changes()  # NEW
-			request_animation_mode_change()
+			
 		"slow_walk_start":
 			character.is_slow_walking = true
 			character.emit_movement_mode_changes()  # NEW
-			request_animation_mode_change()
+			
 		"slow_walk_end":
 			character.is_slow_walking = false
 			character.emit_movement_mode_changes()  # NEW
-			request_animation_mode_change()
+			
 		
 		# Look actions
 		"look_delta":
@@ -118,11 +122,10 @@ func handle_move_start_action(action: Action):
 	movement_start_time = Time.get_ticks_msec() / 1000.0
 	is_movement_active = true
 	
-	# NEW: Emit movement state change
+	# Character signal emission handles animation automatically
 	character.movement_state_changed.emit(true, current_movement_vector, movement_magnitude)
 	
-	# Request immediate animation update
-	request_animation_movement_change()
+	# REMOVED: request_animation_movement_change() - not needed
 	
 	# Child states can override for specific behavior
 	on_movement_started(current_movement_vector, movement_magnitude)
@@ -144,11 +147,10 @@ func handle_move_end_action(action: Action):
 	movement_magnitude = 0.0
 	is_movement_active = false
 	
-	# NEW: Emit movement state change
+	# Character signal emission handles animation automatically
 	character.movement_state_changed.emit(false, Vector2.ZERO, 0.0)
 	
-	# Request immediate animation update
-	request_animation_movement_change()
+	# REMOVED: request_animation_movement_change() - not needed
 	
 	# Child states can override for specific behavior
 	on_movement_ended()
