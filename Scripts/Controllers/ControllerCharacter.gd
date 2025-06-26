@@ -78,7 +78,6 @@ func _physics_process(delta):
 # === MOVEMENT CALCULATION - WITH DEBUG ===
 
 func calculate_movement_vector(input_dir: Vector2) -> Vector3:
-	print("🔧 CALC_MOVEMENT: input_dir=", input_dir, " camera=", camera != null)
 	
 	if input_dir.length() == 0:
 		return Vector3.ZERO
@@ -90,26 +89,20 @@ func calculate_movement_vector(input_dir: Vector2) -> Vector3:
 		var cam_forward = Vector3(-cam_transform.z.x, 0, -cam_transform.z.z).normalized()
 		var cam_right = Vector3(cam_transform.x.x, 0, cam_transform.x.z).normalized()
 		
-		print("🔧 CALC_MOVEMENT: cam_forward=", cam_forward, " cam_right=", cam_right)
-		
 		movement_vector = cam_right * input_dir.x + cam_forward * (-input_dir.y)
 		
-		print("🔧 CALC_MOVEMENT: result=", movement_vector)
 	else:
 		movement_vector = Vector3(input_dir.x, 0, input_dir.y)
-		print("🔧 CALC_MOVEMENT: no camera, using world space=", movement_vector)
+
 	
 	return movement_vector.normalized()
 
 func apply_movement(movement_vector: Vector3, target_speed: float, acceleration: float, delta: float):
-	print("🔧 APPLY_MOVEMENT: movement_vector=", movement_vector, " target_speed=", target_speed)
 	
 	if movement_vector.length() > 0:
 		var old_velocity = velocity
 		velocity.x = move_toward(velocity.x, movement_vector.x * target_speed, acceleration * delta)
 		velocity.z = move_toward(velocity.z, movement_vector.z * target_speed, acceleration * delta)
-		
-		print("🔧 APPLY_MOVEMENT: velocity changed from ", Vector2(old_velocity.x, old_velocity.z), " to ", Vector2(velocity.x, velocity.z))
 		
 		rotate_toward_movement(movement_vector, delta)
 
@@ -118,8 +111,6 @@ func rotate_toward_movement(movement_direction: Vector3, delta: float):
 		var target_rotation = atan2(movement_direction.x, movement_direction.z)
 		var old_rotation = rotation.y
 		rotation.y = lerp_angle(rotation.y, target_rotation, rotation_speed * delta)
-		
-		print("🔧 ROTATE: target=", rad_to_deg(target_rotation), " old=", rad_to_deg(old_rotation), " new=", rad_to_deg(rotation.y))
 
 # === SIGNAL EMISSION METHODS ===
 

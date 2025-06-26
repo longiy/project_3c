@@ -71,7 +71,7 @@ func _on_click_input_received(event_type: String, event_data: Dictionary):
 	if not camera_rig or not camera_rig.is_in_click_navigation_mode():
 		return
 	
-	print("🖱️ ClickNav: Received ", event_type)
+	#print("🖱️ ClickNav: Received ", event_type)
 	
 	match event_type:
 		"left_click_pressed":
@@ -100,7 +100,7 @@ func get_movement_input() -> Vector2:
 		return Vector2.ZERO
 	
 	var distance = character.global_position.distance_to(click_destination)
-	print("🖱️ ClickNav: Distance to destination: ", distance, " threshold: ", arrival_threshold)
+	#print("🖱️ ClickNav: Distance to destination: ", distance, " threshold: ", arrival_threshold)
 	
 	if distance < arrival_threshold:
 		if is_dragging:
@@ -112,7 +112,7 @@ func get_movement_input() -> Vector2:
 	var direction_3d = (click_destination - character.global_position).normalized()
 	var input_2d = world_to_input_direction(direction_3d)
 	
-	print("🖱️ ClickNav: Providing movement input: ", input_2d)
+	#print("🖱️ ClickNav: Providing movement input: ", input_2d)
 	return input_2d
 
 func cancel_input():
@@ -126,12 +126,12 @@ func cancel_input():
 	is_arrival_delay = false
 	is_dragging = false
 	hide_marker()
-	print("🖱️ ClickNav: Navigation cancelled (cooldown applied)")
+	#print("🖱️ ClickNav: Navigation cancelled (cooldown applied)")
 
 # === CLICK HANDLING ===
 
 func start_click_or_drag(screen_pos: Vector2):
-	print("🖱️ ClickNav: Click at ", screen_pos)
+	#print("🖱️ ClickNav: Click at ", screen_pos)
 	
 	if enable_drag_mode:
 		is_dragging = true
@@ -139,16 +139,17 @@ func start_click_or_drag(screen_pos: Vector2):
 	handle_click(screen_pos)
 
 func finish_click_or_drag():
-	print("🖱️ ClickNav: Click finished, was dragging: ", is_dragging)
+	#print("🖱️ ClickNav: Click finished, was dragging: ", is_dragging)
 	is_dragging = false
 
 func handle_click(screen_pos: Vector2):
 	var world_pos = screen_to_world(screen_pos)
 	if world_pos != Vector3.ZERO:
 		set_destination(world_pos)
-		print("🖱️ ClickNav: Moving to ", world_pos)
+		#print("🖱️ ClickNav: Moving to ", world_pos)
 	else:
-		print("🖱️ ClickNav: No valid destination found")
+		pass
+		#print("🖱️ ClickNav: No valid destination found")
 
 func update_drag_destination(screen_pos: Vector2):
 	if not is_dragging:
@@ -180,10 +181,10 @@ func screen_to_world(screen_pos: Vector2) -> Vector3:
 	
 	var result = space_state.intersect_ray(query)
 	if result:
-		print("🖱️ ClickNav: Raycast hit at ", result.position)
+		#print("🖱️ ClickNav: Raycast hit at ", result.position)
 		return result.position
 	else:
-		print("🖱️ ClickNav: Raycast missed")
+		#print("🖱️ ClickNav: Raycast missed")
 		return Vector3.ZERO
 
 func set_destination(world_pos: Vector3):
@@ -191,7 +192,7 @@ func set_destination(world_pos: Vector3):
 	has_destination = true
 	is_arrival_delay = false
 	show_marker(world_pos)
-	print("🖱️ ClickNav: Destination set to ", world_pos)
+	#print("🖱️ ClickNav: Destination set to ", world_pos)
 
 func world_to_input_direction(direction_3d: Vector3) -> Vector2:
 	if not camera_rig:
@@ -213,13 +214,13 @@ func world_to_input_direction(direction_3d: Vector3) -> Vector2:
 # === ARRIVAL HANDLING ===
 
 func start_arrival_delay():
-	print("🖱️ ClickNav: Arrived at destination")
+	#print("🖱️ ClickNav: Arrived at destination")
 	has_destination = false
 	is_arrival_delay = true
 	arrival_timer = marker_hide_delay
 
 func complete_arrival():
-	print("🖱️ ClickNav: Arrival complete")
+	#print("🖱️ ClickNav: Arrival complete")
 	is_arrival_delay = false
 	is_dragging = false
 	hide_marker()
@@ -230,12 +231,12 @@ func show_marker(world_pos: Vector3):
 	if destination_marker and show_destination_marker:
 		destination_marker.global_position = world_pos
 		destination_marker.visible = true
-		print("🖱️ ClickNav: Marker shown at ", world_pos)
+		#print("🖱️ ClickNav: Marker shown at ", world_pos)
 
 func hide_marker():
 	if destination_marker:
 		destination_marker.visible = false
-		print("🖱️ ClickNav: Marker hidden")
+		#print("🖱️ ClickNav: Marker hidden")
 
 func get_debug_info() -> Dictionary:
 	return {

@@ -86,7 +86,7 @@ func handle_click_navigation_input(event: InputEvent):
 				var event_type = "left_click_pressed" if event.pressed else "left_click_released"
 				var event_data = {"position": event.position}
 				click_input_received.emit(event_type, event_data)
-				print("📝 Click nav: ", event_type, " at ", event.position)
+				#print("📝 Click nav: ", event_type, " at ", event.position)
 	
 	elif event is InputEventMouseMotion:
 		var event_data = {"position": event.position, "relative": event.relative}
@@ -115,7 +115,7 @@ func handle_movement_input(delta: float):
 			"direction": new_input,
 			"magnitude": input_magnitude
 		})
-		print("📝 Movement started: ", new_input)
+		#print("📝 Movement started: ", new_input)
 	
 	elif not is_moving and was_moving:
 		movement_active = false
@@ -123,7 +123,7 @@ func handle_movement_input(delta: float):
 		last_sent_input = Vector2.ZERO
 		
 		action_system.request_action("move_end")
-		print("📝 Movement ended")
+		#print("📝 Movement ended")
 	
 	elif is_moving and movement_update_timer >= movement_update_interval:
 		if new_input.distance_to(last_sent_input) > 0.1:
@@ -146,7 +146,7 @@ func get_current_movement_input() -> Vector2:
 	if wasd_input.length() > input_deadzone:
 		# FIXED: Only cancel components if WASD is actually being used
 		cancel_all_input_components()
-		print("📝 Using WASD input: ", wasd_input)
+		#print("📝 Using WASD input: ", wasd_input)
 		return wasd_input
 	
 	# Check input components by priority (only in click nav mode)
@@ -156,7 +156,7 @@ func get_current_movement_input() -> Vector2:
 			if component and is_component_active(component):
 				var component_input = component.get_movement_input()
 				if component_input and component_input.length() > input_deadzone:
-					print("📝 Using ", component_name, " input: ", component_input)
+					#print("📝 Using ", component_name, " input: ", component_input)
 					return component_input
 	
 	return Vector2.ZERO
@@ -178,7 +178,7 @@ func is_component_active(component: Node) -> bool:
 
 func cancel_all_input_components():
 	"""FIXED: Only cancel when WASD is actually active"""
-	print("📝 Cancelling all input components due to WASD usage")
+	#print("📝 Cancelling all input components due to WASD usage")
 	for component in input_components:
 		if component and component.has_method("cancel_input"):
 			component.cancel_input()

@@ -12,23 +12,17 @@ func update(delta: float):
 	
 	character.apply_gravity(delta)
 	
-	print("🚶 WALKING: is_movement_active=", is_movement_active, " vector=", current_movement_vector)
-	
 	if is_movement_active and current_movement_vector.length() > 0:
 		# Calculate 3D movement vector
 		var movement_3d = character.calculate_movement_vector(current_movement_vector)
 		var target_speed = character.get_target_speed()
 		var acceleration = character.get_target_acceleration()
-		
-		print("🚶 WALKING: movement_3d=", movement_3d, " target_speed=", target_speed)
-		
+	
 		character.apply_movement(movement_3d, target_speed, acceleration, delta)
 	else:
 		character.apply_deceleration(delta)
 	
 	character.move_and_slide()
-	
-	print("🚶 WALKING: final velocity=", character.velocity)
 
 # Override to prevent base class transitions for now
 func handle_common_transitions():
