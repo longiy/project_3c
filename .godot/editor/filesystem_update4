@@ -8,3 +8,4 @@ res://Scripts/Character/CharacterStateMachine.gd
 res://Assets/ps_character_gurl.tscn
 res://Scripts/Camera/CameraRig.gd
 res://Scripts/Camera/CameraCinematicControl.gd
+res://Scripts/InputComponents/ClickNavigationComponent.gd

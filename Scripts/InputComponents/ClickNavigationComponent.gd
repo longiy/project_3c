@@ -1,4 +1,4 @@
-# ClickNavigationComponent.gd - Self-contained click-to-move navigation
+# ClickNavigationComponent.gd - Self-contained click-to-move navigation (Cleaned)
 extends Node
 class_name ClickNavigationComponent
 
@@ -6,7 +6,6 @@ class_name ClickNavigationComponent
 @export var arrival_threshold = 0.1
 @export var show_destination_marker = true
 @export var enable_drag_mode = true
-@export var force_mouse_visible_in_cinematic = true
 
 @export_group("Optional Visual Feedback")
 @export var destination_marker: Node3D  # Optional - will work without
@@ -25,9 +24,6 @@ var is_arrival_delay = false
 var is_dragging = false
 var drag_start_pos = Vector2.ZERO
 
-# Cinematic override state
-var mouse_forced_visible = false
-
 func _ready():
 	# Get required parent
 	character = get_parent() as CharacterBody3D
@@ -41,13 +37,6 @@ func _ready():
 		print("ClickNav: No camera found - click navigation disabled")
 
 func _input(event):
-	# Handle cinematic mode mouse toggle first (works even when mouse captured)
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
-		if is_in_cinematic_mode() and force_mouse_visible_in_cinematic:
-			toggle_mouse_in_cinematic()
-			get_viewport().set_input_as_handled()
-			return
-	
 	if not can_handle_input():
 		return
 	
@@ -62,7 +51,7 @@ func _input(event):
 	elif event is InputEventMouseMotion and is_dragging and enable_drag_mode:
 		update_drag_destination(event.position)
 	
-	# Right click cancels when not in cinematic mode
+	# Right click cancels
 	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
 		cancel_input()
 
@@ -110,11 +99,7 @@ func cancel_input():
 
 func can_handle_input() -> bool:
 	"""Check if we should respond to input"""
-	# In cinematic mode, only handle input if we forced mouse visible
-	if is_in_cinematic_mode():
-		return mouse_forced_visible and camera != null
-	
-	# Normal mode - handle input when mouse is free
+	# Handle input when mouse is free and we have camera
 	return Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and camera != null
 
 func handle_click(screen_pos: Vector2):
@@ -183,46 +168,6 @@ func world_to_input_direction(direction_3d: Vector3) -> Vector2:
 	
 	return Vector2(right_dot, -forward_dot)
 
-# === CINEMATIC MODE DETECTION AND MOUSE TOGGLE ===
-
-func is_in_cinematic_mode() -> bool:
-	"""Detect if we're in cinematic mode by checking common patterns"""
-	# Method 1: Check if Input.mouse_mode was forced visible recently
-	# (This catches when cinematic mode sets mouse visible)
-	
-	# Method 2: Look for CameraCinema component and check its state
-	var camera_cinema = find_camera_cinema()
-	if camera_cinema and camera_cinema.has_method("is_in_cinematic_mode"):
-		return camera_cinema.is_in_cinematic_mode()
-	
-	# Method 3: Heuristic - if mouse was captured but is now visible without user input
-	# (This is a simple fallback that works in most cases)
-	return false  # Default to false if we can't detect
-
-func find_camera_cinema() -> Node:
-	"""Try to find CameraCinema component (optional)"""
-	# Look in common locations
-	var camera_rig = get_node_or_null("../../CAMERARIG")
-	if camera_rig:
-		var cinema = camera_rig.get_node_or_null("CameraCinema")
-		if cinema:
-			return cinema
-	
-	# Could add more search patterns here
-	return null
-
-func toggle_mouse_in_cinematic():
-	"""Toggle mouse visibility in cinematic mode"""
-	if mouse_forced_visible:
-		# Hide mouse and disable click nav
-		mouse_forced_visible = false
-		cancel_input()
-		print("ClickNav: Mouse hidden in cinematic mode")
-	else:
-		# Show mouse and enable click nav
-		mouse_forced_visible = true
-		print("ClickNav: Mouse shown in cinematic mode")
-
 # === ARRIVAL HANDLING ===
 
 func start_arrival_delay():
@@ -258,8 +203,6 @@ func get_debug_info() -> Dictionary:
 		"has_destination": has_destination,
 		"is_dragging": is_dragging,
 		"can_handle_input": can_handle_input(),
-		"is_in_cinematic_mode": is_in_cinematic_mode(),
-		"mouse_forced_visible": mouse_forced_visible,
 		"has_camera": camera != null,
 		"has_marker": destination_marker != null,
 		"current_destination": click_destination,
