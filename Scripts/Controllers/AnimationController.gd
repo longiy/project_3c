@@ -1,4 +1,4 @@
-# AnimationController.gd - Signal-driven version (REPLACE existing)
+# AnimationController.gd - Pure signal-driven version (NO ACTION SYSTEM)
 extends Node
 class_name AnimationController
 
@@ -13,10 +13,10 @@ class_name AnimationController
 @export var walk_speed_reference = 3.0
 @export var run_speed_reference = 6.0
 
-# Character reference (keep for validation)
+# Character reference (keep for validation only)
 var character: CharacterBody3D
 
-# Animation state tracking - NOW SIGNAL-DRIVEN
+# Animation state tracking - PURE SIGNAL-DRIVEN
 var current_blend_value = 0.0  # For 1D
 var current_blend_vector = Vector2.ZERO  # For 2D
 var target_blend_value = 0.0
@@ -42,10 +42,10 @@ func _ready():
 	
 	animation_tree.active = true
 	
-	# CONNECT TO CHARACTER SIGNALS
+	# CONNECT TO CHARACTER SIGNALS ONLY
 	connect_to_character_signals()
 	
-	print("✅ AnimationController: Signal-driven system initialized")
+	print("✅ AnimationController: Pure signal-driven system initialized")
 
 func connect_to_character_signals():
 	"""Connect to character signals for data"""
@@ -67,7 +67,7 @@ func _physics_process(delta):
 	if animation_tree:
 		update_blend_smoothing(delta)
 
-# === SIGNAL HANDLERS (REPLACE ACTION SYSTEM HANDLERS) ===
+# === SIGNAL HANDLERS (PURE SIGNAL VERSION) ===
 
 func _on_movement_state_changed(is_moving: bool, direction: Vector2, magnitude: float):
 	"""Handle movement state changes via signal"""
@@ -167,14 +167,7 @@ func is_using_1d_blend_space() -> bool:
 	var current_value = animation_tree.get(move_blend_param)
 	return current_value is float
 
-# === REMOVED: All direct character property access ===
-# NO MORE: get_movement_speed(), is_on_floor(), character.is_running
-
-# === PUBLIC API FOR EXPRESSIONS (REMOVED) ===
-# Animation expressions should NOT query character properties
-# If needed, create separate signal for grounded state
-
-# === DEBUG INFO ===
+# === DEBUG INFO (PURE SIGNALS) ===
 
 func get_debug_info() -> Dictionary:
 	return {
@@ -188,5 +181,6 @@ func get_debug_info() -> Dictionary:
 		"target_1d": target_blend_value,
 		"target_2d": target_blend_vector,
 		"is_1d_mode": is_using_1d_blend_space(),
-		"signal_driven": true
+		"system_type": "Pure Signal-Driven",
+		"action_system_dependency": false
 	}

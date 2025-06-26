@@ -1,7 +1,7 @@
-# ControllerCharacter.gd - Action system version (FIXED)
+# ControllerCharacter.gd - Pure signal-driven version (FIXED)
 extends CharacterBody3D
 
-# === INSPECTOR CONFIGURATION === (unchanged)
+# === INSPECTOR CONFIGURATION ===
 @export_group("Movement Speeds")
 @export var walk_speed = 3.0
 @export var run_speed = 6.0
@@ -31,14 +31,14 @@ extends CharacterBody3D
 @export var jump_system: JumpSystem
 @export var debug_helper: CharacterDebugHelper
 
-# === NEW SIGNALS (Add after existing exports) ===
+# === SIGNAL DEFINITIONS ===
 signal movement_mode_changed(is_running: bool, is_slow_walking: bool)
 signal speed_changed(new_speed: float)
 signal ground_state_changed(is_grounded: bool)
 signal movement_state_changed(is_moving: bool, direction: Vector2, magnitude: float)
 signal jump_performed(jump_force: float, is_air_jump: bool)
 
-# === TRACKING VARIABLES (Add to runtime variables section) ===
+# === TRACKING VARIABLES ===
 var last_emitted_speed: float = 0.0
 var last_emitted_grounded: bool = true
 var last_emitted_running: bool = false
@@ -47,7 +47,7 @@ var last_emitted_slow_walking: bool = false
 # === RUNTIME VARIABLES ===
 var base_gravity: float
 
-# Movement modes (now handled by action system)
+# Movement modes (now with signal emissions)
 var is_slow_walking = false
 var is_running = false
 
@@ -58,7 +58,7 @@ var action_system: ActionSystem
 func _ready():
 	setup_character()
 	setup_state_machine()
-	# TEST: Connect to own signals to verify they work
+	# Connect to own signals for verification
 	movement_mode_changed.connect(_on_movement_mode_changed)
 	speed_changed.connect(_on_speed_changed)
 	ground_state_changed.connect(_on_ground_state_changed)
@@ -88,7 +88,7 @@ func setup_character():
 	if not jump_system:
 		push_warning("No JumpSystem assigned - jumping will not work")
 
-		# NEW: Initialize tracking variables
+	# Initialize tracking variables
 	last_emitted_speed = 0.0
 	last_emitted_grounded = is_on_floor()
 	last_emitted_running = is_running
@@ -116,18 +116,16 @@ func _input(event):
 	# All input now handled by InputManager -> ActionSystem
 	pass
 
-# === MODIFY EXISTING _physics_process ===
+# === PHYSICS PROCESS WITH SIGNAL EMISSIONS ===
 func _physics_process(delta):
 	if state_machine:
 		state_machine.update(delta)
 	
-	# NEW: Emit speed changes
+	# Emit property changes for signal-driven systems
 	emit_speed_changes()
-	
-	# NEW: Emit ground state changes  
 	emit_ground_state_changes()
 
-# === NEW EMISSION METHODS ===
+# === SIGNAL EMISSION METHODS ===
 
 func emit_speed_changes():
 	"""Emit speed changes when movement speed changes significantly"""
@@ -150,7 +148,39 @@ func emit_movement_mode_changes():
 		last_emitted_slow_walking = is_slow_walking
 		movement_mode_changed.emit(is_running, is_slow_walking)
 
-# === MOVEMENT CALCULATION === (unchanged)
+# === PROPERTY SETTERS WITH SIGNAL EMISSIONS ===
+
+func set_running(value: bool):
+	"""Set running state and emit signal"""
+	if is_running != value:
+		is_running = value
+		emit_movement_mode_changes()
+
+func set_slow_walking(value: bool):
+	"""Set slow walking state and emit signal"""
+	if is_slow_walking != value:
+		is_slow_walking = value
+		emit_movement_mode_changes()
+
+# === DIRECT PROPERTY CHANGES (Use setters for signals) ===
+
+func start_running():
+	"""Start running mode"""
+	set_running(true)
+
+func stop_running():
+	"""Stop running mode"""
+	set_running(false)
+
+func start_slow_walking():
+	"""Start slow walking mode"""
+	set_slow_walking(true)
+
+func stop_slow_walking():
+	"""Stop slow walking mode"""
+	set_slow_walking(false)
+
+# === MOVEMENT CALCULATION ===
 
 func calculate_movement_vector(input_dir: Vector2) -> Vector3:
 	"""Convert 2D input to 3D movement relative to camera"""
@@ -182,7 +212,7 @@ func get_target_acceleration() -> float:
 	"""Get acceleration based on ground state"""
 	return ground_acceleration if is_on_floor() else air_acceleration
 
-# === PHYSICS HELPERS === (unchanged)
+# === PHYSICS HELPERS ===
 
 func apply_gravity(delta: float):
 	"""Apply gravity if not grounded"""
@@ -213,7 +243,7 @@ func perform_jump(jump_force: float):
 		var was_grounded = is_on_floor()
 		jump_system.perform_jump(jump_force)
 		
-		# NEW: Emit jump event
+		# Emit jump event
 		jump_performed.emit(jump_force, not was_grounded)
 
 # === GROUND STATE MANAGEMENT ===
@@ -223,47 +253,7 @@ func update_ground_state():
 	if jump_system:
 		jump_system.update_ground_state()
 
-# === NEW: Action-based input helpers ===
-
-func get_current_input_direction() -> Vector2:
-	"""Get current input direction from action system state"""
-	if state_machine and state_machine.current_state:
-		var current_state = state_machine.current_state
-		if current_state.has_method("get_current_movement_input"):
-			return current_state.get_current_movement_input()
-	return Vector2.ZERO
-
-# === LEGACY API (marked for removal) ===
-
-func get_input_duration() -> float:
-	"""LEGACY: Use state machine action state instead"""
-	if state_machine and state_machine.current_state:
-		var current_state = state_machine.current_state
-		if current_state.has_method("get_movement_duration"):
-			return current_state.get_movement_duration()
-	return 0.0
-
-func is_input_sustained(min_duration: float = 0.3) -> bool:
-	"""LEGACY: Use state machine action state instead"""
-	if state_machine and state_machine.current_state:
-		var current_state = state_machine.current_state
-		if current_state.has_method("is_input_sustained"):
-			return current_state.is_input_sustained(min_duration)
-	return false
-
-func should_process_input() -> bool:
-	"""LEGACY: Use state machine action state instead"""
-	if state_machine and state_machine.current_state:
-		var current_state = state_machine.current_state
-		if current_state.has_method("should_process_movement"):
-			return current_state.should_process_movement()
-	return false
-
-func get_smoothed_input() -> Vector2:
-	"""LEGACY: Use get_current_input_direction() instead"""
-	return get_current_input_direction()
-
-# === JUMP HELPERS === (delegated to JumpSystem)
+# === JUMP HELPERS ===
 
 func can_jump() -> bool:
 	return jump_system.can_jump() if jump_system else false

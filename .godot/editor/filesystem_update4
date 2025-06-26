@@ -2,3 +2,7 @@ res://SCENE.tscn
 res://AnimationTreeMove1d.tres
 res://Scripts/Camera/CameraStateResponder.gd
 res://Assets/ps_character_gurl.tscn
+res://Scripts/Character/CharacterStatesBase.gd
+res://Scripts/ActionSystem/ActionSystem.gd
+res://Scripts/Controllers/ControllerCharacter.gd
+res://Scripts/Controllers/AnimationController.gd

@@ -1,4 +1,4 @@
-# CharacterStatesBase.gd - Enhanced with animation integration
+# CharacterStatesBase.gd - Pure signal-driven version (CLEANED)
 class_name CharacterStateBase
 extends State
 
@@ -22,32 +22,10 @@ func enter():
 	action_system = character.get_node_or_null("ActionSystem")
 	if not action_system:
 		push_warning("No ActionSystem found - actions will not work")
-	
-	# REMOVED: request_animation_update() - signals handle this automatically
-
-# REMOVE OR COMMENT OUT THESE METHODS:
-# - request_animation_update()
-# - request_animation_movement_change()  
-# - request_animation_mode_change()
 
 func update(delta: float):
 	super.update(delta)
 	# States now react to actions instead of polling input
-
-# === ANIMATION INTEGRATION ===
-
-func request_animation_update():
-	"""Request animation system to update based on current state"""
-	if action_system:
-		# Create animation context based on current state
-		var anim_context = {
-			"state_name": state_name,
-			"movement_active": is_movement_active,
-			"movement_vector": current_movement_vector,
-			"movement_speed": character.get_movement_speed() if character else 0.0
-		}
-		
-		action_system.request_action("animation_state_change", anim_context)
 
 # === ACTION SYSTEM INTERFACE ===
 
@@ -63,9 +41,6 @@ func can_execute_action(action: Action) -> bool:
 		# Look actions - usually available
 		"look_delta":
 			return can_handle_look_action(action)
-		# Animation actions - internal system
-		"animation_state_change", "animation_speed_change":
-			return false  # Handled by animation system
 		# Reset always available
 		"reset":
 			return true
@@ -83,23 +58,22 @@ func execute_action(action: Action):
 		"move_end":
 			handle_move_end_action(action)
 		
-		# Mode actions - ADD SIGNAL EMISSIONS
+		# Mode actions - EMIT SIGNALS DIRECTLY
 		"sprint_start":
 			character.is_running = true
-			character.emit_movement_mode_changes()  # NEW
+			character.emit_movement_mode_changes()
 			
 		"sprint_end":
 			character.is_running = false
-			character.emit_movement_mode_changes()  # NEW
+			character.emit_movement_mode_changes()
 			
 		"slow_walk_start":
 			character.is_slow_walking = true
-			character.emit_movement_mode_changes()  # NEW
+			character.emit_movement_mode_changes()
 			
 		"slow_walk_end":
 			character.is_slow_walking = false
-			character.emit_movement_mode_changes()  # NEW
-			
+			character.emit_movement_mode_changes()
 		
 		# Look actions
 		"look_delta":
@@ -112,9 +86,8 @@ func execute_action(action: Action):
 		_:
 			push_warning("Unhandled action in ", state_name, ": ", action.name)
 
-# === MOVEMENT ACTION HANDLERS (Enhanced) ===
+# === MOVEMENT ACTION HANDLERS (PURE SIGNAL VERSION) ===
 
-# === MODIFY EXISTING handle_move_start_action ===
 func handle_move_start_action(action: Action):
 	"""Handle start of movement input"""
 	current_movement_vector = action.get_movement_vector()
@@ -122,10 +95,8 @@ func handle_move_start_action(action: Action):
 	movement_start_time = Time.get_ticks_msec() / 1000.0
 	is_movement_active = true
 	
-	# Character signal emission handles animation automatically
+	# PURE SIGNAL: Character emits, animation receives
 	character.movement_state_changed.emit(true, current_movement_vector, movement_magnitude)
-	
-	# REMOVED: request_animation_movement_change() - not needed
 	
 	# Child states can override for specific behavior
 	on_movement_started(current_movement_vector, movement_magnitude)
@@ -135,8 +106,8 @@ func handle_move_update_action(action: Action):
 	current_movement_vector = action.get_movement_vector()
 	movement_magnitude = action.context.get("magnitude", current_movement_vector.length())
 	
-	# Request animation update for direction changes
-	request_animation_movement_change()
+	# PURE SIGNAL: Just emit the change, no action requests
+	character.movement_state_changed.emit(true, current_movement_vector, movement_magnitude)
 	
 	# Child states can override for specific behavior
 	on_movement_updated(current_movement_vector, movement_magnitude)
@@ -147,10 +118,8 @@ func handle_move_end_action(action: Action):
 	movement_magnitude = 0.0
 	is_movement_active = false
 	
-	# Character signal emission handles animation automatically
+	# PURE SIGNAL: Character emits, animation receives
 	character.movement_state_changed.emit(false, Vector2.ZERO, 0.0)
-	
-	# REMOVED: request_animation_movement_change() - not needed
 	
 	# Child states can override for specific behavior
 	on_movement_ended()
@@ -158,31 +127,7 @@ func handle_move_end_action(action: Action):
 func handle_look_action(action: Action):
 	"""Handle look input - delegate to camera system"""
 	var look_delta = action.get_look_delta()
-	# This will be handled by camera system
-
-# === ANIMATION REQUEST HELPERS ===
-
-func request_animation_movement_change():
-	"""Request animation update for movement changes"""
-	if action_system:
-		var movement_context = {
-			"movement_active": is_movement_active,
-			"movement_vector": current_movement_vector,
-			"movement_magnitude": movement_magnitude,
-			"state_name": state_name
-		}
-		action_system.request_action("animation_movement_change", movement_context)
-
-func request_animation_mode_change():
-	"""Request animation update for mode changes (sprint/walk)"""
-	if action_system:
-		var mode_context = {
-			"is_running": character.is_running if character else false,
-			"is_slow_walking": character.is_slow_walking if character else false,
-			"movement_speed": character.get_movement_speed() if character else 0.0,
-			"state_name": state_name
-		}
-		action_system.request_action("animation_mode_change", mode_context)
+	# This will be handled by camera system automatically
 
 # === VIRTUAL METHODS FOR CHILD STATES ===
 
