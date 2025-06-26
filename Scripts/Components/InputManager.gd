@@ -1,7 +1,6 @@
-# InputManager.gd - Unified action-based input processing
+# InputManager.gd - FIXED: Proper camera mode-based input routing
 extends Node
 class_name InputManager
-
 
 @export_group("Input Settings")
 @export var input_deadzone = 0.05
@@ -10,18 +9,13 @@ class_name InputManager
 # Component references
 var action_system: ActionSystem
 var character: CharacterBody3D
+var camera_rig: CameraRig
 
 # Movement state tracking
 var current_raw_input = Vector2.ZERO
 var last_sent_input = Vector2.ZERO
 var movement_active = false
 var movement_start_time = 0.0
-
-# Look input tracking
-var mouse_captured = false
-
-# Add camera reference
-var camera_rig: CameraRig
 
 # Input component priority and references
 @export var input_component_priority: Array[String] = ["ClickNavigation", "Gamepad"]
@@ -31,7 +25,7 @@ var input_components: Array[Node] = []
 var movement_update_timer = 0.0
 var movement_update_interval: float
 
-# Add new signal for click components
+# FIXED: Click navigation signals
 signal click_input_received(event_type: String, event_data: Dictionary)
 
 func _ready():
@@ -57,24 +51,20 @@ func _ready():
 	# Find input components
 	call_deferred("find_input_components")
 	
-	print("📝 InputManager: Initialized with camera mode awareness")
+	print("📝 InputManager: FIXED - Camera mode aware input routing")
 
-# Add to _input() function
 func _input(event):
-	"""Process all input events based on camera mode"""
+	"""FIXED: Route input based on camera mode"""
 	
-	# Route input based on camera mode
-	if camera_rig and camera_rig.is_in_click_navigation_mode():
-		# Click navigation mode: route mouse clicks to click nav
-		handle_click_navigation_input(event)
-	else:
-		# Orbit mode: handle keyboard input normally
-		handle_orbit_mode_input(event)
-
-func handle_orbit_mode_input(event: InputEvent):
-	"""Handle input in orbit mode (default)"""
-	# Handle discrete input events (keys, buttons)
-	handle_discrete_input(event)
+	# Handle discrete keyboard input first (works in all modes)
+	if handle_discrete_input(event):
+		return
+	
+	# Route mouse input based on camera mode
+	if camera_rig:
+		if camera_rig.is_in_click_navigation_mode():
+			handle_click_navigation_input(event)
+		# Note: Orbit mode mouse input is handled by CameraRig directly
 
 func _physics_process(delta):
 	"""Process continuous input (movement) at fixed intervals"""
@@ -82,78 +72,50 @@ func _physics_process(delta):
 
 # === DISCRETE INPUT HANDLING ===
 
-func handle_click_navigation_input(event: InputEvent):
-	"""Handle input in click navigation mode"""
-	# Handle keyboard input normally
-	handle_discrete_input(event)
-	
-	# Route mouse clicks to click navigation components
-	if event is InputEventMouseButton:
-		match event.button_index:
-			MOUSE_BUTTON_LEFT:
-				var event_type = "left_click_pressed" if event.pressed else "left_click_released"
-				var event_data = {"position": event.position}
-				click_input_received.emit(event_type, event_data)
-				print("📝 Click nav mode: Routed ", event_type)
-			
-			# Right mouse handled by camera for mode toggle
-	
-	elif event is InputEventMouseMotion:
-		# Route motion to active click components
-		if has_active_click_components():
-			var event_data = {"position": event.position, "relative": event.relative}
-			click_input_received.emit("mouse_motion", event_data)
-
-# Add new function for click input routing
-func handle_click_input_routing(event: InputEvent):
-	"""Route click input to click navigation components"""
-	if event is InputEventMouseButton:
-		match event.button_index:
-			MOUSE_BUTTON_LEFT:
-				var event_type = "left_click_pressed" if event.pressed else "left_click_released"
-				var event_data = {"position": event.position}
-				click_input_received.emit(event_type, event_data)
-				print("📝 InputManager: Routed ", event_type, " to click components")
-			
-			MOUSE_BUTTON_RIGHT:
-				if event.pressed:
-					click_input_received.emit("right_click_pressed", {"position": event.position})
-					print("📝 InputManager: Routed right_click_pressed to click components")
-	
-	elif event is InputEventMouseMotion:
-		# Only route motion if there are active click components
-		if has_active_click_components():
-			var event_data = {"position": event.position, "relative": event.relative}
-			click_input_received.emit("mouse_motion", event_data)
-
-# Add helper function to check for active click components
-func has_active_click_components() -> bool:
-	"""Check if any click navigation components are active"""
-	for component in input_components:
-		if component.has_method("is_active") and component.is_active():
-			return true
-	return false
-	
-# Update the existing discrete input handler to only work when mouse is captured
-func handle_discrete_input(event: InputEvent):
-	"""Convert key/button events to actions (same for both modes)"""
+func handle_discrete_input(event: InputEvent) -> bool:
+	"""Handle keyboard input (works in all camera modes) - returns true if handled"""
 	if event is InputEventKey and event.pressed:
 		match event.keycode:
 			KEY_SPACE:
 				action_system.request_action("jump")
+				return true
 			KEY_ENTER when Input.is_action_pressed("reset"):
 				action_system.request_action("reset")
+				return true
 	
 	# Handle movement mode toggles
 	if event.is_action_pressed("sprint"):
 		action_system.request_action("sprint_start")
+		return true
 	elif event.is_action_released("sprint"):
 		action_system.request_action("sprint_end")
+		return true
 	
 	if event.is_action_pressed("walk"):
 		action_system.request_action("slow_walk_start")
+		return true
 	elif event.is_action_released("walk"):
 		action_system.request_action("slow_walk_end")
+		return true
+	
+	return false
+
+func handle_click_navigation_input(event: InputEvent):
+	"""FIXED: Handle mouse input in click navigation mode"""
+	if event is InputEventMouseButton:
+		match event.button_index:
+			MOUSE_BUTTON_LEFT:
+				var event_type = "left_click_pressed" if event.pressed else "left_click_released"
+				var event_data = {"position": event.position}
+				click_input_received.emit(event_type, event_data)
+				print("📝 Click nav: ", event_type, " at ", event.position)
+			
+			# Right mouse is handled by CameraRig for mode switching
+	
+	elif event is InputEventMouseMotion:
+		# Always route mouse motion in click nav mode (for dragging)
+		var event_data = {"position": event.position, "relative": event.relative}
+		click_input_received.emit("mouse_motion", event_data)
 
 # === MOVEMENT INPUT HANDLING ===
 
@@ -161,7 +123,7 @@ func handle_movement_input(delta: float):
 	"""Process movement input and generate appropriate actions"""
 	movement_update_timer += delta
 	
-	# Get current movement input
+	# Get current movement input (priority: WASD > Components)
 	var new_input = get_current_movement_input()
 	var input_magnitude = new_input.length()
 	var has_input = input_magnitude > input_deadzone
@@ -211,16 +173,6 @@ func handle_movement_input(delta: float):
 		
 		movement_update_timer = 0.0
 
-# === MOUSE LOOK HANDLING ===
-
-func handle_mouse_look(event: InputEvent):
-	"""Convert mouse movement to look actions"""
-	if event is InputEventMouseMotion:
-		# REMOVED: Don't process mouse look through actions anymore
-		# CameraRig handles this directly now
-		pass
-		
-
 # === INPUT SOURCE MANAGEMENT ===
 
 func get_current_movement_input() -> Vector2:
@@ -231,13 +183,14 @@ func get_current_movement_input() -> Vector2:
 		cancel_all_input_components()
 		return wasd_input
 	
-	# Check input components by priority
-	for component_name in input_component_priority:
-		var component = get_component_by_name(component_name)
-		if component and is_component_active(component):
-			var component_input = component.get_movement_input()
-			if component_input and component_input.length() > input_deadzone:
-				return component_input
+	# Check input components by priority (only in click nav mode)
+	if camera_rig and camera_rig.is_in_click_navigation_mode():
+		for component_name in input_component_priority:
+			var component = get_component_by_name(component_name)
+			if component and is_component_active(component):
+				var component_input = component.get_movement_input()
+				if component_input and component_input.length() > input_deadzone:
+					return component_input
 	
 	return Vector2.ZERO
 
@@ -255,11 +208,6 @@ func is_component_active(component: Node) -> bool:
 	
 	if component.has_method("is_active"):
 		return component.is_active()
-	
-	# Fallback: check if component has input
-	if component.has_method("get_movement_input"):
-		var test_input = component.get_movement_input()
-		return test_input != null and test_input.length() > input_deadzone
 	
 	return false
 
@@ -282,7 +230,7 @@ func find_input_components():
 	
 	print("📝 InputManager: Total input components: ", input_components.size())
 
-# === LEGACY API (for backward compatibility during transition) ===
+# === UTILITY METHODS ===
 
 func get_movement_duration() -> float:
 	"""Get how long movement has been active"""
@@ -298,22 +246,6 @@ func get_current_input_direction() -> Vector2:
 	"""Get current input for external systems that still need it"""
 	return current_raw_input
 
-# These methods now delegate to action system state
-func get_smoothed_input() -> Vector2:
-	"""DEPRECATED: Use action system instead"""
-	push_warning("get_smoothed_input() is deprecated. Use action system.")
-	return current_raw_input
-
-func get_raw_input() -> Vector2:
-	"""DEPRECATED: Use action system instead"""
-	push_warning("get_raw_input() is deprecated. Use action system.")
-	return current_raw_input
-
-func should_process_input() -> bool:
-	"""DEPRECATED: Use action system instead"""
-	push_warning("should_process_input() is deprecated. Use action system.")
-	return movement_active
-
 # === DEBUG INFO ===
 
 func get_debug_info() -> Dictionary:
@@ -324,7 +256,8 @@ func get_debug_info() -> Dictionary:
 		"component_count": input_components.size(),
 		"active_components": get_active_components(),
 		"action_system_connected": action_system != null,
-		"update_frequency": movement_update_frequency
+		"camera_mode": camera_rig.get_mode_name(camera_rig.get_current_mode()) if camera_rig else "unknown",
+		"click_nav_available": camera_rig and camera_rig.is_in_click_navigation_mode()
 	}
 
 func get_active_components() -> Array[String]:

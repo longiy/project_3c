@@ -1,9 +1,9 @@
-# CameraRig.gd - Default orbit mode with click nav toggle
+# CameraRig.gd - FIXED: Proper mode switching with visual feedback
 extends Node3D
 class_name CameraRig
 
 # === SIGNALS ===
-signal camera_mode_changed(mode: String)  # "orbit" or "click_navigation"
+signal camera_mode_changed(mode: String)
 signal mouse_mode_changed(captured: bool)
 signal target_lost()
 signal target_acquired(target: Node3D)
@@ -65,16 +65,28 @@ var target_fov = 75.0
 var external_controllers: Dictionary = {}
 var is_externally_controlled = false
 
+# FIXED: Mode switching state
+var mode_switch_cooldown = 0.0
+var mode_switch_delay = 0.2
+
 func _ready():
 	setup_camera_rig()
 	setup_target()
 	set_camera_mode(CameraMode.ORBIT)
 
 func _input(event):
-	"""Handle camera input based on current mode"""
+	"""Handle camera input - FIXED mode switching"""
 	if not enable_camera_rig or is_externally_controlled:
 		return
 	
+	# FIXED: Global Mouse2 handling for mode switching
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+		if mode_switch_cooldown <= 0:
+			toggle_camera_mode()
+			mode_switch_cooldown = mode_switch_delay
+		return
+	
+	# Process mode-specific input
 	match current_mode:
 		CameraMode.ORBIT:
 			handle_orbit_input(event)
@@ -84,6 +96,10 @@ func _input(event):
 func _physics_process(delta):
 	if not enable_camera_rig:
 		return
+	
+	# Update cooldown
+	if mode_switch_cooldown > 0:
+		mode_switch_cooldown -= delta
 		
 	update_target_following(delta)
 	update_camera_properties(delta)
@@ -92,7 +108,7 @@ func _physics_process(delta):
 # === CAMERA MODE MANAGEMENT ===
 
 func set_camera_mode(mode: CameraMode):
-	"""Switch between camera modes"""
+	"""Switch between camera modes - FIXED"""
 	if current_mode == mode:
 		return
 	
@@ -106,7 +122,7 @@ func set_camera_mode(mode: CameraMode):
 			setup_click_navigation_mode()
 	
 	camera_mode_changed.emit(get_mode_name(mode))
-	print("📹 Camera mode changed: ", get_mode_name(old_mode), " → ", get_mode_name(mode))
+	print("📹 Camera mode: ", get_mode_name(old_mode), " → ", get_mode_name(mode))
 
 func toggle_camera_mode():
 	"""Toggle between orbit and click navigation modes"""
@@ -126,19 +142,21 @@ func get_mode_name(mode: CameraMode) -> String:
 			return "unknown"
 
 func setup_orbit_mode():
-	"""Setup orbit camera mode"""
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE  # Mouse free but no cursor
-	print("📹 Orbit mode: Mouse controls camera, WASD moves character")
+	"""Setup orbit camera mode - FIXED"""
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	mouse_mode_changed.emit(true)
+	print("📹 ORBIT MODE: Mouse captured, camera orbits")
 
 func setup_click_navigation_mode():
-	"""Setup click navigation mode"""
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE  # Mouse free with cursor
-	print("📹 Click navigation mode: Click to move, camera orbit disabled")
+	"""Setup click navigation mode - FIXED"""
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	mouse_mode_changed.emit(false)
+	print("📹 CLICK NAV MODE: Mouse visible, click to move")
 
 # === ORBIT MODE INPUT ===
 
 func handle_orbit_input(event: InputEvent):
-	"""Handle input in orbit mode"""
+	"""Handle input in orbit mode - mouse captured"""
 	# Mouse look for camera orbit
 	if event is InputEventMouseMotion:
 		handle_mouse_orbit(event.relative)
@@ -150,8 +168,6 @@ func handle_orbit_input(event: InputEvent):
 				handle_zoom_direct(-scroll_zoom_speed)
 			MOUSE_BUTTON_WHEEL_DOWN:
 				handle_zoom_direct(scroll_zoom_speed)
-			MOUSE_BUTTON_RIGHT:  # Mouse2 = toggle to click nav
-				toggle_camera_mode()
 
 func handle_mouse_orbit(mouse_delta: Vector2):
 	"""Handle mouse orbit around character"""
@@ -171,18 +187,17 @@ func handle_mouse_orbit(mouse_delta: Vector2):
 # === CLICK NAVIGATION MODE INPUT ===
 
 func handle_click_nav_input(event: InputEvent):
-	"""Handle input in click navigation mode"""
-	# Still allow zoom
+	"""Handle input in click navigation mode - FIXED"""
+	# Still allow zoom in click nav mode
 	if event is InputEventMouseButton and event.pressed:
 		match event.button_index:
 			MOUSE_BUTTON_WHEEL_UP:
 				handle_zoom_direct(-scroll_zoom_speed)
 			MOUSE_BUTTON_WHEEL_DOWN:
 				handle_zoom_direct(scroll_zoom_speed)
-			MOUSE_BUTTON_RIGHT:  # Mouse2 = toggle back to orbit
-				toggle_camera_mode()
 	
-	# Mouse clicks and motion are handled by InputManager in this mode
+	# NOTE: Mouse clicks and motion are now handled by InputManager
+	# This method only handles camera-specific input in click nav mode
 
 # === CAMERA CONTROL ===
 
@@ -287,14 +302,15 @@ func get_camera_right() -> Vector3:
 
 # === DEBUG INFO ===
 
-func get_debug_info() -> Dictionary:
+func get_camera_debug_info() -> Dictionary:
 	return {
 		"enabled": enable_camera_rig,
-		"mode": get_mode_name(current_mode),
-		"target": target_node.name if target_node else "None",
+		"follow_mode": get_mode_name(current_mode),
+		"is_following": target_node != null,
+		"mouse_captured": Input.mouse_mode == Input.MOUSE_MODE_CAPTURED,
+		"current_distance": current_distance,
 		"external_control": is_externally_controlled,
 		"position": global_position,
 		"rotation_deg": Vector2(rad_to_deg(camera_rotation_x), rad_to_deg(camera_rotation_y)),
-		"fov": current_fov,
-		"distance": current_distance
+		"fov": current_fov
 	}

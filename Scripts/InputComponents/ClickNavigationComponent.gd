@@ -1,4 +1,4 @@
-# ClickNavigationComponent.gd - Simplified for camera mode integration
+# ClickNavigationComponent.gd - FIXED: Proper activation and camera mode integration
 extends Node
 class_name ClickNavigationComponent
 
@@ -54,7 +54,7 @@ func _ready():
 		input_manager.click_input_received.connect(_on_click_input_received)
 		print("🖱️ ClickNav: Connected to InputManager click signals")
 	
-	print("🖱️ ClickNav: Initialized for camera mode integration")
+	print("🖱️ ClickNav: FIXED - Ready for camera mode integration")
 
 func _physics_process(delta):
 	# Handle arrival delay timer
@@ -70,8 +70,9 @@ func _physics_process(delta):
 # === INPUT HANDLING ===
 
 func _on_click_input_received(event_type: String, event_data: Dictionary):
-	"""Handle click input from InputManager (only in click nav mode)"""
-	if not is_active():
+	"""Handle click input from InputManager - FIXED"""
+	# Always process clicks in click nav mode (removed activation check)
+	if not camera_rig or not camera_rig.is_in_click_navigation_mode():
 		return
 	
 	match event_type:
@@ -90,15 +91,13 @@ func _on_click_input_received(event_type: String, event_data: Dictionary):
 # === PUBLIC INTERFACE (Required by InputManager) ===
 
 func is_active() -> bool:
-	"""Check if this component should be providing input"""
-	# Only active in click navigation mode
-	if not camera_rig:
+	"""FIXED: Check if this component should be providing input"""
+	# Only active in click navigation mode AND (has destination OR is dragging)
+	if not camera_rig or not camera_rig.is_in_click_navigation_mode():
 		return false
 	
-	var in_click_mode = camera_rig.is_in_click_navigation_mode()
-	var has_input = (has_destination or is_dragging) and not is_arrival_delay
-	
-	return in_click_mode and has_input
+	# FIXED: Active if we have destination, are dragging, or are in arrival delay
+	return (has_destination or is_dragging or is_arrival_delay)
 
 func get_movement_input() -> Vector2:
 	"""Get movement direction as 2D input"""
@@ -141,7 +140,7 @@ func start_click_or_drag(screen_pos: Vector2):
 
 func finish_click_or_drag():
 	"""Handle end of click or drag"""
-	print("🖱️ ClickNav: Click finished")
+	print("🖱️ ClickNav: Click finished, dragging=", is_dragging)
 	is_dragging = false
 
 func handle_click(screen_pos: Vector2):
@@ -185,16 +184,23 @@ func screen_to_world(screen_pos: Vector2) -> Vector3:
 	query.collision_mask = 1  # Only ground layer
 	
 	var result = space_state.intersect_ray(query)
-	return result.position if result else Vector3.ZERO
+	if result:
+		print("🖱️ ClickNav: Raycast hit at ", result.position)
+		return result.position
+	else:
+		print("🖱️ ClickNav: Raycast missed")
+		return Vector3.ZERO
 
 func set_destination(world_pos: Vector3):
 	"""Set new click destination"""
 	click_destination = world_pos
 	has_destination = true
+	is_arrival_delay = false  # Clear any arrival delay
 	show_marker(world_pos)
+	print("🖱️ ClickNav: Destination set to ", world_pos)
 
 func world_to_input_direction(direction_3d: Vector3) -> Vector2:
-	"""Convert 3D world direction to 2D input relative to camera"""
+	"""Convert 3D world direction to 2D input relative to camera - FIXED AXES"""
 	if not camera_rig:
 		return Vector2(direction_3d.x, direction_3d.z)
 	
@@ -211,18 +217,22 @@ func world_to_input_direction(direction_3d: Vector3) -> Vector2:
 	var forward_dot = direction_3d.dot(cam_forward)
 	var right_dot = direction_3d.dot(cam_right)
 	
-	return Vector2(right_dot, forward_dot)
+	# FIXED: Invert Y axis to match WASD input convention
+	# WASD: W=forward=-Y, S=backward=+Y, A=left=-X, D=right=+X
+	return Vector2(right_dot, -forward_dot)
 
 # === ARRIVAL HANDLING ===
 
 func start_arrival_delay():
 	"""Start arrival delay"""
+	print("🖱️ ClickNav: Arrived at destination")
 	has_destination = false
 	is_arrival_delay = true
 	arrival_timer = marker_hide_delay
 
 func complete_arrival():
 	"""Complete arrival and clean up"""
+	print("🖱️ ClickNav: Arrival complete")
 	is_arrival_delay = false
 	is_dragging = false
 	hide_marker()
@@ -234,11 +244,13 @@ func show_marker(world_pos: Vector3):
 	if destination_marker and show_destination_marker:
 		destination_marker.global_position = world_pos
 		destination_marker.visible = true
+		print("🖱️ ClickNav: Marker shown at ", world_pos)
 
 func hide_marker():
 	"""Hide destination marker"""
 	if destination_marker:
 		destination_marker.visible = false
+		print("🖱️ ClickNav: Marker hidden")
 
 # === DEBUG ===
 
@@ -248,6 +260,9 @@ func get_debug_info() -> Dictionary:
 		"is_dragging": is_dragging,
 		"is_active": is_active(),
 		"camera_mode": camera_rig.get_mode_name(camera_rig.get_current_mode()) if camera_rig else "unknown",
+		"in_click_nav_mode": camera_rig.is_in_click_navigation_mode() if camera_rig else false,
 		"current_destination": click_destination,
-		"distance_to_dest": character.global_position.distance_to(click_destination) if has_destination else 0.0
+		"distance_to_dest": character.global_position.distance_to(click_destination) if has_destination else 0.0,
+		"arrival_delay": is_arrival_delay,
+		"marker_visible": destination_marker.visible if destination_marker else false
 	}
