@@ -162,9 +162,6 @@ max_air_jumps = 5
 
 [node name="CharacterDebugHelper" type="Node" parent="CHARACTER"]
 script = ExtResource("24_sjx82")
-enable_debug_logging = null
-reset_position = null
-enable_force_state_commands = null
 
 [node name="ActionSystem" type="Node" parent="CHARACTER"]
 script = ExtResource("25_3fkbm")

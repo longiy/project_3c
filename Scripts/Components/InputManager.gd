@@ -1,13 +1,10 @@
-# InputManager.gd - CENTRALIZED input processing (ALL input flows through here)
+# InputManager.gd - Unified action-based input processing
 extends Node
 class_name InputManager
 
 @export_group("Input Settings")
 @export var input_deadzone = 0.05
 @export var movement_update_frequency = 60  # Hz for move_update actions
-
-@export_group("Mouse Settings")
-@export var scroll_zoom_speed = 0.5
 
 # Component references
 var action_system: ActionSystem
@@ -18,6 +15,9 @@ var current_raw_input = Vector2.ZERO
 var last_sent_input = Vector2.ZERO
 var movement_active = false
 var movement_start_time = 0.0
+
+# Look input tracking
+var mouse_captured = false
 
 # Input component priority and references
 @export var input_component_priority: Array[String] = ["ClickNavigation", "Gamepad"]
@@ -36,56 +36,33 @@ func _ready():
 	# Calculate update interval
 	movement_update_interval = 1.0 / movement_update_frequency
 	
-	# Find action system (deferred to ensure it's ready)
-	call_deferred("setup_action_system")
-	
-	# Find input components
-	call_deferred("find_input_components")
-	
-	print("📝 InputManager: CENTRALIZED input processing initialized")
-
-func setup_action_system():
-	"""Find and validate action system"""
+	# Find action system
 	action_system = character.get_node_or_null("ActionSystem")
 	if not action_system:
 		push_error("InputManager requires ActionSystem as sibling")
 		return
 	
-	print("✅ InputManager: Connected to ActionSystem")
+	# Find input components
+	call_deferred("find_input_components")
+	
+	print("📝 InputManager: Initialized with unified action processing")
 
 func _input(event):
-	"""Process ALL input events and convert to actions"""
-	# Safety check - don't process input until action system is ready
-	if not action_system:
-		return
-		
+	"""Process all input events and convert to actions"""
 	# Handle discrete input events (keys, buttons)
 	handle_discrete_input(event)
 	
-	# Handle mouse look (CENTRALIZED - was in CameraActionReceiver)
+	# Handle mouse look (if captured)
 	handle_mouse_look(event)
-	
-	# Handle mouse wheel (CENTRALIZED - was in CameraActionReceiver)
-	handle_mouse_wheel(event)
-	
-	# Handle mouse buttons (CENTRALIZED)
-	handle_mouse_buttons(event)
 
 func _physics_process(delta):
 	"""Process continuous input (movement) at fixed intervals"""
-	# Safety check - don't process until action system is ready
-	if not action_system:
-		return
-		
 	handle_movement_input(delta)
 
 # === DISCRETE INPUT HANDLING ===
 
 func handle_discrete_input(event: InputEvent):
 	"""Convert key/button events to actions"""
-	if not action_system:
-		return  # Safely return if action system not ready
-		
 	if event is InputEventKey and event.pressed:
 		match event.keycode:
 			KEY_SPACE:
@@ -104,60 +81,10 @@ func handle_discrete_input(event: InputEvent):
 	elif event.is_action_released("walk"):
 		action_system.request_action("slow_walk_end")
 
-# === MOUSE INPUT HANDLING (CENTRALIZED) ===
-
-func handle_mouse_look(event: InputEvent):
-	"""Convert mouse movement to look actions (MOVED FROM CameraActionReceiver)"""
-	if not action_system:
-		return  # Safely return if action system not ready
-		
-	if event is InputEventMouseMotion:
-		# Only process if mouse is captured
-		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-			action_system.request_action("look_delta", {
-				"delta": event.relative,
-				"sensitivity": 1.0
-			})
-
-func handle_mouse_wheel(event: InputEvent):
-	"""Convert scroll wheel to zoom actions (MOVED FROM CameraActionReceiver)"""
-	if not action_system:
-		return  # Safely return if action system not ready
-		
-	if event is InputEventMouseButton and event.pressed:
-		match event.button_index:
-			MOUSE_BUTTON_WHEEL_UP:
-				action_system.request_action("camera_zoom", {
-					"zoom_delta": -scroll_zoom_speed
-				})
-			MOUSE_BUTTON_WHEEL_DOWN:
-				action_system.request_action("camera_zoom", {
-					"zoom_delta": scroll_zoom_speed
-				})
-
-func handle_mouse_buttons(event: InputEvent):
-	"""Handle mouse button presses (CENTRALIZED)"""
-	if not action_system:
-		return  # Safely return if action system not ready
-		
-	if event is InputEventMouseButton and event.pressed:
-		match event.button_index:
-			MOUSE_BUTTON_RIGHT:
-				# Mouse toggle for camera
-				action_system.request_action("camera_toggle_mouse")
-			
-			MOUSE_BUTTON_LEFT:
-				# Let ClickNavigationComponent handle this through normal flow
-				# (ClickNav → InputManager is already correct)
-				pass
-
 # === MOVEMENT INPUT HANDLING ===
 
 func handle_movement_input(delta: float):
 	"""Process movement input and generate appropriate actions"""
-	if not action_system:
-		return  # Safely return if action system not ready
-		
 	movement_update_timer += delta
 	
 	# Get current movement input
@@ -209,6 +136,20 @@ func handle_movement_input(delta: float):
 			})
 		
 		movement_update_timer = 0.0
+
+# === MOUSE LOOK HANDLING ===
+
+func handle_mouse_look(event: InputEvent):
+	"""Convert mouse movement to look actions"""
+	if event is InputEventMouseMotion:
+		# Check if mouse should be captured (delegate to camera system)
+		var should_process_look = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+		
+		if should_process_look:
+			action_system.request_action("look_delta", {
+				"delta": event.relative,
+				"sensitivity": 1.0  # Let camera handle sensitivity
+			})
 
 # === INPUT SOURCE MANAGEMENT ===
 
@@ -271,7 +212,7 @@ func find_input_components():
 	
 	print("📝 InputManager: Total input components: ", input_components.size())
 
-# === UTILITY METHODS ===
+# === LEGACY API (for backward compatibility during transition) ===
 
 func get_movement_duration() -> float:
 	"""Get how long movement has been active"""
@@ -287,6 +228,22 @@ func get_current_input_direction() -> Vector2:
 	"""Get current input for external systems that still need it"""
 	return current_raw_input
 
+# These methods now delegate to action system state
+func get_smoothed_input() -> Vector2:
+	"""DEPRECATED: Use action system instead"""
+	push_warning("get_smoothed_input() is deprecated. Use action system.")
+	return current_raw_input
+
+func get_raw_input() -> Vector2:
+	"""DEPRECATED: Use action system instead"""
+	push_warning("get_raw_input() is deprecated. Use action system.")
+	return current_raw_input
+
+func should_process_input() -> bool:
+	"""DEPRECATED: Use action system instead"""
+	push_warning("should_process_input() is deprecated. Use action system.")
+	return movement_active
+
 # === DEBUG INFO ===
 
 func get_debug_info() -> Dictionary:
@@ -297,9 +254,7 @@ func get_debug_info() -> Dictionary:
 		"component_count": input_components.size(),
 		"active_components": get_active_components(),
 		"action_system_connected": action_system != null,
-		"update_frequency": movement_update_frequency,
-		"centralized_mouse": true,
-		"input_flow": "ALL_CENTRALIZED"
+		"update_frequency": movement_update_frequency
 	}
 
 func get_active_components() -> Array[String]:
