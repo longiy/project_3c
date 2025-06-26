@@ -61,6 +61,10 @@ func _physics_process(delta):
 		arrival_timer -= delta
 		if arrival_timer <= 0:
 			complete_arrival()
+	
+	# Continuous cursor tracking during drag mode
+	if is_dragging and can_handle_input():
+		update_drag_to_current_cursor_position()
 
 # === PUBLIC INTERFACE (Required by character controller) ===
 
@@ -77,7 +81,8 @@ func get_movement_input() -> Vector2:
 	var distance = character.global_position.distance_to(click_destination)
 	if distance < arrival_threshold:
 		if is_dragging:
-			# In drag mode, keep following mouse even when close
+			# In drag mode, check if we're continuously updating or should stop
+			# Only continue if destination is being actively updated (cursor tracking)
 			return world_to_input_direction((click_destination - character.global_position).normalized())
 		else:
 			# Single click - stop when arrived
@@ -123,11 +128,21 @@ func finish_click_or_drag():
 	is_dragging = false
 
 func update_drag_destination(screen_pos: Vector2):
-	"""Update destination while dragging"""
+	"""Update destination while dragging (legacy - now mainly for explicit position updates)"""
 	if not is_dragging:
 		return
 	
 	var world_pos = screen_to_world(screen_pos)
+	if world_pos != Vector3.ZERO:
+		set_destination(world_pos)
+
+func update_drag_to_current_cursor_position():
+	"""Update destination to current cursor position during drag"""
+	if not is_dragging:
+		return
+	
+	var current_mouse_pos = get_viewport().get_mouse_position()
+	var world_pos = screen_to_world(current_mouse_pos)
 	if world_pos != Vector3.ZERO:
 		set_destination(world_pos)
 
