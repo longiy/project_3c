@@ -51,9 +51,6 @@ func _input(event):
 	"""Process all input events and convert to actions"""
 	# Handle discrete input events (keys, buttons)
 	handle_discrete_input(event)
-	
-	# Handle mouse look (if captured)
-	handle_mouse_look(event)
 
 func _physics_process(delta):
 	"""Process continuous input (movement) at fixed intervals"""
@@ -142,14 +139,10 @@ func handle_movement_input(delta: float):
 func handle_mouse_look(event: InputEvent):
 	"""Convert mouse movement to look actions"""
 	if event is InputEventMouseMotion:
-		# Check if mouse should be captured (delegate to camera system)
-		var should_process_look = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+		# REMOVED: Don't process mouse look through actions anymore
+		# CameraRig handles this directly now
+		pass
 		
-		if should_process_look:
-			action_system.request_action("look_delta", {
-				"delta": event.relative,
-				"sensitivity": 1.0  # Let camera handle sensitivity
-			})
 
 # === INPUT SOURCE MANAGEMENT ===
 

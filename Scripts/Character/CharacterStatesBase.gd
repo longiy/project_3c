@@ -38,10 +38,6 @@ func can_execute_action(action: Action) -> bool:
 		# Mode actions - usually available
 		"sprint_start", "sprint_end", "slow_walk_start", "slow_walk_end":
 			return can_handle_mode_action(action)
-		# Look actions - usually available
-		"look_delta":
-			return can_handle_look_action(action)
-		# Reset always available
 		"reset":
 			return true
 		_:
@@ -74,11 +70,7 @@ func execute_action(action: Action):
 		"slow_walk_end":
 			character.is_slow_walking = false
 			character.emit_movement_mode_changes()
-		
-		# Look actions
-		"look_delta":
-			handle_look_action(action)
-		
+			
 		# Utility actions
 		"reset":
 			character.reset_character()
