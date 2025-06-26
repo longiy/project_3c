@@ -1,4 +1,4 @@
-# ControllerCharacter.gd - Signal emission simplified
+# ControllerCharacter.gd - Debug cleaned version
 extends CharacterBody3D
 
 # === INSPECTOR CONFIGURATION ===
@@ -40,14 +40,16 @@ signal ground_state_changed(is_grounded: bool)
 signal movement_state_changed(is_moving: bool, direction: Vector2, magnitude: float)
 signal jump_performed(jump_force: float, is_air_jump: bool)
 
-# === SIMPLIFIED TRACKING (removed duplicates) ===
+# === TRACKING VARIABLES ===
 var last_emitted_speed: float = 0.0
 var last_emitted_grounded: bool = true
+var last_emitted_running: bool = false
+var last_emitted_slow_walking: bool = false
 
 # === RUNTIME VARIABLES ===
 var base_gravity: float
 
-# Movement modes - SIMPLIFIED (states handle signal emission now)
+# Movement modes (now with signal emissions)
 var is_slow_walking = false
 var is_running = false
 
@@ -92,9 +94,11 @@ func setup_character():
 	if not jump_system:
 		push_warning("No JumpSystem assigned - jumping will not work")
 
-	# Initialize tracking variables (simplified)
+	# Initialize tracking variables
 	last_emitted_speed = 0.0
 	last_emitted_grounded = is_on_floor()
+	last_emitted_running = is_running
+	last_emitted_slow_walking = is_slow_walking
 
 func setup_state_machine():
 	"""Find and initialize the state machine and action system"""
@@ -118,16 +122,16 @@ func _input(event):
 	# All input now handled by InputManager -> ActionSystem
 	pass
 
-# === PHYSICS PROCESS WITH SIMPLIFIED SIGNAL EMISSIONS ===
+# === PHYSICS PROCESS WITH SIGNAL EMISSIONS ===
 func _physics_process(delta):
 	if state_machine:
 		state_machine.update(delta)
 	
-	# Emit property changes for signal-driven systems (SIMPLIFIED)
+	# Emit property changes for signal-driven systems
 	emit_speed_changes()
 	emit_ground_state_changes()
 
-# === SIMPLIFIED SIGNAL EMISSION METHODS ===
+# === SIGNAL EMISSION METHODS ===
 
 func emit_speed_changes():
 	"""Emit speed changes when movement speed changes significantly"""
@@ -143,20 +147,44 @@ func emit_ground_state_changes():
 		last_emitted_grounded = current_grounded
 		ground_state_changed.emit(current_grounded)
 
-# REMOVED: emit_movement_mode_changes() - handled by states now
-# REMOVED: duplicate tracking variables - simplified
+func emit_movement_mode_changes():
+	"""Emit mode changes when sprint/walk modes change"""
+	if is_running != last_emitted_running or is_slow_walking != last_emitted_slow_walking:
+		last_emitted_running = is_running
+		last_emitted_slow_walking = is_slow_walking
+		movement_mode_changed.emit(is_running, is_slow_walking)
 
-# === SIMPLIFIED PROPERTY MANAGEMENT ===
-# Note: States now handle signal emission via set_movement_mode()
+# === PROPERTY SETTERS WITH SIGNAL EMISSIONS ===
 
-func get_target_speed() -> float:
-	"""Get target speed based on current movement mode"""
-	if is_slow_walking:
-		return slow_walk_speed
-	elif is_running:
-		return run_speed
-	else:
-		return walk_speed
+func set_running(value: bool):
+	"""Set running state and emit signal"""
+	if is_running != value:
+		is_running = value
+		emit_movement_mode_changes()
+
+func set_slow_walking(value: bool):
+	"""Set slow walking state and emit signal"""
+	if is_slow_walking != value:
+		is_slow_walking = value
+		emit_movement_mode_changes()
+
+# === DIRECT PROPERTY CHANGES (Use setters for signals) ===
+
+func start_running():
+	"""Start running mode"""
+	set_running(true)
+
+func stop_running():
+	"""Stop running mode"""
+	set_running(false)
+
+func start_slow_walking():
+	"""Start slow walking mode"""
+	set_slow_walking(true)
+
+func stop_slow_walking():
+	"""Stop slow walking mode"""
+	set_slow_walking(false)
 
 # === MOVEMENT CALCULATION ===
 
@@ -176,6 +204,15 @@ func calculate_movement_vector(input_dir: Vector2) -> Vector3:
 		movement_vector = Vector3(input_dir.x, 0, input_dir.y)
 	
 	return movement_vector.normalized()
+
+func get_target_speed() -> float:
+	"""Get target speed based on current movement mode"""
+	if is_slow_walking:
+		return slow_walk_speed
+	elif is_running:
+		return run_speed
+	else:
+		return walk_speed
 
 func get_target_acceleration() -> float:
 	"""Get acceleration based on ground state"""
