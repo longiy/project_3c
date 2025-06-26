@@ -13,7 +13,6 @@ signal target_acquired(target: Node3D)
 @export var target_node: Node3D
 @export var follow_height_offset = 1.6
 @export var follow_smoothing = 8.0
-@export var auto_find_character = true
 
 @export_group("Mouse Look")
 @export var mouse_sensitivity = 0.002
@@ -102,17 +101,16 @@ func setup_camera_rig():
 	print("📹 CameraRig: Initialized")
 
 func setup_target():
-	"""Setup target following"""
-	if auto_find_character and not target_node:
-		target_node = find_character_in_scene()
+	"""Setup target following - EXPLICIT only"""
 	
+	# EXPLICIT connection only
 	if target_node:
 		target_position = target_node.global_position + Vector3(0, follow_height_offset, 0)
 		global_position = target_position
 		target_acquired.emit(target_node)
-		print("📹 CameraRig: Target acquired - ", target_node.name)
+		print("📹 CameraRig: Target explicitly assigned - ", target_node.name)
 	else:
-		print("📹 CameraRig: No target found")
+		print("⚠️ CameraRig: No target assigned - please set target_node in inspector")
 
 func connect_signals():
 	"""Connect to camera component signals"""
@@ -258,19 +256,6 @@ func apply_camera_transforms():
 	spring_arm.rotation.x = camera_rotation_x
 
 # === UTILITY METHODS ===
-
-func find_character_in_scene() -> Node3D:
-	"""Auto-find character node in scene"""
-	var scene_root = get_tree().current_scene
-	if not scene_root:
-		return null
-		
-	# Look for CharacterBody3D
-	for child in scene_root.get_children():
-		if child is CharacterBody3D:
-			return child
-			
-	return null
 
 func has_yaw_limits() -> bool:
 	"""Check if yaw rotation has limits"""

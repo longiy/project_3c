@@ -102,9 +102,11 @@ transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 
 
 [node name="CameraActionReciever" type="Node" parent="CAMERARIG"]
 script = ExtResource("3_xcjh0")
+action_system_node = NodePath("../../CHARACTER/ActionSystem")
 
 [node name="CameraStateResponder" type="Node" parent="CAMERARIG"]
 script = ExtResource("4_msfgm")
+character_state_machine_node = NodePath("../../CHARACTER/CharacterStateMachine")
 
 [node name="CHARACTER" type="CharacterBody3D" parent="." node_paths=PackedStringArray("animation_controller", "camera", "input_manager", "jump_system", "debug_helper")]
 collision_layer = 2

@@ -5,6 +5,8 @@ class_name CameraStateResponder
 signal response_started(state_name: String)
 signal response_completed(state_name: String)
 
+@export var character_state_machine_node: NodePath = ""  # Set in inspector
+
 @export_group("State Response Settings")
 @export var enable_state_responses = true
 @export var default_transition_time = 0.3
@@ -29,7 +31,6 @@ signal response_completed(state_name: String)
 @export var landing_fov = 75.0
 @export var landing_distance = 4.0
 
-# Component references
 var camera_rig: CameraRig
 var character_state_machine: Node
 var current_tween: Tween
@@ -49,28 +50,39 @@ func _ready():
 	
 	print("📹 CameraStateResponder: Initialized")
 
+func connect_to_state_machine():
+	"""Connect to state machine"""
+	if character_state_machine and character_state_machine.has_signal("character_state_changed"):
+		character_state_machine.character_state_changed.connect(_on_character_state_changed)
+		print("✅ CameraStateResponder: Connected to CharacterStateMachine at ", character_state_machine.get_path())
+	else:
+		print("❌ CameraStateResponder: CharacterStateMachine missing character_state_changed signal")
+
 func find_and_connect_character():
-	"""Find character and connect to its state machine"""
+	"""Use explicit path instead of scene searching"""
 	if not enable_state_responses:
 		print("📹 CameraStateResponder: State responses disabled")
 		return
 	
-	var character = find_character_in_scene()
-	if not character:
-		print("⚠️ CameraStateResponder: No character found")
-		return
+	# EXPLICIT connection via NodePath
+	if not character_state_machine_node.is_empty():
+		character_state_machine = get_node_or_null(character_state_machine_node)
+		if character_state_machine:
+			connect_to_state_machine()
+			return
 	
-	character_state_machine = character.get_node_or_null("CharacterStateMachine")
-	if not character_state_machine:
-		print("⚠️ CameraStateResponder: No CharacterStateMachine found")
-		return
+	# FALLBACK: Only search immediate scene children (no deep search)
+	var scene_root = get_tree().current_scene
+	if scene_root:
+		for child in scene_root.get_children():
+			if child is CharacterBody3D:
+				var state_machine = child.get_node_or_null("CharacterStateMachine")
+				if state_machine:
+					character_state_machine = state_machine
+					connect_to_state_machine()
+					return
 	
-	# Connect to state change signal
-	if character_state_machine.has_signal("character_state_changed"):
-		character_state_machine.character_state_changed.connect(_on_character_state_changed)
-		print("✅ CameraStateResponder: Connected to character state machine")
-	else:
-		print("❌ CameraStateResponder: CharacterStateMachine has no character_state_changed signal")
+	print("⚠️ CameraStateResponder: No CharacterStateMachine found - set character_state_machine_node path")
 
 func find_character_in_scene() -> Node:
 	"""Find character node in scene"""

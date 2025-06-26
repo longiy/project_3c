@@ -5,6 +5,7 @@ class_name CameraActionReceiver
 @export_group("Input Settings")
 @export var scroll_zoom_speed = 0.5
 @export var enable_action_processing = true
+@export var action_system_node: NodePath = ""  # Set in inspector
 
 # Component references
 var camera_rig: CameraRig
@@ -38,39 +39,36 @@ func _input(event):
 	if event.is_action_pressed("toggle_mouse_look"):
 		camera_rig._on_mouse_toggle()
 
-func find_and_connect_action_system():
-	"""Find action system in scene and connect to it"""
-	var character = find_character_with_action_system()
-	if not character:
-		print("⚠️ CameraActionReceiver: No character with ActionSystem found")
-		return
-		
-	action_system = character.get_node_or_null("ActionSystem")
-	if not action_system:
-		print("⚠️ CameraActionReceiver: No ActionSystem found on character")
-		return
-	
-	# Connect to action execution signal
-	if action_system.has_signal("action_executed"):
+func connect_to_action_system():
+	"""Connect to action system"""
+	if action_system and action_system.has_signal("action_executed"):
 		action_system.action_executed.connect(_on_action_executed)
-		print("✅ CameraActionReceiver: Connected to ActionSystem")
+		print("✅ CameraActionReceiver: Connected to ActionSystem at ", action_system.get_path())
 	else:
-		print("❌ CameraActionReceiver: ActionSystem has no action_executed signal")
+		print("❌ CameraActionReceiver: ActionSystem missing action_executed signal")
 
-func find_character_with_action_system() -> Node:
-	"""Find character node that has ActionSystem"""
+func find_and_connect_action_system():
+	"""Use explicit path instead of scene searching"""
+	# EXPLICIT connection via NodePath
+	if not action_system_node.is_empty():
+		action_system = get_node_or_null(action_system_node) as ActionSystem
+		if action_system:
+			connect_to_action_system()
+			return
+	
+	# FALLBACK: Only search immediate scene children (no deep search)
 	var scene_root = get_tree().current_scene
-	if not scene_root:
-		return null
+	if scene_root:
+		for child in scene_root.get_children():
+			if child is CharacterBody3D:
+				var action_sys = child.get_node_or_null("ActionSystem")
+				if action_sys:
+					action_system = action_sys
+					connect_to_action_system()
+					return
 	
-	# Look for CharacterBody3D with ActionSystem
-	for child in scene_root.get_children():
-		if child is CharacterBody3D:
-			var action_sys = child.get_node_or_null("ActionSystem")
-			if action_sys:
-				return child
-	
-	return null
+	print("⚠️ CameraActionReceiver: No ActionSystem found - set action_system_node path")
+
 
 # === ACTION PROCESSING ===
 
