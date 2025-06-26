@@ -1,4 +1,4 @@
-# StateLanding.gd - Action-based landing state
+# ===== StateLanding.gd - Debug Cleaned =====
 class_name StateLanding
 extends CharacterStateBase
 
@@ -40,21 +40,6 @@ func check_transitions():
 				change_to("walking")
 		else:
 			change_to("idle")
-
-# === MOVEMENT ACTION OVERRIDES ===
-
-func on_movement_started(direction: Vector2, magnitude: float):
-	"""Movement started while landing"""
-	# Don't transition immediately, wait for landing recovery
-	pass
-
-func on_movement_updated(direction: Vector2, magnitude: float):
-	"""Movement updated while landing"""
-	pass
-
-func on_movement_ended():
-	"""Movement ended while landing"""
-	pass
 
 # === ACTION SYSTEM INTERFACE ===
 

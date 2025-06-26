@@ -1,4 +1,4 @@
-# InputManager.gd - CENTRALIZED input processing (ALL input flows through here)
+# InputManager.gd - Debug cleaned version
 extends Node
 class_name InputManager
 
@@ -8,6 +8,9 @@ class_name InputManager
 
 @export_group("Mouse Settings")
 @export var scroll_zoom_speed = 0.5
+
+@export_group("Debug")
+@export var enable_debug_logging = false
 
 # Component references
 var action_system: ActionSystem
@@ -51,7 +54,8 @@ func setup_action_system():
 		push_error("InputManager requires ActionSystem as sibling")
 		return
 	
-	print("✅ InputManager: Connected to ActionSystem")
+	if enable_debug_logging:
+		print("✅ InputManager: Connected to ActionSystem")
 
 func _input(event):
 	"""Process ALL input events and convert to actions"""
@@ -184,7 +188,9 @@ func handle_movement_input(delta: float):
 			"direction": new_input,
 			"magnitude": input_magnitude
 		})
-		print("📝 Movement started: ", new_input)
+		
+		if enable_debug_logging:
+			print("📝 Movement started: ", new_input)
 	
 	# Handle movement end
 	elif not is_moving and was_moving:
@@ -193,7 +199,9 @@ func handle_movement_input(delta: float):
 		last_sent_input = Vector2.ZERO
 		
 		action_system.request_action("move_end")
-		print("📝 Movement ended")
+		
+		if enable_debug_logging:
+			print("📝 Movement ended")
 	
 	# Handle movement update (only if moving and enough time passed)
 	elif is_moving and movement_update_timer >= movement_update_interval:
@@ -267,9 +275,11 @@ func find_input_components():
 			continue
 		if child.has_method("get_movement_input"):
 			input_components.append(child)
-			print("📝 InputManager: Found input component: ", child.name)
+			if enable_debug_logging:
+				print("📝 InputManager: Found input component: ", child.name)
 	
-	print("📝 InputManager: Total input components: ", input_components.size())
+	if enable_debug_logging:
+		print("📝 InputManager: Total input components: ", input_components.size())
 
 # === UTILITY METHODS ===
 

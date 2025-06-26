@@ -1,11 +1,10 @@
-# StateWalking.gd - DEBUG VERSION - Simplified for testing
+# StateWalking.gd - Debug cleaned version
 class_name StateWalking
 extends CharacterStateBase
 
 func enter():
 	super.enter()
 	character.update_ground_state()
-	print("👟 ENTERED WALKING STATE")
 
 func update(delta: float):
 	super.update(delta)
@@ -39,15 +38,15 @@ func check_transitions():
 
 func on_movement_started(direction: Vector2, magnitude: float):
 	"""Movement started while walking"""
-	print("👟 Movement started in walking: ", direction)
+	pass
 
 func on_movement_updated(direction: Vector2, magnitude: float):
 	"""Movement updated while walking"""
-	print("👟 Movement updated in walking: ", direction)
+	pass
 
 func on_movement_ended():
 	"""Movement ended while walking"""
-	print("👟 Movement ended in walking - should transition to idle soon")
+	pass
 
 # === ACTION SYSTEM INTERFACE ===
 
