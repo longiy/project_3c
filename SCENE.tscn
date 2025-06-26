@@ -148,6 +148,7 @@ script = ExtResource("4_wiekx")
 
 [node name="ClickNavigationComponent" type="Node" parent="CHARACTER" node_paths=PackedStringArray("destination_marker")]
 script = ExtResource("4_0er5f")
+arrival_threshold = 1.0
 destination_marker = NodePath("../../CURSOR")
 
 [node name="InputManager" type="Node" parent="CHARACTER"]

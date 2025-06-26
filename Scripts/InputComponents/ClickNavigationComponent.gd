@@ -21,6 +21,7 @@ var arrival_timer = 0.0
 var is_arrival_delay = false
 
 # Drag mode state
+var drag_start_world_pos = Vector3.ZERO
 var is_dragging = false
 var drag_start_pos = Vector2.ZERO
 
@@ -114,6 +115,7 @@ func handle_click(screen_pos: Vector2):
 		set_destination(world_pos)
 
 func start_click_or_drag(screen_pos: Vector2):
+	
 	"""Handle start of click or drag"""
 	if enable_drag_mode:
 		# Start drag mode
