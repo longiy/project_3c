@@ -1,4 +1,4 @@
-# CharacterStatesBase.gd - Pure signal-driven version (CLEANED)
+# CharacterStatesBase.gd - Fixed version with safe signal emission
 class_name CharacterStateBase
 extends State
 
@@ -31,7 +31,17 @@ func update(delta: float):
 
 func can_execute_action(action: Action) -> bool:
 	"""Override in child states to define what actions can be executed"""
-	match action.name:
+	if not action:
+		return false
+	
+	# Safe action name check
+	var action_name = ""
+	if action.has_method("get") and "name" in action:
+		action_name = action.name
+	else:
+		return false
+	
+	match action_name:
 		# Movement actions - available in most states
 		"move_start", "move_update", "move_end":
 			return can_handle_movement_action(action)
@@ -49,7 +59,19 @@ func can_execute_action(action: Action) -> bool:
 
 func execute_action(action: Action):
 	"""Override in child states to define how actions are executed"""
-	match action.name:
+	if not action:
+		push_error("CharacterStateBase: Cannot execute null action")
+		return
+	
+	# Safe action name extraction
+	var action_name = ""
+	if action.has_method("get") and "name" in action:
+		action_name = action.name
+	else:
+		push_error("CharacterStateBase: Action has no name property")
+		return
+	
+	match action_name:
 		# Movement actions
 		"move_start":
 			handle_move_start_action(action)
@@ -58,22 +80,15 @@ func execute_action(action: Action):
 		"move_end":
 			handle_move_end_action(action)
 		
-		# Mode actions - EMIT SIGNALS DIRECTLY
+		# Mode actions - SAFE SIGNAL EMISSION
 		"sprint_start":
-			character.is_running = true
-			character.emit_movement_mode_changes()
-			
+			safe_set_character_running(true)
 		"sprint_end":
-			character.is_running = false
-			character.emit_movement_mode_changes()
-			
+			safe_set_character_running(false)
 		"slow_walk_start":
-			character.is_slow_walking = true
-			character.emit_movement_mode_changes()
-			
+			safe_set_character_slow_walking(true)
 		"slow_walk_end":
-			character.is_slow_walking = false
-			character.emit_movement_mode_changes()
+			safe_set_character_slow_walking(false)
 		
 		# Look actions
 		"look_delta":
@@ -81,33 +96,85 @@ func execute_action(action: Action):
 		
 		# Utility actions
 		"reset":
-			character.reset_character()
+			if character and character.has_method("reset_character"):
+				character.reset_character()
 		
 		_:
-			push_warning("Unhandled action in ", state_name, ": ", action.name)
+			push_warning("Unhandled action in ", state_name, ": ", action_name)
 
-# === MOVEMENT ACTION HANDLERS (PURE SIGNAL VERSION) ===
+# === SAFE CHARACTER PROPERTY SETTERS ===
+
+func safe_set_character_running(value: bool):
+	"""Safely set character running state with signal emission"""
+	if not character:
+		return
+	
+	# Set property directly
+	character.is_running = value
+	
+	# Emit signal safely
+	safe_emit_movement_mode_changes()
+
+func safe_set_character_slow_walking(value: bool):
+	"""Safely set character slow walking state with signal emission"""
+	if not character:
+		return
+	
+	# Set property directly
+	character.is_slow_walking = value
+	
+	# Emit signal safely
+	safe_emit_movement_mode_changes()
+
+func safe_emit_movement_mode_changes():
+	"""Safely emit movement mode changes"""
+	if not character:
+		return
+	
+	# Method 1: Try dedicated method
+	if character.has_method("emit_movement_mode_changes"):
+		character.emit_movement_mode_changes()
+		return
+	
+	# Method 2: Try direct signal emission
+	if character.has_signal("movement_mode_changed"):
+		character.movement_mode_changed.emit(character.is_running, character.is_slow_walking)
+		return
+	
+	# Method 3: Try property setters
+	if character.has_method("set_running"):
+		character.set_running(character.is_running)
+	elif character.has_method("set_slow_walking"):
+		character.set_slow_walking(character.is_slow_walking)
+
+# === MOVEMENT ACTION HANDLERS (SAFE VERSION) ===
 
 func handle_move_start_action(action: Action):
 	"""Handle start of movement input"""
-	current_movement_vector = action.get_movement_vector()
-	movement_magnitude = action.context.get("magnitude", current_movement_vector.length())
+	if not action:
+		return
+	
+	current_movement_vector = safe_get_movement_vector(action)
+	movement_magnitude = safe_get_context_value(action, "magnitude", current_movement_vector.length())
 	movement_start_time = Time.get_ticks_msec() / 1000.0
 	is_movement_active = true
 	
-	# PURE SIGNAL: Character emits, animation receives
-	character.movement_state_changed.emit(true, current_movement_vector, movement_magnitude)
+	# SAFE SIGNAL: Character emits, animation receives
+	safe_emit_movement_state_changed(true, current_movement_vector, movement_magnitude)
 	
 	# Child states can override for specific behavior
 	on_movement_started(current_movement_vector, movement_magnitude)
 
 func handle_move_update_action(action: Action):
 	"""Handle ongoing movement input"""
-	current_movement_vector = action.get_movement_vector()
-	movement_magnitude = action.context.get("magnitude", current_movement_vector.length())
+	if not action:
+		return
 	
-	# PURE SIGNAL: Just emit the change, no action requests
-	character.movement_state_changed.emit(true, current_movement_vector, movement_magnitude)
+	current_movement_vector = safe_get_movement_vector(action)
+	movement_magnitude = safe_get_context_value(action, "magnitude", current_movement_vector.length())
+	
+	# SAFE SIGNAL: Just emit the change
+	safe_emit_movement_state_changed(true, current_movement_vector, movement_magnitude)
 	
 	# Child states can override for specific behavior
 	on_movement_updated(current_movement_vector, movement_magnitude)
@@ -118,16 +185,51 @@ func handle_move_end_action(action: Action):
 	movement_magnitude = 0.0
 	is_movement_active = false
 	
-	# PURE SIGNAL: Character emits, animation receives
-	character.movement_state_changed.emit(false, Vector2.ZERO, 0.0)
+	# SAFE SIGNAL: Character emits, animation receives
+	safe_emit_movement_state_changed(false, Vector2.ZERO, 0.0)
 	
 	# Child states can override for specific behavior
 	on_movement_ended()
 
 func handle_look_action(action: Action):
 	"""Handle look input - delegate to camera system"""
-	var look_delta = action.get_look_delta()
-	# This will be handled by camera system automatically
+	# Camera system will handle this automatically through ActionSystem
+	pass
+
+# === SAFE SIGNAL EMISSION ===
+
+func safe_emit_movement_state_changed(is_moving: bool, direction: Vector2, magnitude: float):
+	"""Safely emit movement state changes"""
+	if not character:
+		return
+	
+	if character.has_signal("movement_state_changed"):
+		character.movement_state_changed.emit(is_moving, direction, magnitude)
+
+# === SAFE ACTION DATA EXTRACTION ===
+
+func safe_get_movement_vector(action: Action) -> Vector2:
+	"""Safely extract movement vector from action"""
+	if not action:
+		return Vector2.ZERO
+	
+	if action.has_method("get_movement_vector"):
+		return action.get_movement_vector()
+	
+	# Fallback: try context directly
+	return safe_get_context_value(action, "direction", Vector2.ZERO)
+
+func safe_get_context_value(action: Action, key: String, default_value):
+	"""Safely get value from action context"""
+	if not action:
+		return default_value
+	
+	if action.has_method("get") and "context" in action:
+		var context = action.context
+		if context and context.has(key):
+			return context[key]
+	
+	return default_value
 
 # === VIRTUAL METHODS FOR CHILD STATES ===
 
@@ -181,7 +283,7 @@ func should_process_movement() -> bool:
 	"""Check if state should process movement"""
 	return is_movement_active and (
 		get_movement_duration() >= 0.08 or 
-		character.get_movement_speed() > 0.5
+		(character and character.get_movement_speed() > 0.5)
 	)
 
 # === UTILITY METHODS ===
@@ -194,30 +296,36 @@ func transition_and_forward_action(new_state_name: String, action: Action):
 	if state_machine and state_machine.current_state:
 		var new_state = state_machine.current_state
 		if new_state != self and new_state.has_method("execute_action"):
-			print("🔄 Forwarding action ", action.name, " to new state: ", new_state_name)
+			print("🔄 Forwarding action ", safe_get_action_name(action), " to new state: ", new_state_name)
 			new_state.execute_action(action)
+
+func safe_get_action_name(action: Action) -> String:
+	"""Safely get action name"""
+	if not action:
+		return "null"
+	
+	if action.has_method("get") and "name" in action:
+		return action.name
+	
+	return "unknown"
 
 func has_action_system() -> bool:
 	return action_system != null
 
 func request_action(action_name: String, context: Dictionary = {}):
 	"""Helper to request actions from states"""
-	if action_system:
+	if action_system and action_system.has_method("request_action"):
 		action_system.request_action(action_name, context)
 
 func get_recent_actions(count: int = 5) -> Array:
 	"""Get recent actions for combo detection, etc."""
-	if action_system:
-		return action_system.executed_actions.slice(-count)
+	if action_system and action_system.has_method("get_recent_actions"):
+		return action_system.get_recent_actions(count)
 	return []
 
 func was_action_recently_executed(action_name: String, time_window: float = 1.0) -> bool:
 	"""Check if action was executed recently"""
-	if not action_system:
+	if not action_system or not action_system.has_method("was_action_recently_executed"):
 		return false
 	
-	var current_time = Time.get_ticks_msec() / 1000.0
-	for action in action_system.executed_actions:
-		if action.name == action_name and (current_time - action.timestamp) <= time_window:
-			return true
-	return false
+	return action_system.was_action_recently_executed(action_name, time_window)
