@@ -1,4 +1,4 @@
-# ClickNavigationComponent.gd - Self-contained click-to-move navigation (Cleaned)
+# ClickNavigationComponent.gd - Simplified for camera mode integration
 extends Node
 class_name ClickNavigationComponent
 
@@ -7,12 +7,17 @@ class_name ClickNavigationComponent
 @export var show_destination_marker = true
 @export var enable_drag_mode = true
 
+@export_group("Explicit References")
+@export var character: CharacterBody3D  # Drag CHARACTER node here
+@export var camera: Camera3D  # Drag Camera3D node here
+@export var destination_marker: Node3D  # Optional - drag MARKER node here
+
 @export_group("Optional Visual Feedback")
-@export var destination_marker: Node3D  # Optional - will work without
 @export var marker_hide_delay = 0.3
 
-var character: CharacterBody3D
-var camera: Camera3D
+# Component references
+var input_manager: InputManager
+var camera_rig: CameraRig
 
 # Navigation state
 var click_destination = Vector3.ZERO
@@ -21,40 +26,35 @@ var arrival_timer = 0.0
 var is_arrival_delay = false
 
 # Drag mode state
-var drag_start_world_pos = Vector3.ZERO
 var is_dragging = false
-var drag_start_pos = Vector2.ZERO
 
 func _ready():
-	# Get required parent
-	character = get_parent() as CharacterBody3D
+	# Validate explicit references
 	if not character:
-		push_error("ClickNavigationComponent must be child of CharacterBody3D")
+		push_error("ClickNavigationComponent: No character assigned!")
 		return
 	
-	# Auto-find camera (optional - graceful fallback)
-	camera = get_viewport().get_camera_3d()
 	if not camera:
-		print("ClickNav: No camera found - click navigation disabled")
-
-func _input(event):
-	if not can_handle_input():
+		push_error("ClickNavigationComponent: No camera assigned!")
 		return
 	
-	# Left mouse - start click or drag
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			start_click_or_drag(event.position)
-		else:
-			finish_click_or_drag()
+	# Get component references
+	input_manager = character.get_node_or_null("InputManager")
+	if not input_manager:
+		push_error("ClickNavigationComponent: No InputManager found!")
+		return
 	
-	# Mouse motion during drag
-	elif event is InputEventMouseMotion and is_dragging and enable_drag_mode:
-		update_drag_destination(event.position)
+	camera_rig = get_node_or_null("../../CAMERARIG") as CameraRig
+	if not camera_rig:
+		push_error("ClickNavigationComponent: No CameraRig found!")
+		return
 	
-	# Right click cancels
-	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
-		cancel_input()
+	# Connect to InputManager for click events
+	if input_manager.has_signal("click_input_received"):
+		input_manager.click_input_received.connect(_on_click_input_received)
+		print("🖱️ ClickNav: Connected to InputManager click signals")
+	
+	print("🖱️ ClickNav: Initialized for camera mode integration")
 
 func _physics_process(delta):
 	# Handle arrival delay timer
@@ -63,15 +63,42 @@ func _physics_process(delta):
 		if arrival_timer <= 0:
 			complete_arrival()
 	
-	# Continuous cursor tracking during drag mode
-	if is_dragging and can_handle_input():
+	# Update drag destination continuously
+	if is_dragging and is_active():
 		update_drag_to_current_cursor_position()
 
-# === PUBLIC INTERFACE (Required by character controller) ===
+# === INPUT HANDLING ===
+
+func _on_click_input_received(event_type: String, event_data: Dictionary):
+	"""Handle click input from InputManager (only in click nav mode)"""
+	if not is_active():
+		return
+	
+	match event_type:
+		"left_click_pressed":
+			var screen_pos = event_data.get("position", Vector2.ZERO)
+			start_click_or_drag(screen_pos)
+		
+		"left_click_released":
+			finish_click_or_drag()
+		
+		"mouse_motion":
+			if is_dragging:
+				var screen_pos = event_data.get("position", Vector2.ZERO)
+				update_drag_destination(screen_pos)
+
+# === PUBLIC INTERFACE (Required by InputManager) ===
 
 func is_active() -> bool:
-	"""Check if this component is providing input"""
-	return (has_destination or is_dragging) and not is_arrival_delay
+	"""Check if this component should be providing input"""
+	# Only active in click navigation mode
+	if not camera_rig:
+		return false
+	
+	var in_click_mode = camera_rig.is_in_click_navigation_mode()
+	var has_input = (has_destination or is_dragging) and not is_arrival_delay
+	
+	return in_click_mode and has_input
 
 func get_movement_input() -> Vector2:
 	"""Get movement direction as 2D input"""
@@ -82,8 +109,7 @@ func get_movement_input() -> Vector2:
 	var distance = character.global_position.distance_to(click_destination)
 	if distance < arrival_threshold:
 		if is_dragging:
-			# In drag mode, check if we're continuously updating or should stop
-			# Only continue if destination is being actively updated (cursor tracking)
+			# Continue moving while dragging
 			return world_to_input_direction((click_destination - character.global_position).normalized())
 		else:
 			# Single click - stop when arrived
@@ -100,37 +126,35 @@ func cancel_input():
 	is_arrival_delay = false
 	is_dragging = false
 	hide_marker()
+	print("🖱️ ClickNav: Navigation cancelled")
 
-# === INTERNAL CLICK HANDLING ===
-
-func can_handle_input() -> bool:
-	"""Check if we should respond to input"""
-	# Handle input when mouse is free and we have camera
-	return Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and camera != null
-
-func handle_click(screen_pos: Vector2):
-	"""Handle mouse click"""
-	var world_pos = screen_to_world(screen_pos)
-	if world_pos != Vector3.ZERO:
-		set_destination(world_pos)
+# === CLICK HANDLING ===
 
 func start_click_or_drag(screen_pos: Vector2):
-	
 	"""Handle start of click or drag"""
-	if enable_drag_mode:
-		# Start drag mode
-		is_dragging = true
-		drag_start_pos = screen_pos
+	print("🖱️ ClickNav: Click at ", screen_pos)
 	
-	# Set initial destination (works for both click and drag)
+	if enable_drag_mode:
+		is_dragging = true
+	
 	handle_click(screen_pos)
 
 func finish_click_or_drag():
 	"""Handle end of click or drag"""
+	print("🖱️ ClickNav: Click finished")
 	is_dragging = false
 
+func handle_click(screen_pos: Vector2):
+	"""Handle mouse click - convert to world position"""
+	var world_pos = screen_to_world(screen_pos)
+	if world_pos != Vector3.ZERO:
+		set_destination(world_pos)
+		print("🖱️ ClickNav: Moving to ", world_pos)
+	else:
+		print("🖱️ ClickNav: No valid destination found")
+
 func update_drag_destination(screen_pos: Vector2):
-	"""Update destination while dragging (legacy - now mainly for explicit position updates)"""
+	"""Update destination while dragging"""
 	if not is_dragging:
 		return
 	
@@ -171,24 +195,28 @@ func set_destination(world_pos: Vector3):
 
 func world_to_input_direction(direction_3d: Vector3) -> Vector2:
 	"""Convert 3D world direction to 2D input relative to camera"""
-	if not camera:
-		# Fallback to world-space
+	if not camera_rig:
 		return Vector2(direction_3d.x, direction_3d.z)
 	
-	# Camera-relative conversion
-	var cam_basis = camera.global_transform.basis
-	var cam_forward = Vector3(-cam_basis.z.x, 0, -cam_basis.z.z).normalized()
-	var cam_right = Vector3(cam_basis.x.x, 0, cam_basis.x.z).normalized()
+	# Use camera rig's forward/right vectors
+	var cam_forward = camera_rig.get_camera_forward()
+	var cam_right = camera_rig.get_camera_right()
+	
+	# Project to ground plane
+	cam_forward.y = 0
+	cam_right.y = 0
+	cam_forward = cam_forward.normalized()
+	cam_right = cam_right.normalized()
 	
 	var forward_dot = direction_3d.dot(cam_forward)
 	var right_dot = direction_3d.dot(cam_right)
 	
-	return Vector2(right_dot, -forward_dot)
+	return Vector2(right_dot, forward_dot)
 
 # === ARRIVAL HANDLING ===
 
 func start_arrival_delay():
-	"""Start arrival delay - brief pause before hiding marker"""
+	"""Start arrival delay"""
 	has_destination = false
 	is_arrival_delay = true
 	arrival_timer = marker_hide_delay
@@ -196,32 +224,30 @@ func start_arrival_delay():
 func complete_arrival():
 	"""Complete arrival and clean up"""
 	is_arrival_delay = false
-	is_dragging = false  # Stop dragging on arrival
+	is_dragging = false
 	hide_marker()
 
-# === OPTIONAL VISUAL FEEDBACK ===
+# === VISUAL FEEDBACK ===
 
 func show_marker(world_pos: Vector3):
-	"""Show destination marker if available"""
+	"""Show destination marker"""
 	if destination_marker and show_destination_marker:
 		destination_marker.global_position = world_pos
 		destination_marker.visible = true
 
 func hide_marker():
-	"""Hide destination marker if available"""
+	"""Hide destination marker"""
 	if destination_marker:
 		destination_marker.visible = false
 
 # === DEBUG ===
 
 func get_debug_info() -> Dictionary:
-	"""Get debug information"""
 	return {
 		"has_destination": has_destination,
 		"is_dragging": is_dragging,
-		"can_handle_input": can_handle_input(),
-		"has_camera": camera != null,
-		"has_marker": destination_marker != null,
+		"is_active": is_active(),
+		"camera_mode": camera_rig.get_mode_name(camera_rig.get_current_mode()) if camera_rig else "unknown",
 		"current_destination": click_destination,
 		"distance_to_dest": character.global_position.distance_to(click_destination) if has_destination else 0.0
 	}

@@ -2,6 +2,7 @@
 extends Node
 class_name InputManager
 
+
 @export_group("Input Settings")
 @export var input_deadzone = 0.05
 @export var movement_update_frequency = 60  # Hz for move_update actions
@@ -19,6 +20,9 @@ var movement_start_time = 0.0
 # Look input tracking
 var mouse_captured = false
 
+# Add camera reference
+var camera_rig: CameraRig
+
 # Input component priority and references
 @export var input_component_priority: Array[String] = ["ClickNavigation", "Gamepad"]
 var input_components: Array[Node] = []
@@ -26,6 +30,9 @@ var input_components: Array[Node] = []
 # Update timing for movement actions
 var movement_update_timer = 0.0
 var movement_update_interval: float
+
+# Add new signal for click components
+signal click_input_received(event_type: String, event_data: Dictionary)
 
 func _ready():
 	character = get_parent() as CharacterBody3D
@@ -42,13 +49,30 @@ func _ready():
 		push_error("InputManager requires ActionSystem as sibling")
 		return
 	
+	# Find camera rig
+	camera_rig = get_node_or_null("../../CAMERARIG") as CameraRig
+	if not camera_rig:
+		push_warning("No CameraRig found - click navigation may not work")
+	
 	# Find input components
 	call_deferred("find_input_components")
 	
-	print("📝 InputManager: Initialized with unified action processing")
+	print("📝 InputManager: Initialized with camera mode awareness")
 
+# Add to _input() function
 func _input(event):
-	"""Process all input events and convert to actions"""
+	"""Process all input events based on camera mode"""
+	
+	# Route input based on camera mode
+	if camera_rig and camera_rig.is_in_click_navigation_mode():
+		# Click navigation mode: route mouse clicks to click nav
+		handle_click_navigation_input(event)
+	else:
+		# Orbit mode: handle keyboard input normally
+		handle_orbit_mode_input(event)
+
+func handle_orbit_mode_input(event: InputEvent):
+	"""Handle input in orbit mode (default)"""
 	# Handle discrete input events (keys, buttons)
 	handle_discrete_input(event)
 
@@ -58,8 +82,61 @@ func _physics_process(delta):
 
 # === DISCRETE INPUT HANDLING ===
 
+func handle_click_navigation_input(event: InputEvent):
+	"""Handle input in click navigation mode"""
+	# Handle keyboard input normally
+	handle_discrete_input(event)
+	
+	# Route mouse clicks to click navigation components
+	if event is InputEventMouseButton:
+		match event.button_index:
+			MOUSE_BUTTON_LEFT:
+				var event_type = "left_click_pressed" if event.pressed else "left_click_released"
+				var event_data = {"position": event.position}
+				click_input_received.emit(event_type, event_data)
+				print("📝 Click nav mode: Routed ", event_type)
+			
+			# Right mouse handled by camera for mode toggle
+	
+	elif event is InputEventMouseMotion:
+		# Route motion to active click components
+		if has_active_click_components():
+			var event_data = {"position": event.position, "relative": event.relative}
+			click_input_received.emit("mouse_motion", event_data)
+
+# Add new function for click input routing
+func handle_click_input_routing(event: InputEvent):
+	"""Route click input to click navigation components"""
+	if event is InputEventMouseButton:
+		match event.button_index:
+			MOUSE_BUTTON_LEFT:
+				var event_type = "left_click_pressed" if event.pressed else "left_click_released"
+				var event_data = {"position": event.position}
+				click_input_received.emit(event_type, event_data)
+				print("📝 InputManager: Routed ", event_type, " to click components")
+			
+			MOUSE_BUTTON_RIGHT:
+				if event.pressed:
+					click_input_received.emit("right_click_pressed", {"position": event.position})
+					print("📝 InputManager: Routed right_click_pressed to click components")
+	
+	elif event is InputEventMouseMotion:
+		# Only route motion if there are active click components
+		if has_active_click_components():
+			var event_data = {"position": event.position, "relative": event.relative}
+			click_input_received.emit("mouse_motion", event_data)
+
+# Add helper function to check for active click components
+func has_active_click_components() -> bool:
+	"""Check if any click navigation components are active"""
+	for component in input_components:
+		if component.has_method("is_active") and component.is_active():
+			return true
+	return false
+	
+# Update the existing discrete input handler to only work when mouse is captured
 func handle_discrete_input(event: InputEvent):
-	"""Convert key/button events to actions"""
+	"""Convert key/button events to actions (same for both modes)"""
 	if event is InputEventKey and event.pressed:
 		match event.keycode:
 			KEY_SPACE:

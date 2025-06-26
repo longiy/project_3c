@@ -143,9 +143,11 @@ animation_tree = NodePath("../PS_Character_Gurl/AnimationTree")
 [node name="GamepadComponent" type="Node" parent="CHARACTER"]
 script = ExtResource("4_wiekx")
 
-[node name="ClickNavigationComponent" type="Node" parent="CHARACTER" node_paths=PackedStringArray("destination_marker")]
+[node name="ClickNavigationComponent" type="Node" parent="CHARACTER" node_paths=PackedStringArray("character", "camera", "destination_marker")]
 script = ExtResource("4_0er5f")
 arrival_threshold = 1.0
+character = NodePath("..")
+camera = NodePath("../../CAMERARIG/SpringArm3D/Camera3D")
 destination_marker = NodePath("../../CURSOR")
 
 [node name="InputManager" type="Node" parent="CHARACTER"]

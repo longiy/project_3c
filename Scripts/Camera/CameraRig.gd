@@ -1,9 +1,9 @@
-# CameraRig.gd - Hybrid camera controller (Direct Input + Signals)
+# CameraRig.gd - Default orbit mode with click nav toggle
 extends Node3D
 class_name CameraRig
 
 # === SIGNALS ===
-signal camera_state_changed(camera_data: Dictionary)
+signal camera_mode_changed(mode: String)  # "orbit" or "click_navigation"
 signal mouse_mode_changed(captured: bool)
 signal target_lost()
 signal target_acquired(target: Node3D)
@@ -21,9 +21,6 @@ signal target_acquired(target: Node3D)
 @export_group("Rotation Limits")
 @export var pitch_limit_min = -80.0
 @export var pitch_limit_max = 50.0
-@export var yaw_limit_min = 0.0
-@export var yaw_limit_max = 0.0
-@export var use_rotation_limits = false
 
 @export_group("Camera Distance")
 @export var default_distance = 4.0
@@ -36,9 +33,16 @@ signal target_acquired(target: Node3D)
 @export var default_fov = 75.0
 @export var fov_smoothing = 5.0
 
-@export_group("Component Control")
+@export_group("Control Modes")
 @export var enable_camera_rig = true
-@export var enable_direct_input = true
+
+# === CAMERA MODES ===
+enum CameraMode {
+	ORBIT,              # Default: Mouse orbits camera, WASD moves character
+	CLICK_NAVIGATION    # Mouse2 toggle: Cursor visible, click to move
+}
+
+var current_mode: CameraMode = CameraMode.ORBIT
 
 # === INTERNAL STATE ===
 @onready var spring_arm: SpringArm3D = $SpringArm3D
@@ -47,12 +51,9 @@ signal target_acquired(target: Node3D)
 # Camera transform state
 var camera_rotation_x = 0.0  # Pitch
 var camera_rotation_y = 0.0  # Yaw
-var mouse_captured = false
 
 # Target following
 var target_position = Vector3.ZERO
-var follow_target_override = Vector3.ZERO
-var use_position_override = false
 
 # Camera properties
 var current_distance = 4.0
@@ -67,51 +68,18 @@ var is_externally_controlled = false
 func _ready():
 	setup_camera_rig()
 	setup_target()
-	connect_signals()
-	
-	# DEBUG: Check if everything is working
-	print("📹 CameraRig Debug:")
-	print("  - Target node: ", target_node)
-	print("  - Spring arm: ", spring_arm)
-	print("  - Camera: ", camera)
-	print("  - Mouse captured: ", mouse_captured)
-	print("  - Enable camera rig: ", enable_camera_rig)
-	print("  - Enable direct input: ", enable_direct_input)
-	
-	# Force mouse capture for testing (remove later)
-	mouse_captured = true
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	print("  - Forced mouse capture for testing")
+	set_camera_mode(CameraMode.ORBIT)
 
 func _input(event):
-	"""DIRECT INPUT - Immediate response for mouse controls"""
-	if not enable_camera_rig or not enable_direct_input or is_externally_controlled:
+	"""Handle camera input based on current mode"""
+	if not enable_camera_rig or is_externally_controlled:
 		return
 	
-	# DEBUG: Print input events
-	if event is InputEventMouseMotion:
-		print("📹 Mouse motion: ", event.relative, " captured: ", mouse_captured)
-	
-	# Mouse look - IMMEDIATE processing
-	if event is InputEventMouseMotion and mouse_captured:
-		handle_mouse_look_direct(event.relative)
-		print("📹 Processing mouse look: ", event.relative)
-	
-	# Zoom - IMMEDIATE processing
-	elif event is InputEventMouseButton and event.pressed:
-		print("📹 Mouse button: ", event.button_index)
-		match event.button_index:
-			MOUSE_BUTTON_WHEEL_UP:
-				handle_zoom_direct(-scroll_zoom_speed)
-				print("📹 Zoom in")
-			MOUSE_BUTTON_WHEEL_DOWN:
-				handle_zoom_direct(scroll_zoom_speed)
-				print("📹 Zoom out")
-	
-	# Mouse toggle - IMMEDIATE processing
-	elif event.is_action_pressed("toggle_mouse_look"):
-		handle_mouse_toggle_direct()
-		print("📹 Mouse toggle pressed")
+	match current_mode:
+		CameraMode.ORBIT:
+			handle_orbit_input(event)
+		CameraMode.CLICK_NAVIGATION:
+			handle_click_nav_input(event)
 
 func _physics_process(delta):
 	if not enable_camera_rig:
@@ -120,6 +88,111 @@ func _physics_process(delta):
 	update_target_following(delta)
 	update_camera_properties(delta)
 	apply_camera_transforms()
+
+# === CAMERA MODE MANAGEMENT ===
+
+func set_camera_mode(mode: CameraMode):
+	"""Switch between camera modes"""
+	if current_mode == mode:
+		return
+	
+	var old_mode = current_mode
+	current_mode = mode
+	
+	match mode:
+		CameraMode.ORBIT:
+			setup_orbit_mode()
+		CameraMode.CLICK_NAVIGATION:
+			setup_click_navigation_mode()
+	
+	camera_mode_changed.emit(get_mode_name(mode))
+	print("📹 Camera mode changed: ", get_mode_name(old_mode), " → ", get_mode_name(mode))
+
+func toggle_camera_mode():
+	"""Toggle between orbit and click navigation modes"""
+	match current_mode:
+		CameraMode.ORBIT:
+			set_camera_mode(CameraMode.CLICK_NAVIGATION)
+		CameraMode.CLICK_NAVIGATION:
+			set_camera_mode(CameraMode.ORBIT)
+
+func get_mode_name(mode: CameraMode) -> String:
+	match mode:
+		CameraMode.ORBIT:
+			return "orbit"
+		CameraMode.CLICK_NAVIGATION:
+			return "click_navigation"
+		_:
+			return "unknown"
+
+func setup_orbit_mode():
+	"""Setup orbit camera mode"""
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE  # Mouse free but no cursor
+	print("📹 Orbit mode: Mouse controls camera, WASD moves character")
+
+func setup_click_navigation_mode():
+	"""Setup click navigation mode"""
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE  # Mouse free with cursor
+	print("📹 Click navigation mode: Click to move, camera orbit disabled")
+
+# === ORBIT MODE INPUT ===
+
+func handle_orbit_input(event: InputEvent):
+	"""Handle input in orbit mode"""
+	# Mouse look for camera orbit
+	if event is InputEventMouseMotion:
+		handle_mouse_orbit(event.relative)
+	
+	# Zoom
+	elif event is InputEventMouseButton and event.pressed:
+		match event.button_index:
+			MOUSE_BUTTON_WHEEL_UP:
+				handle_zoom_direct(-scroll_zoom_speed)
+			MOUSE_BUTTON_WHEEL_DOWN:
+				handle_zoom_direct(scroll_zoom_speed)
+			MOUSE_BUTTON_RIGHT:  # Mouse2 = toggle to click nav
+				toggle_camera_mode()
+
+func handle_mouse_orbit(mouse_delta: Vector2):
+	"""Handle mouse orbit around character"""
+	var look_delta = mouse_delta * mouse_sensitivity
+	
+	if invert_y:
+		look_delta.y = -look_delta.y
+	
+	# Apply rotation
+	camera_rotation_y -= look_delta.x
+	camera_rotation_x = clamp(
+		camera_rotation_x - look_delta.y,
+		deg_to_rad(pitch_limit_min),
+		deg_to_rad(pitch_limit_max)
+	)
+
+# === CLICK NAVIGATION MODE INPUT ===
+
+func handle_click_nav_input(event: InputEvent):
+	"""Handle input in click navigation mode"""
+	# Still allow zoom
+	if event is InputEventMouseButton and event.pressed:
+		match event.button_index:
+			MOUSE_BUTTON_WHEEL_UP:
+				handle_zoom_direct(-scroll_zoom_speed)
+			MOUSE_BUTTON_WHEEL_DOWN:
+				handle_zoom_direct(scroll_zoom_speed)
+			MOUSE_BUTTON_RIGHT:  # Mouse2 = toggle back to orbit
+				toggle_camera_mode()
+	
+	# Mouse clicks and motion are handled by InputManager in this mode
+
+# === CAMERA CONTROL ===
+
+func handle_zoom_direct(zoom_delta: float):
+	"""Handle zoom in any mode"""
+	target_distance = clamp(
+		target_distance + zoom_delta,
+		min_distance,
+		max_distance
+	)
 
 # === SETUP ===
 
@@ -140,9 +213,6 @@ func setup_camera_rig():
 	current_fov = default_fov
 	target_fov = default_fov
 	camera.fov = current_fov
-	
-	# Initialize mouse capture
-	mouse_captured = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 
 func setup_target():
 	"""Setup target following"""
@@ -151,109 +221,10 @@ func setup_target():
 		global_position = target_position
 		target_acquired.emit(target_node)
 
-func connect_signals():
-	"""Connect to external signals (for reactive responses)"""
-	# CameraStateResponder will connect to our signals
-	pass
-
-# === DIRECT INPUT HANDLERS (Immediate Response) ===
-
-func handle_mouse_look_direct(mouse_delta: Vector2):
-	"""Handle mouse look with immediate response"""
-	var effective_sensitivity = mouse_sensitivity
-	var look_delta = mouse_delta * effective_sensitivity
-	
-	if invert_y:
-		look_delta.y = -look_delta.y
-	
-	# Apply yaw (horizontal)
-	if not has_yaw_limits():
-		camera_rotation_y -= look_delta.x
-	else:
-		camera_rotation_y = clamp(
-			camera_rotation_y - look_delta.x,
-			deg_to_rad(yaw_limit_min),
-			deg_to_rad(yaw_limit_max)
-		)
-	
-	# Apply pitch (vertical)
-	camera_rotation_x = clamp(
-		camera_rotation_x - look_delta.y,
-		deg_to_rad(pitch_limit_min),
-		deg_to_rad(pitch_limit_max)
-	)
-
-func handle_zoom_direct(zoom_delta: float):
-	"""Handle zoom with immediate response"""
-	target_distance = clamp(
-		target_distance + zoom_delta,
-		min_distance,
-		max_distance
-	)
-
-func handle_mouse_toggle_direct():
-	"""Handle mouse capture toggle with immediate response"""
-	mouse_captured = !mouse_captured
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if mouse_captured else Input.MOUSE_MODE_VISIBLE
-	mouse_mode_changed.emit(mouse_captured)
-
-# === SIGNAL-BASED HANDLERS (For External Control) ===
-
-func _on_look_input(delta: Vector2, sensitivity_multiplier: float = 1.0):
-	"""Handle look input from external systems (legacy API)"""
-	if not enable_camera_rig or is_externally_controlled:
-		return
-	
-	# Use the direct handler with sensitivity multiplier
-	handle_mouse_look_direct(delta * sensitivity_multiplier)
-
-func _on_zoom_input(zoom_delta: float):
-	"""Handle zoom input from external systems (legacy API)"""
-	if not enable_camera_rig or is_externally_controlled:
-		return
-	
-	handle_zoom_direct(zoom_delta)
-
-func _on_mouse_toggle():
-	"""Handle mouse toggle from external systems (legacy API)"""
-	if is_externally_controlled:
-		return
-	
-	handle_mouse_toggle_direct()
-
-# === REACTIVE CONTROL (Signal-Driven) ===
-
-func set_camera_fov(fov: float, transition_time: float = 0.0):
-	"""Set camera FOV with optional transition (signal-driven)"""
-	target_fov = fov
-	if transition_time <= 0:
-		current_fov = fov
-		camera.fov = fov
-
-func set_camera_distance(distance: float, transition_time: float = 0.0):
-	"""Set camera distance with optional transition (signal-driven)"""
-	target_distance = clamp(distance, min_distance, max_distance)
-	if transition_time <= 0:
-		current_distance = target_distance
-		spring_arm.spring_length = current_distance
-
-func set_camera_position_override(position: Vector3):
-	"""Override target position (for external control)"""
-	follow_target_override = position
-	use_position_override = true
-
-func clear_position_override():
-	"""Clear position override and return to target following"""
-	use_position_override = false
-
 # === UPDATE LOOPS ===
 
 func update_target_following(delta: float):
 	"""Update camera position to follow target"""
-	if is_externally_controlled and use_position_override:
-		global_position = global_position.lerp(follow_target_override, follow_smoothing * delta)
-		return
-	
 	if not target_node:
 		return
 	
@@ -276,78 +247,54 @@ func apply_camera_transforms():
 	rotation.y = camera_rotation_y
 	spring_arm.rotation.x = camera_rotation_x
 
-# === EXTERNAL CONTROL ===
+# === REACTIVE CONTROL (Signal-Driven) ===
 
-func _on_target_changed(new_target: Node3D):
-	"""Handle target change (signal-driven)"""
-	if target_node == new_target:
-		return
-		
-	var old_target = target_node
-	target_node = new_target
-	
-	if target_node:
-		target_acquired.emit(target_node)
-	else:
-		target_lost.emit()
+func set_camera_fov(fov: float, transition_time: float = 0.0):
+	"""Set camera FOV with optional transition (signal-driven)"""
+	target_fov = fov
+	if transition_time <= 0:
+		current_fov = fov
+		camera.fov = fov
 
-func _on_external_control_requested(active: bool, controller_name: String):
-	"""Handle external control requests (signal-driven)"""
-	if active:
-		external_controllers[controller_name] = true
-		is_externally_controlled = true
-	else:
-		external_controllers.erase(controller_name)
-		is_externally_controlled = external_controllers.size() > 0
-
-# === UTILITY METHODS ===
-
-func has_yaw_limits() -> bool:
-	return use_rotation_limits and yaw_limit_min != yaw_limit_max
-
-func has_pitch_limits() -> bool:
-	return use_rotation_limits and pitch_limit_min != pitch_limit_max
+func set_camera_distance(distance: float, transition_time: float = 0.0):
+	"""Set camera distance with optional transition (signal-driven)"""
+	target_distance = clamp(distance, min_distance, max_distance)
+	if transition_time <= 0:
+		current_distance = target_distance
+		spring_arm.spring_length = current_distance
 
 # === PUBLIC API ===
 
 func get_camera() -> Camera3D:
 	return camera
 
-func get_spring_arm() -> SpringArm3D:
-	return spring_arm
+func get_current_mode() -> CameraMode:
+	return current_mode
 
-func is_mouse_captured() -> bool:
-	return mouse_captured
+func is_in_orbit_mode() -> bool:
+	return current_mode == CameraMode.ORBIT
 
-func get_current_target() -> Node3D:
-	return target_node
+func is_in_click_navigation_mode() -> bool:
+	return current_mode == CameraMode.CLICK_NAVIGATION
 
-func set_enabled(enabled: bool):
-	enable_camera_rig = enabled
+func get_camera_forward() -> Vector3:
+	"""Get camera forward direction for character movement"""
+	return -camera.global_transform.basis.z
 
-func set_direct_input_enabled(enabled: bool):
-	"""Enable/disable direct input processing"""
-	enable_direct_input = enabled
-
-func force_mouse_mode(captured: bool):
-	"""Force mouse mode (for external controllers)"""
-	mouse_captured = captured
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if captured else Input.MOUSE_MODE_VISIBLE
-	mouse_mode_changed.emit(mouse_captured)
+func get_camera_right() -> Vector3:
+	"""Get camera right direction for character movement"""
+	return camera.global_transform.basis.x
 
 # === DEBUG INFO ===
 
 func get_debug_info() -> Dictionary:
 	return {
 		"enabled": enable_camera_rig,
-		"direct_input": enable_direct_input,
+		"mode": get_mode_name(current_mode),
 		"target": target_node.name if target_node else "None",
-		"mouse_captured": mouse_captured,
 		"external_control": is_externally_controlled,
-		"controllers": external_controllers.keys(),
 		"position": global_position,
 		"rotation_deg": Vector2(rad_to_deg(camera_rotation_x), rad_to_deg(camera_rotation_y)),
 		"fov": current_fov,
-		"distance": current_distance,
-		"following_override": use_position_override
+		"distance": current_distance
 	}
