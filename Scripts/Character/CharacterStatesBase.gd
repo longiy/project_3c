@@ -1,4 +1,4 @@
-# CharacterStatesBase.gd - Pure signal-driven version (CLEANED)
+# CharacterStatesBase.gd - CLEANED: Consolidated transitions, no debug prints
 class_name CharacterStateBase
 extends State
 
@@ -10,6 +10,10 @@ var current_movement_vector: Vector2 = Vector2.ZERO
 var movement_magnitude: float = 0.0
 var movement_start_time: float = 0.0
 var is_movement_active: bool = false
+
+# Transition thresholds (configurable per character type)
+var movement_stop_threshold: float = 0.1
+var movement_start_threshold: float = 0.05
 
 func enter():
 	super.enter()
@@ -25,17 +29,91 @@ func enter():
 
 func update(delta: float):
 	super.update(delta)
-	# States now react to actions instead of polling input
+	
+	# Handle common transitions that apply to all states
+	handle_common_transitions()
+
+# === CONSOLIDATED TRANSITION LOGIC ===
+
+func handle_common_transitions():
+	"""Handle transitions common to all states - override in child states to add specific logic"""
+	
+	# Universal air state transition (applies to all ground states)
+	if should_transition_to_air():
+		change_to("airborne")
+		return
+	
+	# Ground landing transition (applies when airborne)
+	if should_transition_to_ground():
+		change_to("landing")
+		return
+	
+	# Movement-based transitions (only for appropriate states)
+	if can_do_movement_transitions():
+		handle_movement_transitions()
+
+func should_transition_to_air() -> bool:
+	"""Check if should transition to airborne state"""
+	# Only ground states should check for air transition
+	var ground_states = ["idle", "walking", "running", "landing"]
+	return state_name in ground_states and not character.is_on_floor()
+
+func should_transition_to_ground() -> bool:
+	"""Check if should transition from air to ground"""
+	# Only air states should check for ground transition
+	var air_states = ["jumping", "airborne"]
+	return state_name in air_states and character.is_on_floor()
+
+func can_do_movement_transitions() -> bool:
+	"""Check if this state should handle movement-based transitions"""
+	# Most states handle movement transitions except jumping/landing
+	var no_movement_transition_states = ["jumping", "landing"]
+	return not (state_name in no_movement_transition_states)
+
+func handle_movement_transitions():
+	"""Handle movement-based state transitions"""
+	var current_speed = character.get_movement_speed()
+	
+	# Movement stopped - transition to idle
+	if is_movement_active and current_speed < movement_stop_threshold:
+		if can_transition_to_idle():
+			change_to("idle")
+			return
+	
+	# Movement started - transition from idle
+	if state_name == "idle" and is_movement_active and current_movement_vector.length() > movement_start_threshold:
+		var target_state = get_target_movement_state()
+		change_to(target_state)
+		return
+	
+	# Movement mode changed - transition between movement states
+	if state_name in ["walking", "running"] and is_movement_active:
+		var target_state = get_target_movement_state()
+		if target_state != state_name:
+			change_to(target_state)
+
+func can_transition_to_idle() -> bool:
+	"""Check if can transition to idle (override for special cases)"""
+	return true
+
+func get_target_movement_state() -> String:
+	"""Determine target movement state based on current conditions"""
+	if not is_movement_active:
+		return "idle"
+	
+	# Check movement modes
+	if character.is_running:
+		return "running"
+	else:
+		return "walking"
 
 # === ACTION SYSTEM INTERFACE ===
 
 func can_execute_action(action: Action) -> bool:
 	"""Override in child states to define what actions can be executed"""
 	match action.name:
-		# Movement actions - available in most states
 		"move_start", "move_update", "move_end":
 			return can_handle_movement_action(action)
-		# Mode actions - usually available
 		"sprint_start", "sprint_end", "slow_walk_start", "slow_walk_end":
 			return can_handle_mode_action(action)
 		"reset":
@@ -46,39 +124,30 @@ func can_execute_action(action: Action) -> bool:
 func execute_action(action: Action):
 	"""Override in child states to define how actions are executed"""
 	match action.name:
-		# Movement actions
 		"move_start":
 			handle_move_start_action(action)
 		"move_update":
 			handle_move_update_action(action)
 		"move_end":
 			handle_move_end_action(action)
-		
-		# Mode actions - EMIT SIGNALS DIRECTLY
 		"sprint_start":
 			character.is_running = true
 			character.emit_movement_mode_changes()
-			
 		"sprint_end":
 			character.is_running = false
 			character.emit_movement_mode_changes()
-			
 		"slow_walk_start":
 			character.is_slow_walking = true
 			character.emit_movement_mode_changes()
-			
 		"slow_walk_end":
 			character.is_slow_walking = false
 			character.emit_movement_mode_changes()
-			
-		# Utility actions
 		"reset":
 			character.reset_character()
-		
 		_:
 			push_warning("Unhandled action in ", state_name, ": ", action.name)
 
-# === MOVEMENT ACTION HANDLERS (PURE SIGNAL VERSION) ===
+# === MOVEMENT ACTION HANDLERS ===
 
 func handle_move_start_action(action: Action):
 	"""Handle start of movement input"""
@@ -87,10 +156,7 @@ func handle_move_start_action(action: Action):
 	movement_start_time = Time.get_ticks_msec() / 1000.0
 	is_movement_active = true
 	
-	# PURE SIGNAL: Character emits, animation receives
 	character.movement_state_changed.emit(true, current_movement_vector, movement_magnitude)
-	
-	# Child states can override for specific behavior
 	on_movement_started(current_movement_vector, movement_magnitude)
 
 func handle_move_update_action(action: Action):
@@ -98,10 +164,7 @@ func handle_move_update_action(action: Action):
 	current_movement_vector = action.get_movement_vector()
 	movement_magnitude = action.context.get("magnitude", current_movement_vector.length())
 	
-	# PURE SIGNAL: Just emit the change, no action requests
 	character.movement_state_changed.emit(true, current_movement_vector, movement_magnitude)
-	
-	# Child states can override for specific behavior
 	on_movement_updated(current_movement_vector, movement_magnitude)
 
 func handle_move_end_action(action: Action):
@@ -110,16 +173,8 @@ func handle_move_end_action(action: Action):
 	movement_magnitude = 0.0
 	is_movement_active = false
 	
-	# PURE SIGNAL: Character emits, animation receives
 	character.movement_state_changed.emit(false, Vector2.ZERO, 0.0)
-	
-	# Child states can override for specific behavior
 	on_movement_ended()
-
-func handle_look_action(action: Action):
-	"""Handle look input - delegate to camera system"""
-	var look_delta = action.get_look_delta()
-	# This will be handled by camera system automatically
 
 # === VIRTUAL METHODS FOR CHILD STATES ===
 
@@ -135,42 +190,33 @@ func on_movement_ended():
 	"""Override in child states for movement end behavior"""
 	pass
 
-# === MOVEMENT CONDITION HELPERS ===
+# === CONDITION HELPERS ===
 
 func can_handle_movement_action(action: Action) -> bool:
 	"""Override in child states to restrict movement actions"""
-	return true  # Most states can handle movement
+	return true
 
 func can_handle_mode_action(action: Action) -> bool:
 	"""Override in child states to restrict mode changes"""
-	return true  # Most states can handle mode changes
+	return true
 
-func can_handle_look_action(action: Action) -> bool:
-	"""Override in child states to restrict look actions"""
-	return true  # Most states can handle look
-
-# === MOVEMENT HELPERS (using action-based state) ===
+# === MOVEMENT HELPERS ===
 
 func get_current_movement_input() -> Vector2:
-	"""Get current movement input from action state"""
 	return current_movement_vector
 
 func get_movement_magnitude() -> float:
-	"""Get current movement magnitude"""
 	return movement_magnitude
 
 func get_movement_duration() -> float:
-	"""Get how long movement has been active"""
 	if is_movement_active:
 		return (Time.get_ticks_msec() / 1000.0) - movement_start_time
 	return 0.0
 
 func is_input_sustained(min_duration: float = 0.3) -> bool:
-	"""Check if movement input has been sustained"""
 	return get_movement_duration() >= min_duration
 
 func should_process_movement() -> bool:
-	"""Check if state should process movement"""
 	return is_movement_active and (
 		get_movement_duration() >= 0.08 or 
 		character.get_movement_speed() > 0.5
@@ -182,29 +228,24 @@ func transition_and_forward_action(new_state_name: String, action: Action):
 	"""Transition to new state and forward the action to it"""
 	change_to(new_state_name)
 	
-	# Forward action to new state after transition
 	if state_machine and state_machine.current_state:
 		var new_state = state_machine.current_state
 		if new_state != self and new_state.has_method("execute_action"):
-			print("🔄 Forwarding action ", action.name, " to new state: ", new_state_name)
 			new_state.execute_action(action)
 
 func has_action_system() -> bool:
 	return action_system != null
 
 func request_action(action_name: String, context: Dictionary = {}):
-	"""Helper to request actions from states"""
 	if action_system:
 		action_system.request_action(action_name, context)
 
 func get_recent_actions(count: int = 5) -> Array:
-	"""Get recent actions for combo detection, etc."""
 	if action_system:
 		return action_system.executed_actions.slice(-count)
 	return []
 
 func was_action_recently_executed(action_name: String, time_window: float = 1.0) -> bool:
-	"""Check if action was executed recently"""
 	if not action_system:
 		return false
 	

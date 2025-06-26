@@ -5,3 +5,12 @@ res://Scripts/Camera/CameraRig.gd
 res://Scripts/Components/InputManager.gd
 res://Scripts/Character/CharacterStatesBase.gd
 res://Scripts/InputComponents/ClickNavigationComponent.gd
+res://Scripts/Character/States/StateIdle.gd
+res://Scripts/Character/States/StateWalking.gd
+res://Scripts/Character/States/StateRunning.gd
+res://Scripts/Character/States/StateJumping.gd
+res://Scripts/Character/States/StateAirborne.gd
+res://Scripts/Character/States/StateLanding.gd
+res://Scripts/Character/CharacterStateMachine.gd
+res://Scripts/Controllers/ControllerCharacter.gd
+res://Scripts/Controllers/AnimationController.gd

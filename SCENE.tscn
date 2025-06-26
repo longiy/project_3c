@@ -116,7 +116,6 @@ debug_helper = NodePath("CharacterDebugHelper")
 [node name="CharacterStateMachine" type="Node" parent="CHARACTER" node_paths=PackedStringArray("state_nodes")]
 script = ExtResource("13_n01k3")
 state_nodes = [NodePath("Idle"), NodePath("Airborne"), NodePath("Jumping"), NodePath("Landing"), NodePath("Running"), NodePath("Walking")]
-enable_debug_transitions = true
 
 [node name="Idle" type="Node" parent="CHARACTER/CharacterStateMachine"]
 script = ExtResource("14_8x7ek")

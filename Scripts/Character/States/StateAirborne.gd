@@ -1,4 +1,4 @@
-# StateAirborne.gd - Action-based airborne state
+# StateAirborne.gd - CLEANED: Uses base class transitions, no debug prints
 class_name StateAirborne
 extends CharacterStateBase
 
@@ -10,7 +10,6 @@ func update(delta: float):
 	
 	character.apply_gravity(delta)
 	
-	# Handle air movement
 	if is_movement_active and current_movement_vector.length() > 0:
 		var movement_3d = character.calculate_movement_vector(current_movement_vector)
 		var air_speed = character.get_target_speed() * character.air_speed_multiplier
@@ -19,27 +18,6 @@ func update(delta: float):
 		character.apply_movement(movement_3d, air_speed, air_acceleration, delta)
 	
 	character.move_and_slide()
-	check_transitions()
-
-func check_transitions():
-	if character.is_on_floor():
-		change_to("landing")
-
-# === MOVEMENT ACTION OVERRIDES ===
-
-func on_movement_started(direction: Vector2, magnitude: float):
-	"""Movement started while airborne"""
-	pass
-
-func on_movement_updated(direction: Vector2, magnitude: float):
-	"""Movement updated while airborne"""
-	pass
-
-func on_movement_ended():
-	"""Movement ended while airborne"""
-	pass
-
-# === ACTION SYSTEM INTERFACE ===
 
 func can_execute_action(action: Action) -> bool:
 	match action.name:
@@ -58,10 +36,8 @@ func execute_action(action: Action):
 	match action.name:
 		"jump":
 			character.perform_jump(character.jump_system.get_jump_force())
-			change_to("jumping")  # Brief jump state for air jumps
-		
+			change_to("jumping")
 		"move_start", "move_update", "move_end":
 			super.execute_action(action)
-		
 		_:
 			super.execute_action(action)

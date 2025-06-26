@@ -1,4 +1,4 @@
-# StateLanding.gd - Action-based landing state
+# StateLanding.gd - CLEANED: Uses base class transitions, no debug prints
 class_name StateLanding
 extends CharacterStateBase
 
@@ -8,6 +8,7 @@ func enter():
 	super.enter()
 	character.update_ground_state()
 	
+	# Reduce velocity on landing
 	character.velocity.x *= 0.8
 	character.velocity.z *= 0.8
 
@@ -16,7 +17,6 @@ func update(delta: float):
 	
 	character.apply_gravity(delta)
 	
-	# Handle movement based on action state
 	if is_movement_active and current_movement_vector.length() > 0:
 		var movement_3d = character.calculate_movement_vector(current_movement_vector)
 		var reduced_speed = character.get_target_speed() * 0.5
@@ -27,36 +27,14 @@ func update(delta: float):
 		character.apply_deceleration(delta)
 	
 	character.move_and_slide()
-	check_transitions()
+	
+	# Override base class transitions - landing has recovery time
+	if time_in_state > landing_recovery_time:
+		handle_movement_transitions()
 
-func check_transitions():
-	if not character.is_on_floor():
-		change_to("airborne")
-	elif time_in_state > landing_recovery_time:
-		if is_movement_active and current_movement_vector.length() > 0:
-			if character.is_running:
-				change_to("running")
-			else:
-				change_to("walking")
-		else:
-			change_to("idle")
-
-# === MOVEMENT ACTION OVERRIDES ===
-
-func on_movement_started(direction: Vector2, magnitude: float):
-	"""Movement started while landing"""
-	# Don't transition immediately, wait for landing recovery
-	pass
-
-func on_movement_updated(direction: Vector2, magnitude: float):
-	"""Movement updated while landing"""
-	pass
-
-func on_movement_ended():
-	"""Movement ended while landing"""
-	pass
-
-# === ACTION SYSTEM INTERFACE ===
+# Override to prevent immediate transitions during recovery
+func can_do_movement_transitions() -> bool:
+	return time_in_state > landing_recovery_time
 
 func can_execute_action(action: Action) -> bool:
 	match action.name:
@@ -76,9 +54,7 @@ func execute_action(action: Action):
 		"jump":
 			character.perform_jump(character.jump_system.get_jump_force())
 			change_to("jumping")
-		
 		"move_start", "move_update", "move_end":
 			super.execute_action(action)
-		
 		_:
 			super.execute_action(action)
