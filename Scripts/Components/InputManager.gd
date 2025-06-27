@@ -1,4 +1,4 @@
-# InputManager.gd - CLEANED: Removed debug prints
+# InputManager.gd - FIXED: Single jump per keypress
 extends Node
 class_name InputManager
 
@@ -54,15 +54,18 @@ func _physics_process(delta):
 	handle_movement_input(delta)
 
 func handle_discrete_input(event: InputEvent) -> bool:
-	if event is InputEventKey and event.pressed:
-		match event.keycode:
-			KEY_SPACE:
-				action_system.request_action("jump")
-				return true
-			KEY_ENTER when Input.is_action_pressed("reset"):
-				action_system.request_action("reset")
-				return true
+	"""FIXED: Handle discrete input events (single press only)"""
 	
+	# FIXED: Use action system for proper single-press detection
+	if event.is_action_pressed("jump"):  # Only fires once per press
+		action_system.request_action("jump")
+		return true
+	
+	if event.is_action_pressed("reset"):
+		action_system.request_action("reset")
+		return true
+	
+	# Handle sprint toggle
 	if event.is_action_pressed("sprint"):
 		action_system.request_action("sprint_start")
 		return true
@@ -70,6 +73,7 @@ func handle_discrete_input(event: InputEvent) -> bool:
 		action_system.request_action("sprint_end")
 		return true
 	
+	# Handle slow walk toggle
 	if event.is_action_pressed("walk"):
 		action_system.request_action("slow_walk_start")
 		return true

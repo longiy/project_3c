@@ -14,3 +14,5 @@ res://Scripts/Character/States/StateLanding.gd
 res://Scripts/Character/CharacterStateMachine.gd
 res://Scripts/Controllers/ControllerCharacter.gd
 res://Scripts/Controllers/AnimationController.gd
+res://Scripts/Character/MovementCalculator.gd
+res://Scripts/Character/MovementStateManager.gd

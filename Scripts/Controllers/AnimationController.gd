@@ -1,4 +1,4 @@
-# AnimationController.gd - CLEANED: Removed debug prints
+# AnimationController.gd - UPDATED: Connect to MovementStateManager
 extends Node
 class_name AnimationController
 
@@ -39,23 +39,24 @@ func _ready():
 		return
 	
 	animation_tree.active = true
-	connect_to_character_signals()
+	connect_to_movement_state_manager()
 
-func connect_to_character_signals():
-	if character.has_signal("movement_state_changed"):
-		character.movement_state_changed.connect(_on_movement_state_changed)
-	
-	if character.has_signal("movement_mode_changed"):
-		character.movement_mode_changed.connect(_on_movement_mode_changed)
-	
-	if character.has_signal("speed_changed"):
-		character.speed_changed.connect(_on_speed_changed)
+func connect_to_movement_state_manager():
+	"""UPDATED: Connect to MovementStateManager instead of character"""
+	var movement_manager = character.get_node_or_null("MovementStateManager")
+	if movement_manager:
+		movement_manager.movement_state_changed.connect(_on_movement_state_changed)
+		movement_manager.movement_mode_changed.connect(_on_movement_mode_changed)
+		movement_manager.speed_changed.connect(_on_speed_changed)
+		print("✅ AnimationController: Connected to MovementStateManager")
+	else:
+		push_error("AnimationController: No MovementStateManager found!")
 
 func _physics_process(delta):
 	if animation_tree:
 		update_blend_smoothing(delta)
 
-# === SIGNAL HANDLERS - NO DEBUG PRINTS ===
+# === SIGNAL HANDLERS ===
 
 func _on_movement_state_changed(is_moving: bool, direction: Vector2, magnitude: float):
 	received_is_movement_active = is_moving
@@ -145,6 +146,6 @@ func get_debug_info() -> Dictionary:
 		"target_1d": target_blend_value,
 		"target_2d": target_blend_vector,
 		"is_1d_mode": is_using_1d_blend_space(),
-		"system_type": "Pure Signal-Driven",
-		"action_system_dependency": false
+		"system_type": "MovementStateManager-Driven",
+		"connection_status": "Connected to MovementStateManager"
 	}

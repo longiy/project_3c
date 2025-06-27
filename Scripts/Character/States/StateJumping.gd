@@ -1,4 +1,4 @@
-# StateJumping.gd - CLEANED: Uses base class transitions, no debug prints
+# StateJumping.gd - UPDATED: Using MovementStateManager
 class_name StateJumping
 extends CharacterStateBase
 
@@ -11,14 +11,7 @@ func update(delta: float):
 	super.update(delta)
 	
 	character.apply_gravity(delta)
-	
-	if is_movement_active and current_movement_vector.length() > 0:
-		var movement_3d = character.calculate_movement_vector(current_movement_vector)
-		var air_speed = character.get_target_speed() * character.air_speed_multiplier
-		var air_acceleration = character.air_acceleration
-		
-		character.apply_movement(movement_3d, air_speed, air_acceleration, delta)
-	
+	apply_air_movement(delta)  # Uses MovementStateManager
 	character.move_and_slide()
 	
 	# Override base class transitions - jumping has specific timing
@@ -37,8 +30,6 @@ func can_execute_action(action: Action) -> bool:
 			return true
 		"sprint_start", "sprint_end", "slow_walk_start", "slow_walk_end": 
 			return true
-		"look_delta":
-			return true
 		_: 
 			return super.can_execute_action(action)
 
@@ -46,7 +37,5 @@ func execute_action(action: Action):
 	match action.name:
 		"jump":
 			character.perform_jump(character.jump_system.get_jump_force())
-		"move_start", "move_update", "move_end":
-			super.execute_action(action)
 		_:
-			super.execute_action(action)
+			super.execute_action(action)  # Delegates to MovementStateManager

@@ -1,4 +1,4 @@
-# StateLanding.gd - CLEANED: Uses base class transitions, no debug prints
+# StateLanding.gd - UPDATED: Using MovementStateManager
 class_name StateLanding
 extends CharacterStateBase
 
@@ -16,16 +16,7 @@ func update(delta: float):
 	super.update(delta)
 	
 	character.apply_gravity(delta)
-	
-	if is_movement_active and current_movement_vector.length() > 0:
-		var movement_3d = character.calculate_movement_vector(current_movement_vector)
-		var reduced_speed = character.get_target_speed() * 0.5
-		var acceleration = character.get_target_acceleration()
-		
-		character.apply_movement(movement_3d, reduced_speed, acceleration, delta)
-	else:
-		character.apply_deceleration(delta)
-	
+	apply_ground_movement(delta)  # Uses MovementStateManager
 	character.move_and_slide()
 	
 	# Override base class transitions - landing has recovery time
@@ -44,8 +35,6 @@ func can_execute_action(action: Action) -> bool:
 			return true
 		"sprint_start", "sprint_end", "slow_walk_start", "slow_walk_end": 
 			return true
-		"look_delta":
-			return true
 		_: 
 			return super.can_execute_action(action)
 
@@ -54,7 +43,5 @@ func execute_action(action: Action):
 		"jump":
 			character.perform_jump(character.jump_system.get_jump_force())
 			change_to("jumping")
-		"move_start", "move_update", "move_end":
-			super.execute_action(action)
 		_:
-			super.execute_action(action)
+			super.execute_action(action)  # Delegates to MovementStateManager
