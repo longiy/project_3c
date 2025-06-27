@@ -16,3 +16,5 @@ res://Scripts/Controllers/ControllerCharacter.gd
 res://Scripts/Controllers/AnimationController.gd
 res://Scripts/Character/MovementCalculator.gd
 res://Scripts/Character/MovementStateManager.gd
+res://Scripts/_Debug/CharacterDebugHelper.gd
+res://Scripts/_Debug/DebugUI.gd

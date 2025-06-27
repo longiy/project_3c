@@ -1,4 +1,4 @@
-# DebugUI.gd - Updated for action-based animation system
+# DebugUI.gd - Updated for MovementManager
 extends Control
 
 @export var debug_label: Label
@@ -10,7 +10,6 @@ extends Control
 @export var show_input_info = true
 @export var show_physics_info = true
 @export var show_animation_info = true
-@export var show_action_system_info = true  # NEW
 @export var show_camera_info = true
 @export var show_performance_info = false
 
@@ -40,9 +39,6 @@ func update_debug_display():
 		
 		if show_animation_info:
 			debug_text += build_animation_section_from_helper(comprehensive_info)
-		
-		if show_action_system_info:
-			debug_text += build_action_system_section_from_helper(comprehensive_info)
 		
 		if show_camera_info:
 			debug_text += build_camera_section()
@@ -74,12 +70,25 @@ func build_state_section_from_helper(info: Dictionary) -> String:
 
 func build_movement_section_from_helper(info: Dictionary) -> String:
 	var text = "=== MOVEMENT ===\n"
+	
+	# Character info
 	if info.has("character"):
 		var char_info = info.character
 		text += "Speed: " + str(char_info.get("movement_speed", 0.0)).pad_decimals(2) + "\n"
 		text += "Grounded: " + str(char_info.get("is_grounded", false)) + "\n"
 		text += "Running: " + str(char_info.get("is_running", false)) + "\n"
 		text += "Slow Walk: " + str(char_info.get("is_slow_walking", false)) + "\n"
+	
+	# Movement manager info
+	if info.has("movement"):
+		var movement_info = info.movement
+		if movement_info.has("error"):
+			text += "Movement Error: " + str(movement_info.error) + "\n"
+		else:
+			text += "Movement Active: " + str(movement_info.get("movement_active", false)) + "\n"
+			text += "Input Direction: " + str(movement_info.get("input_direction", Vector2.ZERO)) + "\n"
+			text += "Target State: " + str(movement_info.get("target_state", "unknown")) + "\n"
+	
 	text += "\n"
 	return text
 
@@ -93,12 +102,7 @@ func build_input_section_from_helper(info: Dictionary) -> String:
 			text += "Movement Active: " + str(input_info.get("movement_active", false)) + "\n"
 			text += "Current Input: " + str(input_info.get("current_input", Vector2.ZERO)) + "\n"
 			text += "Duration: " + str(input_info.get("movement_duration", 0.0)).pad_decimals(2) + "s\n"
-			
-			# Show active components
-			if input_info.has("active_components") and input_info.active_components.size() > 0:
-				text += "Active: " + ", ".join(input_info.active_components) + "\n"
-			else:
-				text += "Active: WASD\n"
+			text += "Camera Mode: " + str(input_info.get("camera_mode", "unknown")) + "\n"
 	text += "\n"
 	return text
 
@@ -126,17 +130,17 @@ func build_physics_section_from_helper(info: Dictionary) -> String:
 	return text
 
 func build_animation_section_from_helper(info: Dictionary) -> String:
-	var text = "=== ANIMATION (Action-Based) ===\n"
+	var text = "=== ANIMATION ===\n"
 	if info.has("animation"):
 		var anim_info = info.animation
 		if anim_info.has("error"):
 			text += "Error: " + str(anim_info.error) + "\n"
 		else:
-			# Show action-based animation state
 			text += "System: " + str(anim_info.get("system_type", "Unknown")) + "\n"
 			text += "Movement Active: " + str(anim_info.get("is_movement_active", false)) + "\n"
 			text += "Input Direction: " + str(anim_info.get("input_direction", Vector2.ZERO)) + "\n"
-			text += "Movement Speed: " + str(anim_info.get("movement_speed", 0.0)).pad_decimals(2) + "\n"
+			text += "Running: " + str(anim_info.get("is_running", false)) + "\n"
+			text += "Slow Walking: " + str(anim_info.get("is_slow_walking", false)) + "\n"
 			
 			# Show blend values
 			if anim_info.has("blend_1d"):
@@ -144,57 +148,7 @@ func build_animation_section_from_helper(info: Dictionary) -> String:
 			if anim_info.has("blend_2d"):
 				text += "Blend 2D: " + str(anim_info.blend_2d) + " → " + str(anim_info.get("target_2d", Vector2.ZERO)) + "\n"
 			
-			# Show sync status
-			text += "Sync: " + str(anim_info.get("sync_status", "Unknown")) + "\n"
-			
-			# Show recent animation actions
-			if anim_info.has("recent_animation_actions"):
-				var recent = anim_info.recent_animation_actions
-				if recent.size() > 0:
-					text += "Recent: " + str(recent.slice(-2)) + "\n"
-	text += "\n"
-	return text
-
-func build_action_system_section_from_helper(info: Dictionary) -> String:
-	var text = "=== ACTION SYSTEM ===\n"
-	if info.has("actions"):
-		var action_info = info.actions
-		if action_info.has("error"):
-			text += "Error: " + str(action_info.error) + "\n"
-		else:
-			text += "Type: " + ("Event-Driven" if action_info.get("event_driven", false) else "Frame-Based") + "\n"
-			text += "Total Executed: " + str(action_info.get("executed_count", 0)) + "\n"
-			text += "Animation Actions: " + str(action_info.get("animation_actions_count", 0)) + "\n"
-			text += "Input→Anim Delay: " + str(action_info.get("input_to_animation_delay", "Unknown")) + "\n"
-			
-			# Show recent actions
-			if action_info.has("recent_actions"):
-				var recent = action_info.recent_actions
-				if recent.size() > 0:
-					text += "Recent: " + ", ".join(recent.slice(-3)) + "\n"
-			
-			# Show recent movement actions
-			if action_info.has("recent_movement_actions"):
-				var movement = action_info.recent_movement_actions
-				if movement.size() > 0:
-					text += "Movement: " + ", ".join(movement.slice(-2)) + "\n"
-	text += "\n"
-	return text
-
-func build_performance_section_from_helper(info: Dictionary) -> String:
-	var text = "=== PERFORMANCE ===\n"
-	if character.debug_helper:
-		var perf_info = character.debug_helper.get_performance_info()
-		text += "FPS: " + str(perf_info.fps) + "\n"
-		text += "Frame Time: " + str(perf_info.frame_time_ms).pad_decimals(1) + "ms\n"
-		text += "Physics Time: " + str(perf_info.physics_time_ms).pad_decimals(1) + "ms\n"
-		text += "Memory: " + str(perf_info.memory_usage_mb).pad_decimals(1) + "MB\n"
-		
-		# Add action system performance info
-		if info.has("actions"):
-			var action_info = info.actions
-			text += "Animation Sync: " + str(action_info.get("input_to_animation_delay", "Unknown")) + "\n"
-			text += "Actions Support: " + str(action_info.get("animation_actions_supported", false)) + "\n"
+			text += "Connection: " + str(anim_info.get("connection_status", "Unknown")) + "\n"
 	text += "\n"
 	return text
 
@@ -213,6 +167,17 @@ func build_camera_section() -> String:
 	else:
 		text += "No Camera Info Available\n"
 	
+	text += "\n"
+	return text
+
+func build_performance_section_from_helper(info: Dictionary) -> String:
+	var text = "=== PERFORMANCE ===\n"
+	if character.debug_helper:
+		var perf_info = character.debug_helper.get_performance_info()
+		text += "FPS: " + str(perf_info.fps) + "\n"
+		text += "Frame Time: " + str(perf_info.frame_time_ms).pad_decimals(1) + "ms\n"
+		text += "Physics Time: " + str(perf_info.physics_time_ms).pad_decimals(1) + "ms\n"
+		text += "Memory: " + str(perf_info.memory_usage_mb).pad_decimals(1) + "MB\n"
 	text += "\n"
 	return text
 
@@ -285,15 +250,13 @@ func _input(event):
 			KEY_5:
 				show_animation_info = !show_animation_info
 			KEY_6:
-				show_action_system_info = !show_action_system_info
-			KEY_7:
 				show_camera_info = !show_camera_info
-			KEY_8:
+			KEY_7:
 				show_performance_info = !show_performance_info
 			KEY_F1:
 				toggle_all_debug_sections()
 			KEY_F2:
-				test_animation_sync()
+				test_movement_system()
 
 func toggle_all_debug_sections():
 	"""Toggle all debug sections on/off"""
@@ -304,14 +267,13 @@ func toggle_all_debug_sections():
 	show_input_info = new_state
 	show_physics_info = new_state
 	show_animation_info = new_state
-	show_action_system_info = new_state
 	show_camera_info = new_state
 	show_performance_info = new_state
 
-func test_animation_sync():
-	"""Test animation synchronization (F2 key)"""
+func test_movement_system():
+	"""Test movement system (F2 key)"""
 	if character.debug_helper:
-		character.debug_helper.test_animation_sync()
+		character.debug_helper.test_movement_modes()
 
 # === DEBUG COMMANDS ===
 
@@ -329,12 +291,4 @@ func get_debug_summary() -> String:
 	var speed = character.get_movement_speed()
 	var grounded = character.is_on_floor()
 	
-	# Add action system status
-	var action_status = "No Actions"
-	if character.debug_helper:
-		var info = character.debug_helper.get_comprehensive_debug_info()
-		if info.has("actions"):
-			var delay = info.actions.get("input_to_animation_delay", "Unknown")
-			action_status = "Sync: " + str(delay)
-	
-	return "%s | %.1f u/s | %s | %s" % [state, speed, "Ground" if grounded else "Air", action_status]
+	return "%s | %.1f u/s | %s" % [state, speed, "Ground" if grounded else "Air"]

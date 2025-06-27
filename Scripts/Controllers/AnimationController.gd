@@ -1,4 +1,4 @@
-# AnimationController.gd - UPDATED: Connect to MovementStateManager
+# AnimationController.gd - Updated for MovementManager
 extends Node
 class_name AnimationController
 
@@ -39,37 +39,23 @@ func _ready():
 		return
 	
 	animation_tree.active = true
-	connect_to_movement_state_manager()
-
-func connect_to_movement_state_manager():
-	"""UPDATED: Connect to MovementStateManager instead of character"""
-	var movement_manager = character.get_node_or_null("MovementStateManager")
-	if movement_manager:
-		movement_manager.movement_state_changed.connect(_on_movement_state_changed)
-		movement_manager.movement_mode_changed.connect(_on_movement_mode_changed)
-		movement_manager.speed_changed.connect(_on_speed_changed)
-		print("✅ AnimationController: Connected to MovementStateManager")
-	else:
-		push_error("AnimationController: No MovementStateManager found!")
+	print("✅ AnimationController: Ready to connect to MovementManager")
 
 func _physics_process(delta):
 	if animation_tree:
 		update_blend_smoothing(delta)
 
-# === SIGNAL HANDLERS ===
+# === SIGNAL HANDLERS (Called by Character when connecting signals) ===
 
-func _on_movement_state_changed(is_moving: bool, direction: Vector2, magnitude: float):
+func _on_movement_changed(is_moving: bool, direction: Vector2, speed: float):
 	received_is_movement_active = is_moving
 	received_input_direction = direction
+	received_movement_speed = speed
 	update_animation_immediately()
 
-func _on_movement_mode_changed(is_running: bool, is_slow_walking: bool):
+func _on_mode_changed(is_running: bool, is_slow_walking: bool):
 	received_is_running = is_running
 	received_is_slow_walking = is_slow_walking
-	update_animation_immediately()
-
-func _on_speed_changed(new_speed: float):
-	received_movement_speed = new_speed
 	update_animation_immediately()
 
 func update_animation_immediately():
@@ -146,6 +132,6 @@ func get_debug_info() -> Dictionary:
 		"target_1d": target_blend_value,
 		"target_2d": target_blend_vector,
 		"is_1d_mode": is_using_1d_blend_space(),
-		"system_type": "MovementStateManager-Driven",
-		"connection_status": "Connected to MovementStateManager"
+		"system_type": "MovementManager-Driven",
+		"connection_status": "Ready for signal connection"
 	}

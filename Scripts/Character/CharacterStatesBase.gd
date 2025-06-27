@@ -1,11 +1,9 @@
-# CharacterStatesBase.gd - FIXED: Prevent airborne→walking transitions
+# CharacterStatesBase.gd - Updated for MovementManager
 class_name CharacterStateBase
 extends State
 
 var character: CharacterBody3D
-var action_system: ActionSystem
-var movement_calculator: MovementCalculator
-var movement_state_manager: MovementStateManager
+var movement_manager: MovementManager
 
 # Transition thresholds
 var movement_stop_threshold: float = 0.1
@@ -18,22 +16,19 @@ func enter():
 		push_error("CharacterState requires CharacterBody3D owner")
 		return
 	
-	action_system = character.get_node_or_null("ActionSystem")
-	movement_calculator = character.get_node_or_null("MovementCalculator")
-	movement_state_manager = character.get_node_or_null("MovementStateManager")
-	
-	if not movement_state_manager:
-		push_error("CharacterState requires MovementStateManager component")
+	movement_manager = character.get_node_or_null("MovementManager")
+	if not movement_manager:
+		push_error("CharacterState requires MovementManager component")
 
 func update(delta: float):
 	super.update(delta)
 	handle_common_transitions()
 
-# === FIXED TRANSITION LOGIC ===
+# === TRANSITION LOGIC ===
 
 func handle_common_transitions():
 	"""Handle transitions with proper air/ground state respect"""
-	if not movement_state_manager:
+	if not movement_manager:
 		return
 	
 	# PRIORITY 1: Air/Ground physics transitions (highest priority)
@@ -75,8 +70,8 @@ func can_do_movement_transitions() -> bool:
 	return not (state_name in no_movement_transition_states)
 
 func handle_movement_transitions():
-	"""FIXED: Handle movement transitions only for ground states"""
-	if not movement_state_manager:
+	"""Handle movement transitions only for ground states"""
+	if not movement_manager:
 		return
 	
 	# SAFETY CHECK: Only do movement transitions if actually grounded
@@ -84,7 +79,7 @@ func handle_movement_transitions():
 		return
 	
 	# Check if we should transition to a different ground state
-	var target_state = movement_state_manager.should_transition_to_state(state_name)
+	var target_state = movement_manager.should_transition_to_state(state_name)
 	if target_state != "" and is_valid_ground_transition(target_state):
 		change_to(target_state)
 
@@ -93,77 +88,14 @@ func is_valid_ground_transition(target_state: String) -> bool:
 	var valid_ground_states = ["idle", "walking", "running"]
 	return target_state in valid_ground_states and character.is_on_floor()
 
-# === ACTION SYSTEM INTERFACE ===
-
-func can_execute_action(action: Action) -> bool:
-	"""Default action handling"""
-	match action.name:
-		"move_start", "move_update", "move_end":
-			return can_handle_movement_action(action)
-		"sprint_start", "sprint_end", "slow_walk_start", "slow_walk_end":
-			return can_handle_mode_action(action)
-		"reset":
-			return true
-		_:
-			return false
-
-func execute_action(action: Action):
-	"""Execute actions through state manager"""
-	if not movement_state_manager:
-		return
-	
-	match action.name:
-		"move_start", "move_update", "move_end":
-			movement_state_manager.handle_movement_action(action)
-		"sprint_start", "sprint_end", "slow_walk_start", "slow_walk_end":
-			movement_state_manager.handle_mode_action(action)
-		"reset":
-			character.reset_character()
-		_:
-			push_warning("Unhandled action in ", state_name, ": ", action.name)
-
 # === MOVEMENT EXECUTION ===
 
 func apply_ground_movement(delta: float):
 	"""Apply movement while on ground"""
-	if not movement_calculator or not movement_state_manager:
-		return
-	
-	if movement_state_manager.is_movement_active and movement_state_manager.current_input_direction.length() > 0:
-		var movement_3d = movement_calculator.calculate_movement_vector(movement_state_manager.current_input_direction)
-		var target_speed = movement_calculator.get_target_speed(movement_state_manager.is_running, movement_state_manager.is_slow_walking)
-		var acceleration = movement_calculator.get_acceleration(character.is_on_floor())
-		
-		movement_calculator.apply_movement(movement_3d, target_speed, acceleration, delta)
-	else:
-		movement_calculator.apply_deceleration(delta)
+	if movement_manager:
+		movement_manager.apply_ground_movement(delta)
 
 func apply_air_movement(delta: float):
 	"""Apply movement while in air"""
-	if not movement_calculator or not movement_state_manager:
-		return
-	
-	if movement_state_manager.is_movement_active and movement_state_manager.current_input_direction.length() > 0:
-		var movement_3d = movement_calculator.calculate_movement_vector(movement_state_manager.current_input_direction)
-		movement_calculator.apply_air_movement(movement_3d, movement_state_manager.is_running, movement_state_manager.is_slow_walking, delta)
-
-# === CONDITION HELPERS ===
-
-func can_handle_movement_action(action: Action) -> bool:
-	"""Override in child states to restrict movement actions"""
-	return true
-
-func can_handle_mode_action(action: Action) -> bool:
-	"""Override in child states to restrict mode changes"""
-	return true
-
-# === UTILITY METHODS ===
-
-func transition_and_forward_action(new_state_name: String, action: Action):
-	"""Transition to new state and forward the action to it"""
-	change_to(new_state_name)
-	
-	if state_machine and state_machine.current_state:
-		var new_state = state_machine.current_state
-		if new_state != self and new_state.has_method("execute_action"):
-			new_state.execute_action(action)
+	if movement_manager:
+		movement_manager.apply_air_movement(delta)

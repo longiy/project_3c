@@ -1,4 +1,4 @@
-# ControllerCharacter.gd - FIXED: Using MovementStateManager
+# ControllerCharacter.gd - Simplified character controller
 extends CharacterBody3D
 
 @export_group("Physics")
@@ -11,24 +11,22 @@ extends CharacterBody3D
 @export var jump_system: JumpSystem
 @export var debug_helper: CharacterDebugHelper
 
-# === SIGNALS (Forwarded from MovementStateManager) ===
+# === SIGNALS ===
 signal ground_state_changed(is_grounded: bool)
 signal jump_performed(jump_force: float, is_air_jump: bool)
 
-# Internal state
+# === COMPONENTS ===
+var state_machine: CharacterStateMachine
+var movement_manager: MovementManager
+
+# === STATE ===
 var last_emitted_grounded: bool = true
 var base_gravity: float
 
-var state_machine: CharacterStateMachine
-var action_system: ActionSystem
-var movement_calculator: MovementCalculator
-var movement_state_manager: MovementStateManager
-
 func _ready():
 	setup_character()
-	setup_state_machine()
-	setup_movement_calculator()
-	setup_movement_state_manager()
+	setup_components()
+	connect_signals()
 
 func setup_character():
 	base_gravity = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
@@ -37,40 +35,43 @@ func setup_character():
 	
 	last_emitted_grounded = is_on_floor()
 
-func setup_state_machine():
+func setup_components():
+	# Get required components
 	state_machine = get_node("CharacterStateMachine") as CharacterStateMachine
 	if not state_machine:
-		push_error("No CharacterStateMachine child node found!")
+		push_error("No CharacterStateMachine found!")
 		return
 	
-	action_system = get_node("ActionSystem") as ActionSystem
-	if not action_system:
-		push_error("No ActionSystem child node found!")
-		return
-
-func setup_movement_calculator():
-	movement_calculator = get_node_or_null("MovementCalculator")
-	if not movement_calculator:
-		movement_calculator = MovementCalculator.new()
-		movement_calculator.name = "MovementCalculator"
-		add_child(movement_calculator)
+	# Create or get movement manager
+	movement_manager = get_node_or_null("MovementManager")
+	if not movement_manager:
+		movement_manager = MovementManager.new()
+		movement_manager.name = "MovementManager"
+		add_child(movement_manager)
 	
+	# Setup camera reference
 	if camera:
-		movement_calculator.setup_camera_reference(camera)
+		movement_manager.setup_camera_reference(camera)
 
-func setup_movement_state_manager():
-	"""Setup centralized movement state manager"""
-	movement_state_manager = get_node_or_null("MovementStateManager")
-	if not movement_state_manager:
-		movement_state_manager = MovementStateManager.new()
-		movement_state_manager.name = "MovementStateManager"
-		add_child(movement_state_manager)
+func connect_signals():
+	if not input_manager or not movement_manager:
+		return
 	
-	# Connect to animation controller
+	# Connect input signals to movement manager
+	input_manager.movement_started.connect(_on_movement_started)
+	input_manager.movement_updated.connect(_on_movement_updated)
+	input_manager.movement_stopped.connect(_on_movement_stopped)
+	input_manager.sprint_started.connect(_on_sprint_started)
+	input_manager.sprint_stopped.connect(_on_sprint_stopped)
+	input_manager.slow_walk_started.connect(_on_slow_walk_started)
+	input_manager.slow_walk_stopped.connect(_on_slow_walk_stopped)
+	input_manager.jump_pressed.connect(_on_jump_pressed)
+	input_manager.reset_pressed.connect(_on_reset_pressed)
+	
+	# Connect movement manager to animation controller
 	if animation_controller:
-		movement_state_manager.movement_state_changed.connect(animation_controller._on_movement_state_changed)
-		movement_state_manager.movement_mode_changed.connect(animation_controller._on_movement_mode_changed)
-		movement_state_manager.speed_changed.connect(animation_controller._on_speed_changed)
+		movement_manager.movement_changed.connect(animation_controller._on_movement_changed)
+		movement_manager.mode_changed.connect(animation_controller._on_mode_changed)
 
 func _physics_process(delta):
 	if state_machine:
@@ -78,44 +79,60 @@ func _physics_process(delta):
 	
 	emit_ground_state_changes()
 
-# === MOVEMENT INTERFACE (Delegates to components) ===
+# === SIGNAL HANDLERS ===
 
-func calculate_movement_vector(input_dir: Vector2) -> Vector3:
-	return movement_calculator.calculate_movement_vector(input_dir)
+func _on_movement_started(direction: Vector2, magnitude: float):
+	movement_manager.handle_movement_action("move_start", {"direction": direction, "magnitude": magnitude})
 
-func apply_movement(movement_vector: Vector3, target_speed: float, acceleration: float, delta: float):
-	movement_calculator.apply_movement(movement_vector, target_speed, acceleration, delta)
+func _on_movement_updated(direction: Vector2, magnitude: float):
+	movement_manager.handle_movement_action("move_update", {"direction": direction, "magnitude": magnitude})
 
-func apply_deceleration(delta: float):
-	movement_calculator.apply_deceleration(delta)
+func _on_movement_stopped():
+	movement_manager.handle_movement_action("move_end")
 
-func get_target_speed() -> float:
-	return movement_calculator.get_target_speed(
-		movement_state_manager.is_running if movement_state_manager else false,
-		movement_state_manager.is_slow_walking if movement_state_manager else false
-	)
+func _on_sprint_started():
+	movement_manager.handle_mode_action("sprint_start")
 
-func get_target_acceleration() -> float:
-	return movement_calculator.get_acceleration(is_on_floor())
+func _on_sprint_stopped():
+	movement_manager.handle_mode_action("sprint_end")
+
+func _on_slow_walk_started():
+	movement_manager.handle_mode_action("slow_walk_start")
+
+func _on_slow_walk_stopped():
+	movement_manager.handle_mode_action("slow_walk_end")
+
+func _on_jump_pressed():
+	if can_jump():
+		perform_jump(jump_system.get_jump_force())
+		state_machine.change_state("jumping")
+
+func _on_reset_pressed():
+	reset_character()
+
+# === MOVEMENT INTERFACE ===
+
+func apply_ground_movement(delta: float):
+	movement_manager.apply_ground_movement(delta)
+
+func apply_air_movement(delta: float):
+	movement_manager.apply_air_movement(delta)
 
 func get_movement_speed() -> float:
-	return movement_calculator.get_movement_speed()
+	return movement_manager.get_movement_speed()
 
-# === COMPATIBILITY PROPERTIES (For existing code) ===
+func get_target_speed() -> float:
+	return movement_manager.get_target_speed()
+
+# === MOVEMENT MODE PROPERTIES ===
 
 var is_running: bool:
 	get:
-		return movement_state_manager.is_running if movement_state_manager else false
-	set(value):
-		if movement_state_manager:
-			movement_state_manager.schedule_mode_change("running", value)
+		return movement_manager.is_running if movement_manager else false
 
 var is_slow_walking: bool:
 	get:
-		return movement_state_manager.is_slow_walking if movement_state_manager else false
-	set(value):
-		if movement_state_manager:
-			movement_state_manager.schedule_mode_change("slow_walking", value)
+		return movement_manager.is_slow_walking if movement_manager else false
 
 # === PHYSICS ===
 
@@ -149,11 +166,10 @@ func emit_ground_state_changes():
 		last_emitted_grounded = current_grounded
 		ground_state_changed.emit(current_grounded)
 
-# === DEPRECATED METHODS (For compatibility) ===
+# === STATE QUERIES ===
 
-func emit_movement_mode_changes():
-	"""Deprecated - MovementStateManager handles this now"""
-	pass
+func should_transition_to_state(current_state: String) -> String:
+	return movement_manager.should_transition_to_state(current_state) if movement_manager else ""
 
 # === STATE MACHINE INTERFACE ===
 
@@ -163,7 +179,7 @@ func get_current_state_name() -> String:
 func get_previous_state_name() -> String:
 	return state_machine.get_previous_state_name() if state_machine else "none"
 
-# === UTILITY METHODS ===
+# === UTILITY ===
 
 func reset_character():
 	if debug_helper:
@@ -176,6 +192,5 @@ func get_debug_info() -> Dictionary:
 		return {
 			"current_state": get_current_state_name(),
 			"movement_speed": get_movement_speed(),
-			"is_grounded": is_on_floor(),
-			"debug_helper_missing": true
+			"is_grounded": is_on_floor()
 		}
