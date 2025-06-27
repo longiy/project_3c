@@ -2,3 +2,5 @@ res://SCENE.tscn
 res://AnimationTreeMove1d.tres
 res://Scripts/Components/JumpSystem.gd
 res://Scripts/Controllers/ControllerCharacter.gd
+res://Scripts/Camera/CameraRig.gd
+res://Scripts/Character/CharacterStateMachine.gd
