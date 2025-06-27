@@ -103,9 +103,37 @@ func _on_slow_walk_stopped():
 	movement_manager.handle_mode_action("slow_walk_end")
 
 func _on_jump_pressed():
-	if can_jump():
-		perform_jump(jump_system.get_jump_force())
-		state_machine.change_state("jumping")
+	"""FIXED: Handle both ground and air jumps properly"""
+	if not jump_system:
+		return
+	
+	# Let JumpSystem decide what type of jump to perform
+	if jump_system.can_jump_at_all():
+		# JumpSystem will automatically determine jump type and force
+		jump_system.perform_jump()
+		
+		# Transition to jumping state
+		if state_machine:
+			state_machine.change_state("jumping")
+		
+		# Debug logging (optional)
+		if jump_system.enable_debug_logging:
+			var jump_type = "ground/coyote" if jump_system.can_jump() else "air"
+			print("🎮 Performed ", jump_type, " jump")
+	else:
+		# Debug logging (optional)
+		if jump_system.enable_debug_logging:
+			print("❌ No jumps available - Ground: ", jump_system.has_ground_jump, 
+				  " Air: ", jump_system.air_jumps_remaining, 
+				  " Coyote: ", jump_system.coyote_timer)
+
+
+# UPDATED: These methods now delegate to JumpSystem
+func can_jump() -> bool:
+	return jump_system.can_jump() if jump_system else false
+
+func can_air_jump() -> bool:
+	return jump_system.can_air_jump() if jump_system else false
 
 func _on_reset_pressed():
 	reset_character()
@@ -151,12 +179,6 @@ func perform_jump(jump_force: float):
 func update_ground_state():
 	if jump_system:
 		jump_system.update_ground_state()
-
-func can_jump() -> bool:
-	return jump_system.can_jump() if jump_system else false
-
-func can_air_jump() -> bool:
-	return jump_system.can_air_jump() if jump_system else false
 
 # === SIGNAL EMISSION ===
 

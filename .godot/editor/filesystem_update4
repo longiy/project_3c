@@ -1,6 +1,4 @@
 res://SCENE.tscn
-res://Scripts/Camera/CameraRig.gd
 res://AnimationTreeMove1d.tres
-res://Scripts/Camera/CameraStateResponder.gd
-res://Scripts/Components/InputManager.gd
-res://Scripts/InputComponents/ClickNavigationComponent.gd
+res://Scripts/Components/JumpSystem.gd
+res://Scripts/Controllers/ControllerCharacter.gd
