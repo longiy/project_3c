@@ -1,4 +1,4 @@
-# ClickNavigationComponent.gd - CLEANED: Removed debug prints
+# ClickNavigationComponent.gd - FIXED: Remove duplicate input handling
 extends Node
 class_name ClickNavigationComponent
 
@@ -15,7 +15,6 @@ class_name ClickNavigationComponent
 @export_group("Optional Visual Feedback")
 @export var marker_hide_delay = 0.3
 
-var input_manager: InputManager
 var camera_rig: CameraRig
 
 # Navigation state
@@ -40,44 +39,70 @@ func _ready():
 		push_error("ClickNavigationComponent: No camera assigned!")
 		return
 	
-	input_manager = character.get_node_or_null("InputManager")
-	if not input_manager:
-		push_error("ClickNavigationComponent: No InputManager found!")
-		return
-	
 	camera_rig = get_node_or_null("../../CAMERARIG") as CameraRig
 	if not camera_rig:
 		push_error("ClickNavigationComponent: No CameraRig found!")
 		return
+
+# FIXED: Listen to camera rig input events instead of InputManager
+func _input(event):
+	# Only handle input in click navigation mode
+	if not camera_rig or not camera_rig.is_in_click_navigation_mode():
+		return
 	
-	if input_manager.has_signal("click_input_received"):
-		input_manager.click_input_received.connect(_on_click_input_received)
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		handle_click(event.position)
+	elif event is InputEventMouseMotion and is_dragging:
+		handle_drag(event.position)
+	elif event is InputEventMouseButton and not event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		is_dragging = false
 
 func _physics_process(delta):
 	if is_arrival_delay:
 		arrival_timer -= delta
 		if arrival_timer <= 0:
 			complete_arrival()
+
+# === CLICK HANDLING ===
+
+func handle_click(screen_pos: Vector2):
+	if enable_drag_mode:
+		is_dragging = true
 	
-	if is_dragging and is_active():
-		update_drag_to_current_cursor_position()
+	var world_pos = screen_to_world(screen_pos)
+	if world_pos != Vector3.ZERO:
+		set_destination(world_pos)
 
-# === INPUT HANDLING ===
-
-func _on_click_input_received(event_type: String, event_data: Dictionary):
-	if not camera_rig or not camera_rig.is_in_click_navigation_mode():
+func handle_drag(screen_pos: Vector2):
+	if not is_dragging:
 		return
 	
-	match event_type:
-		"left_click_pressed":
-			var screen_pos = event_data.get("position", Vector2.ZERO)
-			start_click_or_drag(screen_pos)
-		"left_click_released":
-			finish_click_or_drag()
-		"mouse_motion":
-			if is_dragging:
-				var screen_pos = event_data.get("position", Vector2.ZERO)
-				update_drag_destination(screen_pos)
+	var world_pos = screen_to_world(screen_pos)
+	if world_pos != Vector3.ZERO:
+		set_destination(world_pos)
+
+func screen_to_world(screen_pos: Vector2) -> Vector3:
+	if not camera:
+		return Vector3.ZERO
+	
+	var space_state = character.get_world_3d().direct_space_state
+	var from = camera.project_ray_origin(screen_pos)
+	var to = from + camera.project_ray_normal(screen_pos) * 1000
+	
+	var query = PhysicsRayQueryParameters3D.create(from, to)
+	query.collision_mask = 1
+	
+	var result = space_state.intersect_ray(query)
+	if result:
+		return result.position
+	else:
+		return Vector3.ZERO
+
+func set_destination(world_pos: Vector3):
+	click_destination = world_pos
+	has_destination = true
+	is_arrival_delay = false
+	show_marker(world_pos)
 
 # === PUBLIC INTERFACE ===
 
@@ -115,62 +140,6 @@ func cancel_input():
 	is_arrival_delay = false
 	is_dragging = false
 	hide_marker()
-
-# === CLICK HANDLING ===
-
-func start_click_or_drag(screen_pos: Vector2):
-	if enable_drag_mode:
-		is_dragging = true
-	
-	handle_click(screen_pos)
-
-func finish_click_or_drag():
-	is_dragging = false
-
-func handle_click(screen_pos: Vector2):
-	var world_pos = screen_to_world(screen_pos)
-	if world_pos != Vector3.ZERO:
-		set_destination(world_pos)
-
-func update_drag_destination(screen_pos: Vector2):
-	if not is_dragging:
-		return
-	
-	var world_pos = screen_to_world(screen_pos)
-	if world_pos != Vector3.ZERO:
-		set_destination(world_pos)
-
-func update_drag_to_current_cursor_position():
-	if not is_dragging:
-		return
-	
-	var current_mouse_pos = get_viewport().get_mouse_position()
-	var world_pos = screen_to_world(current_mouse_pos)
-	if world_pos != Vector3.ZERO:
-		set_destination(world_pos)
-
-func screen_to_world(screen_pos: Vector2) -> Vector3:
-	if not camera:
-		return Vector3.ZERO
-	
-	var space_state = character.get_world_3d().direct_space_state
-	var from = camera.project_ray_origin(screen_pos)
-	var to = from + camera.project_ray_normal(screen_pos) * 1000
-	
-	var query = PhysicsRayQueryParameters3D.create(from, to)
-	query.collision_mask = 1
-	
-	var result = space_state.intersect_ray(query)
-	if result:
-		return result.position
-	else:
-		return Vector3.ZERO
-
-func set_destination(world_pos: Vector3):
-	click_destination = world_pos
-	has_destination = true
-	is_arrival_delay = false
-	show_marker(world_pos)
 
 func world_to_input_direction(direction_3d: Vector3) -> Vector2:
 	if not camera_rig:

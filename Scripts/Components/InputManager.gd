@@ -1,4 +1,4 @@
-# InputManager.gd - Simplified signal-based input
+# InputManager.gd - FIXED: WASD overrides but doesn't cancel click navigation
 extends Node
 class_name InputManager
 
@@ -32,6 +32,9 @@ var input_components: Array[Node] = []
 var movement_update_timer = 0.0
 var movement_update_interval: float
 
+# FIXED: Track WASD override state
+var wasd_is_overriding = false
+
 func _ready():
 	character = get_parent() as CharacterBody3D
 	if not character:
@@ -60,10 +63,6 @@ func _input(event):
 		slow_walk_started.emit()
 	elif event.is_action_released("walk"):
 		slow_walk_stopped.emit()
-	
-	# Handle click navigation
-	if camera_rig and camera_rig.is_in_click_navigation_mode():
-		handle_click_navigation(event)
 
 func _physics_process(delta):
 	handle_movement_input(delta)
@@ -94,6 +93,11 @@ func handle_movement_input(delta: float):
 		current_raw_input = Vector2.ZERO
 		last_sent_input = Vector2.ZERO
 		movement_stopped.emit()
+		
+		# FIXED: When movement stops, clear click navigation if WASD was overriding
+		if wasd_is_overriding:
+			cancel_all_input_components()
+			wasd_is_overriding = false
 	
 	elif is_moving and movement_update_timer >= movement_update_interval:
 		if new_input.distance_to(last_sent_input) > 0.1:
@@ -102,46 +106,41 @@ func handle_movement_input(delta: float):
 			movement_updated.emit(new_input, input_magnitude)
 		movement_update_timer = 0.0
 
+# FIXED: New input priority logic
 func get_current_movement_input() -> Vector2:
-	# WASD always has priority
-	var wasd_input = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
-	if wasd_input.length() > input_deadzone:
-		cancel_all_input_components()
-		return wasd_input
-	
-	# Check other input components (click navigation, etc.)
+	# Check camera mode first
 	if camera_rig and camera_rig.is_in_click_navigation_mode():
-		for component in input_components:
-			if is_component_active(component):
-				var component_input = component.get_movement_input()
-				if component_input and component_input.length() > input_deadzone:
-					return component_input
+		# In click navigation mode - check WASD first (override priority)
+		var wasd_input = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
+		if wasd_input.length() > input_deadzone:
+			# WASD is active - this overrides click navigation
+			wasd_is_overriding = true
+			return wasd_input
+		else:
+			# No WASD input - check click navigation
+			wasd_is_overriding = false
+			for component in input_components:
+				if is_component_active(component):
+					var component_input = component.get_movement_input()
+					if component_input and component_input.length() > input_deadzone:
+						return component_input
+	else:
+		# In orbit mode - WASD only
+		wasd_is_overriding = false
+		var wasd_input = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
+		if wasd_input.length() > input_deadzone:
+			cancel_all_input_components()  # Cancel click nav when switching to orbit
+			return wasd_input
 	
 	return Vector2.ZERO
 
-func handle_click_navigation(event: InputEvent):
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		var world_pos = screen_to_world(event.position)
-		if world_pos != Vector3.ZERO:
-			click_navigation.emit(world_pos)
+# Keep existing methods but remove the problematic cancel call
+func cancel_all_input_components():
+	for component in input_components:
+		if component and component.has_method("cancel_input"):
+			component.cancel_input()
 
-func screen_to_world(screen_pos: Vector2) -> Vector3:
-	if not camera_rig or not camera_rig.camera:
-		return Vector3.ZERO
-	
-	var camera = camera_rig.camera
-	var space_state = character.get_world_3d().direct_space_state
-	var from = camera.project_ray_origin(screen_pos)
-	var to = from + camera.project_ray_normal(screen_pos) * 1000
-	
-	var query = PhysicsRayQueryParameters3D.create(from, to)
-	query.collision_mask = 1
-	
-	var result = space_state.intersect_ray(query)
-	return result.position if result else Vector3.ZERO
-
-# === COMPONENT MANAGEMENT ===
-
+# Rest of the methods stay the same...
 func find_input_components():
 	input_components.clear()
 	for child in character.get_children():
@@ -150,13 +149,6 @@ func find_input_components():
 
 func is_component_active(component: Node) -> bool:
 	return is_instance_valid(component) and component.has_method("is_active") and component.is_active()
-
-func cancel_all_input_components():
-	for component in input_components:
-		if component and component.has_method("cancel_input"):
-			component.cancel_input()
-
-# === GETTERS ===
 
 func get_movement_duration() -> float:
 	if movement_active:
@@ -175,5 +167,6 @@ func get_debug_info() -> Dictionary:
 		"current_input": current_raw_input,
 		"movement_duration": get_movement_duration(),
 		"component_count": input_components.size(),
-		"camera_mode": camera_rig.get_mode_name(camera_rig.get_current_mode()) if camera_rig else "unknown"
+		"camera_mode": camera_rig.get_mode_name(camera_rig.get_current_mode()) if camera_rig else "unknown",
+		"wasd_overriding": wasd_is_overriding  # ADDED: Debug info
 	}
