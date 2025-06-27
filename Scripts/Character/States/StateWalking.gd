@@ -43,8 +43,6 @@ func can_execute_action(action: Action) -> bool:
 			return super.can_execute_action(action)
 
 func execute_action(action: Action):
-	print("🚶 WALKING: Executing action: ", action.name)
-	
 	match action.name:
 		"jump":
 			character.perform_jump(character.jump_system.get_jump_force())
