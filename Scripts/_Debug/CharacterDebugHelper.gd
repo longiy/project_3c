@@ -114,7 +114,7 @@ func get_animation_debug_info() -> Dictionary:
 	if character.animation_controller:
 		return character.animation_controller.get_debug_info()
 	else:
-		return {"error": "No AnimationController"}
+		return {"error": "No AnimationManager"}
 
 func get_physics_debug_info() -> Dictionary:
 	"""Get physics debug info"""

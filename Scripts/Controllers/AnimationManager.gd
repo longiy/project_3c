@@ -1,6 +1,6 @@
-# AnimationController.gd - Updated for MovementManager
+# AnimationManager.gd - Updated for MovementManager
 extends Node
-class_name AnimationController
+class_name AnimationManager
 
 @export var animation_tree: AnimationTree
 
@@ -31,15 +31,15 @@ func _ready():
 	character = get_parent() as CharacterBody3D
 	
 	if not character:
-		push_error("AnimationController must be child of CharacterBody3D")
+		push_error("AnimationManager must be child of CharacterBody3D")
 		return
 		
 	if not animation_tree:
-		push_error("AnimationTree not assigned to AnimationController")
+		push_error("AnimationTree not assigned to AnimationManager")
 		return
 	
 	animation_tree.active = true
-	print("✅ AnimationController: Ready to connect to MovementManager")
+	print("✅ AnimationManager: Ready to connect to MovementManager")
 
 func _physics_process(delta):
 	if animation_tree:

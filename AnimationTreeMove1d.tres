@@ -28,37 +28,37 @@ advance_mode = 2
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_xyta0"]
 xfade_time = 0.1
 advance_mode = 2
-advance_expression = "get_node(\"../../AnimationController\").character.is_on_floor()"
+advance_expression = "get_node(\"../../AnimationManager\").character.is_on_floor()"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_ly3n2"]
 xfade_time = 0.2
 advance_mode = 2
-advance_expression = "!get_node(\"../../AnimationController\").received_is_movement_active"
+advance_expression = "!get_node(\"../../AnimationManager\").received_is_movement_active"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_f3nvh"]
 xfade_time = 0.1
 advance_mode = 2
-advance_expression = "!get_node(\"../../AnimationController\").character.is_on_floor()"
+advance_expression = "!get_node(\"../../AnimationManager\").character.is_on_floor()"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_ivj5s"]
 xfade_time = 0.2
 advance_mode = 2
-advance_expression = "get_node(\"../../AnimationController\").received_is_movement_active"
+advance_expression = "get_node(\"../../AnimationManager\").received_is_movement_active"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_uvmue"]
 xfade_time = 0.2
 advance_mode = 2
-advance_expression = "!get_node(\"../../AnimationController\").received_is_movement_active"
+advance_expression = "!get_node(\"../../AnimationManager\").received_is_movement_active"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_3ii0w"]
 xfade_time = 0.2
 advance_mode = 2
-advance_expression = "!get_node(\"../../AnimationController\").character.is_on_floor()"
+advance_expression = "!get_node(\"../../AnimationManager\").character.is_on_floor()"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_bfelf"]
 xfade_time = 0.2
 advance_mode = 2
-advance_expression = "get_node(\"../../AnimationController\").received_is_movement_active"
+advance_expression = "get_node(\"../../AnimationManager\").received_is_movement_active"
 
 [resource]
 states/Airborne/node = SubResource("AnimationNodeAnimation_upni3")
@@ -72,4 +72,4 @@ states/Move/node = SubResource("AnimationNodeBlendSpace1D_8iigs")
 states/Move/position = Vector2(950.582, 200.318)
 states/Start/position = Vector2(614.4, 322.4)
 transitions = ["Start", "Idle", SubResource("AnimationNodeStateMachineTransition_o8mde"), "Airborne", "Land", SubResource("AnimationNodeStateMachineTransition_xyta0"), "Land", "Idle", SubResource("AnimationNodeStateMachineTransition_ly3n2"), "Idle", "Airborne", SubResource("AnimationNodeStateMachineTransition_f3nvh"), "Idle", "Move", SubResource("AnimationNodeStateMachineTransition_ivj5s"), "Move", "Idle", SubResource("AnimationNodeStateMachineTransition_uvmue"), "Move", "Airborne", SubResource("AnimationNodeStateMachineTransition_3ii0w"), "Land", "Move", SubResource("AnimationNodeStateMachineTransition_bfelf")]
-graph_offset = Vector2(56.1648, 137.768)
+graph_offset = Vector2(-106.795, 79.9281)

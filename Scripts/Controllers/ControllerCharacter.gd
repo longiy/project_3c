@@ -5,7 +5,7 @@ extends CharacterBody3D
 @export var gravity_multiplier = 1.0
 
 @export_group("Components")
-@export var animation_controller: AnimationController
+@export var animation_controller: AnimationManager
 @export var camera: Camera3D
 @export var input_manager: InputManager
 @export var jump_system: JumpSystem
