@@ -1,7 +1,7 @@
 [gd_scene load_steps=30 format=3 uid="uid://dngafe0y2nx5b"]
 
 [ext_resource type="Script" uid="uid://dt54n1ktg7wqr" path="res://Scripts/Controllers/ControllerCharacter.gd" id="1_5si1x"]
-[ext_resource type="Script" uid="uid://b1jljhk4fpbiw" path="res://Scripts/Camera/CameraRig.gd" id="2_16ayq"]
+[ext_resource type="Script" uid="uid://b1jljhk4fpbiw" path="res://Scripts/Controllers/CameraRig.gd" id="2_16ayq"]
 [ext_resource type="Script" uid="uid://cws7m480lxvaf" path="res://Scripts/_Debug/DebugUI.gd" id="2_u4csh"]
 [ext_resource type="PackedScene" uid="uid://cbx0rhk665pls" path="res://Assets/ps_character_gurl.tscn" id="3_aeafk"]
 [ext_resource type="Script" uid="uid://c63imyupotuj1" path="res://Scripts/InputComponents/ClickNavigationComponent.gd" id="4_0er5f"]
@@ -16,7 +16,7 @@
 [ext_resource type="Script" uid="uid://dvxh1oyh11gby" path="res://Scripts/Character/States/StateLanding.gd" id="17_msfgm"]
 [ext_resource type="Script" uid="uid://dg7vpc6xymvpp" path="res://Scripts/Character/States/StateRunning.gd" id="18_fuc0d"]
 [ext_resource type="Script" uid="uid://chw8f4cb3xd47" path="res://Scripts/Character/States/StateWalking.gd" id="19_sjx82"]
-[ext_resource type="Script" uid="uid://d2tq3l0s4tbth" path="res://Scripts/Components/InputManager.gd" id="22_msfgm"]
+[ext_resource type="Script" uid="uid://d2tq3l0s4tbth" path="res://Scripts/InputComponents/InputManager.gd" id="22_msfgm"]
 [ext_resource type="Script" uid="uid://bb8kly3o18vto" path="res://Scripts/Components/JumpSystem.gd" id="23_fuc0d"]
 [ext_resource type="Script" uid="uid://bqw3xo0kgqhjk" path="res://Scripts/_Debug/CharacterDebugHelper.gd" id="24_sjx82"]
 
