@@ -62,6 +62,11 @@ func _physics_process(delta):
 		arrival_timer -= delta
 		if arrival_timer <= 0:
 			complete_arrival()
+	
+	# FIXED: Continuously update cursor position during drag mode
+	if is_dragging:
+		var current_mouse_pos = get_viewport().get_mouse_position()
+		handle_drag(current_mouse_pos)
 
 # === CLICK HANDLING ===
 
