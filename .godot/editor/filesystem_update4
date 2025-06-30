@@ -17,3 +17,6 @@ res://Scripts/3C/Config/3CPresets.gd
 res://Scripts/3C/Character/AvatarComponent.gd
 res://Scripts/3C/Config/CharacterConfig.gd
 res://Scripts/3C/Character/TargetMovementComponent.gd
+res://SCENE_3C.tscn
+res://Assets/ps_character_gurl.tscn
+res://Scripts/3C/3CCharacterController.gd.gd

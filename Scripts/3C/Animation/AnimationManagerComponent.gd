@@ -253,8 +253,11 @@ func configure_from_3c(config: CharacterConfig):
 		return
 	
 	# Apply any animation-specific configuration
-	enable_root_motion = config.get("enable_root_motion", false)
-	
+	if "enable_root_motion" in config:
+		enable_root_motion = config.enable_root_motion
+	else:
+		enable_root_motion = false
+		
 	if enable_debug_output:
 		print("AnimationManagerComponent: Configured from 3C config")
 
