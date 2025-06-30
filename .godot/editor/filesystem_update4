@@ -1,10 +1,3 @@
 res://SCENE.tscn
 res://AnimationTreeMove1d.tres
-res://THEORY/3C_AdpatationToFramework.md
 res://CCC.tscn
-res://Scripts/CCC/Camera/CameraController.gd
-res://Scripts/CCC/Camera/CameraInput.gd
-res://Scripts/CCC/Camera/CameraResponder.gd
-res://Scripts/InputComponents/ClickNavigationComponent.gd
-res://Scripts/Character/CharacterStateMachine.gd
-res://Scripts/InputComponents/InputManager.gd
