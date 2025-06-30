@@ -3,7 +3,7 @@ extends CharacterBody3D
 class_name ThreeCCharacterController
 
 # === 3C CORE REFERENCES ===
-@onready var config_component: Node = $3CConfigComponent
+@onready var config_component: Node = $ThreeCConfigComponent
 @onready var character_core: Node = $CharacterCore
 @onready var camera_core: Node = $CameraCore
 @onready var control_core: Node = $ControlCore
