@@ -167,8 +167,11 @@ camera_core = NodePath("../../SpringArm3D/Camera")
 camera_rig = NodePath("../..")
 config_component = NodePath("../../../Config/CCC_ConfigComponent")
 
-[node name="CCC_CameraDistanceComponent" type="Node" parent="CCC/CameraCore/CameraComponents"]
+[node name="CCC_CameraDistanceComponent" type="Node" parent="CCC/CameraCore/CameraComponents" node_paths=PackedStringArray("camera_core", "spring_arm", "config_component")]
 script = ExtResource("10_j4ovl")
+camera_core = NodePath("../../SpringArm3D/Camera")
+spring_arm = NodePath("../../SpringArm3D")
+config_component = NodePath("../../../Config/CCC_ConfigComponent")
 
 [node name="CCC_CameraFollowComponent" type="Node" parent="CCC/CameraCore/CameraComponents" node_paths=PackedStringArray("camera_core", "camera_rig", "target_node", "config_component")]
 script = ExtResource("11_rrb3h")
