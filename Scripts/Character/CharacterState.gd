@@ -139,24 +139,18 @@ func update_3c_adaptations(delta: float):
 func setup_states_from_character():
 	"""Find and setup states from character's existing state machine"""
 	# Find existing CharacterStateMachine node
-	var old_state_machine = character.get_node_or_null("CharacterStateMachine")
+	var old_state_machine = character.get_node_or_null("CharacterStateMachine") as CharacterStateMachine
 	if not old_state_machine:
 		push_error("CharacterState: No existing CharacterStateMachine found!")
 		return
 	
-	# Check if it has state_nodes property
-	if not "state_nodes" in old_state_machine:
-		push_error("CharacterState: CharacterStateMachine missing state_nodes property!")
-		return
-	
 	# Extract state nodes from old state machine
-	var state_nodes = old_state_machine.state_nodes
-	if state_nodes.is_empty():
+	if old_state_machine.state_nodes.is_empty():
 		push_error("CharacterState: No state nodes found in existing state machine!")
 		return
 	
 	# Setup states from existing nodes
-	for state_node in state_nodes:
+	for state_node in old_state_machine.state_nodes:
 		if not state_node or not state_node.script:
 			continue
 		

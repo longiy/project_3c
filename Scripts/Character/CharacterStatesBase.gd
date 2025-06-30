@@ -39,7 +39,7 @@ func handle_input(event: InputEvent):
 func setup_module_references():
 	"""Setup quick access to character modules"""
 	# Get character reference from state machine
-	if state_machine and "character" in state_machine:
+	if state_machine and state_machine.has_property("character"):
 		character = state_machine.character as CharacterController
 		owner_node = character  # Set compatibility reference
 	
@@ -55,20 +55,6 @@ func setup_module_references():
 			physics_module = character.physics_module
 			actions_module = character.actions_module
 			movement_manager = character.movement_manager
-		elif owner_node:
-			# Legacy fallback: owner_node might be the character itself
-			if owner_node is CharacterBody3D:
-				# Try to find modules in the character
-				var physics_node = owner_node.get_node_or_null("CharacterPhysics")
-				var actions_node = owner_node.get_node_or_null("CharacterActions") 
-				var movement_node = owner_node.get_node_or_null("MovementManager")
-				
-				if physics_node:
-					physics_module = physics_node
-				if actions_node:
-					actions_module = actions_node
-				if movement_node:
-					movement_manager = movement_node
 
 # === COMMON STATE UTILITIES ===
 
