@@ -6,7 +6,6 @@ class_name CharacterController
 signal ground_state_changed(is_grounded: bool)
 signal jump_performed(jump_force: float, is_air_jump: bool)
 
-
 # === EXPORTS ===
 @export_group("Physics")
 @export var gravity_multiplier = 1.0

@@ -29,5 +29,3 @@ res://Scripts/Character/States/StateAirborne.gd
 res://Scripts/Character/States/StateLanding.gd
 res://Scripts/Character/State.gd
 res://Scripts/Character/CharacterState.gd
-res://Assets/ps_character_gurl.tscn
-res://Scripts/Controllers/AnimationManager.gd

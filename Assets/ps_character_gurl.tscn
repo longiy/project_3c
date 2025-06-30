@@ -78,7 +78,7 @@ bones/41/scale = Vector3(1, 1, 1)
 [node name="AnimationTree" type="AnimationTree" parent="." index="2"]
 tree_root = ExtResource("2_upni3")
 anim_player = NodePath("../AnimationPlayer")
-parameters/Move/blend_position = -0.00552082
+parameters/Move/blend_position = -0.686459
 metadata/is_grounded = false
 metadata/is_moving = false
 metadata/landing_complete = false
