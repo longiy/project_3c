@@ -2,3 +2,6 @@ res://SCENE_3C.tscn
 res://AnimationTreeMove1d.tres
 res://Scripts/3C/CharacterStateMachine3C.gd
 res://Scripts/3C/Character3CManager.gd
+res://Scripts/3C/Control3CManager.gd
+res://Scripts/3C/JumpSystem3C.gd
+res://Scripts/3C/Debug3CUI.gd

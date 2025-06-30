@@ -121,16 +121,15 @@ func create_state(state_name: String, state_node: Node):
 		push_warning("State already exists: " + state_name)
 		return
 	
-	# Set up the state node safely
-	if "state_name" in state_node:
+	# Set up the state node safely - only set properties that exist
+	if state_node.has_method("set") and "state_name" in state_node:
 		state_node.state_name = state_name
 	
-	if "owner_node" in state_node:
+	if state_node.has_method("set") and "owner_node" in state_node:
 		state_node.owner_node = owner_node
 	
-	# Only set state_machine if the property exists
-	if "state_machine" in state_node:
-		state_node.state_machine = self
+	# Don't try to set state_machine property - it doesn't exist in State base class
+	# The state can access the state machine through other means if needed
 	
 	states[state_name] = state_node
 	states_created += 1

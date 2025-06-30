@@ -32,6 +32,10 @@ var movement_update_interval: float = 1.0 / 60.0
 
 var wasd_is_overriding = false
 
+var click_destination: Vector3 = Vector3.ZERO
+var has_click_destination: bool = false
+
+
 func _ready():
 	character = get_parent() as CharacterBody3D
 	if not character:
@@ -109,6 +113,66 @@ func handle_click_navigation(event):
 			var click_pos = perform_ground_raycast(event.position)
 			if click_pos != Vector3.ZERO:
 				click_navigation.emit(click_pos)
+				# Set up pathfinding/movement toward click position
+				setup_click_destination(click_pos)
+
+func setup_click_destination(world_pos: Vector3):
+	"""Set up movement toward clicked position"""
+	# Store destination for navigation
+	click_destination = world_pos
+	has_click_destination = true
+	
+	# Show destination marker if available
+	show_destination_marker(world_pos)
+
+func show_destination_marker(world_pos: Vector3):
+	"""Show visual marker at destination"""
+	var marker = get_node_or_null("../../CURSOR")
+	if marker:
+		marker.global_position = world_pos
+		marker.visible = true
+
+func get_click_navigation_input() -> Vector2:
+	"""Get movement input for click navigation"""
+	if not has_click_destination:
+		return Vector2.ZERO
+	
+	var distance = character.global_position.distance_to(click_destination)
+	var arrival_threshold = 0.1
+	
+	if distance < arrival_threshold:
+		has_click_destination = false
+		hide_destination_marker()
+		return Vector2.ZERO
+	
+	# Calculate direction toward destination
+	var direction_3d = (click_destination - character.global_position).normalized()
+	return world_to_input_direction(direction_3d)
+
+func world_to_input_direction(direction_3d: Vector3) -> Vector2:
+	"""Convert 3D world direction to 2D input direction"""
+	if not camera_3c_manager or not camera_3c_manager.camera:
+		return Vector2(direction_3d.x, direction_3d.z)
+	
+	var camera_transform = camera_3c_manager.camera.global_transform
+	var cam_forward = -camera_transform.basis.z
+	var cam_right = camera_transform.basis.x
+	
+	cam_forward.y = 0
+	cam_right.y = 0
+	cam_forward = cam_forward.normalized()
+	cam_right = cam_right.normalized()
+	
+	var forward_dot = direction_3d.dot(cam_forward)
+	var right_dot = direction_3d.dot(cam_right)
+	
+	return Vector2(right_dot, -forward_dot)
+
+func hide_destination_marker():
+	"""Hide destination marker"""
+	var marker = get_node_or_null("../../CURSOR")
+	if marker:
+		marker.visible = false
 
 func perform_ground_raycast(screen_pos: Vector2) -> Vector3:
 	"""Raycast from camera to ground"""
@@ -211,10 +275,17 @@ func get_target_based_input(camera_mode) -> Vector2:
 		var wasd_input = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
 		if wasd_input.length() > active_3c_config.input_deadzone:
 			wasd_is_overriding = true
+			has_click_destination = false  # Cancel click navigation
+			hide_destination_marker()
 			return wasd_input
 		
-		# Check input components (click navigation)
+		# Check for click navigation movement
 		wasd_is_overriding = false
+		var click_input = get_click_navigation_input()
+		if click_input.length() > active_3c_config.input_deadzone:
+			return click_input
+		
+		# Check input components for other navigation
 		for component in input_components:
 			if is_component_active(component):
 				var component_input = component.get_movement_input()
@@ -223,6 +294,8 @@ func get_target_based_input(camera_mode) -> Vector2:
 	else:
 		# In orbit mode - WASD only
 		wasd_is_overriding = false
+		has_click_destination = false
+		hide_destination_marker()
 		var wasd_input = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
 		if wasd_input.length() > active_3c_config.input_deadzone:
 			cancel_all_input_components()

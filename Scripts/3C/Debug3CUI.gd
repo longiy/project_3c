@@ -220,23 +220,29 @@ func update_info_displays():
 	]
 	character_info_label.text = char_info
 	
-	# Camera info
-	if character_controller.camera_3c_manager:
-		var cam_info = character_controller.camera_3c_manager.get_camera_info()
+	# Camera info - use get() to safely access property
+	var cam_manager = character_controller.get("camera_3c_manager")
+	if cam_manager and cam_manager.has_method("get_camera_info"):
+		var cam_info = cam_manager.get_camera_info()
 		camera_info_label.text = "Camera Mode: %s\nDistance: %.1f\nFOV: %.1f" % [
 			cam_info.mode,
 			cam_info.distance,
 			cam_info.fov
 		]
+	else:
+		camera_info_label.text = "Camera: Not available"
 	
-	# Control info
-	if character_controller.control_3c_manager:
-		var ctrl_info = character_controller.control_3c_manager.get_debug_info()
+	# Control info - use get() to safely access property
+	var ctrl_manager = character_controller.get("control_3c_manager")
+	if ctrl_manager and ctrl_manager.has_method("get_debug_info"):
+		var ctrl_info = ctrl_manager.get_debug_info()
 		control_info_label.text = "Control Type: %s\nInput Active: %s\nPrecision: %.2f" % [
-			ctrl_info.control_type,
-			str(ctrl_info.movement_active),
-			ctrl_info.control_precision
+			ctrl_info.get("control_type", "unknown"),
+			str(ctrl_info.get("movement_active", false)),
+			ctrl_info.get("control_precision", 0.0)
 		]
+	else:
+		control_info_label.text = "Control: Not available"
 
 func create_custom_config():
 	"""Create a custom configuration dialog"""

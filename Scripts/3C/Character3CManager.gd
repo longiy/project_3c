@@ -331,10 +331,21 @@ func get_target_speed() -> float:
 func handle_jump():
 	"""Handle jump with 3C configuration"""
 	if jump_system and active_3c_config:
-		var jump_force = active_3c_config.jump_height * active_3c_config.character_responsiveness
-		if jump_system.can_jump():
-			jump_system.execute_jump(jump_force)
-			jump_performed.emit(jump_force, not is_on_floor())
+		# Configure jump system with 3C values before jumping
+		jump_system.configure_from_3c(active_3c_config)
+		
+		if jump_system.can_jump_at_all():
+			jump_system.perform_jump()
+			
+			# Get the actual jump force used
+			var jump_force = jump_system.get_appropriate_jump_force()
+			var is_air_jump = not jump_system.can_jump()
+			
+			jump_performed.emit(jump_force, is_air_jump)
+			
+			# Transition to jumping state
+			if state_machine:
+				state_machine.change_state("jumping")
 
 # === GROUND STATE DETECTION ===
 

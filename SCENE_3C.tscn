@@ -1,4 +1,4 @@
-[gd_scene load_steps=30 format=3 uid="uid://bobuljm6bc1sb"]
+[gd_scene load_steps=28 format=3 uid="uid://bobuljm6bc1sb"]
 
 [ext_resource type="Script" uid="uid://camys3od4b66y" path="res://Scripts/3C/Debug3CUI.gd" id="1_r8dt0"]
 [ext_resource type="Script" uid="uid://dv63tyxpdvkgd" path="res://Scripts/3C/Camera3CManager.gd" id="2_67ge0"]
@@ -13,9 +13,7 @@
 [ext_resource type="Script" uid="uid://ds1aysl4j42ln" path="res://Scripts/3C/States3C/StateRunning3C.gd" id="10_bmoqh"]
 [ext_resource type="Script" uid="uid://bvj4gwelwh70m" path="res://Scripts/3C/States3C/StateWalking3C.gd" id="11_7s702"]
 [ext_resource type="Script" uid="uid://ceg85p1hqrfpk" path="res://Scripts/Controllers/AnimationManager.gd" id="11_qnn6n"]
-[ext_resource type="Script" uid="uid://bb8kly3o18vto" path="res://Scripts/Components/JumpSystem.gd" id="13_4gvko"]
-[ext_resource type="Script" uid="uid://csay0tqtwpcea" path="res://Scripts/InputComponents/GamepadComponent.gd" id="15_pdvjg"]
-[ext_resource type="Script" uid="uid://c63imyupotuj1" path="res://Scripts/InputComponents/ClickNavigationComponent.gd" id="16_hs6wg"]
+[ext_resource type="Script" uid="uid://bc5tkiwqpwn7h" path="res://Scripts/3C/JumpSystem3C.gd" id="14_n6c2m"]
 [ext_resource type="Script" uid="uid://bqw3xo0kgqhjk" path="res://Scripts/_Debug/CharacterDebugHelper.gd" id="17_mi48c"]
 [ext_resource type="PackedScene" uid="uid://cbx0rhk665pls" path="res://Assets/ps_character_gurl.tscn" id="18_3vymn"]
 [ext_resource type="PackedScene" uid="uid://bsprrm672tx2s" path="res://MARKER.tscn" id="19_ljtau"]
@@ -132,6 +130,7 @@ collision_layer = 2
 slide_on_ceiling = false
 script = ExtResource("3_vrweh")
 active_3c_config = ExtResource("4_67ge0")
+available_presets = null
 animation_controller = NodePath("AnimationManager")
 jump_system = NodePath("JumpSystem")
 debug_helper = NodePath("CharacterDebugHelper")
@@ -139,9 +138,10 @@ debug_helper = NodePath("CharacterDebugHelper")
 [node name="Control3CManager" type="Node" parent="CHARACTER"]
 script = ExtResource("4_ko4ew")
 
-[node name="CharacterStateMachine" type="Node" parent="CHARACTER" node_paths=PackedStringArray("camera_3c_manager")]
+[node name="CharacterStateMachine" type="Node" parent="CHARACTER" node_paths=PackedStringArray("camera_3c_manager", "state_nodes")]
 script = ExtResource("6_67ge0")
 camera_3c_manager = NodePath("../../CAMERARIG")
+state_nodes = [NodePath("Idle"), NodePath("Airborne"), NodePath("Jumping"), NodePath("Landing"), NodePath("Running"), NodePath("Walking")]
 
 [node name="Idle" type="Node" parent="CHARACTER/CharacterStateMachine"]
 script = ExtResource("6_r8dt0")
@@ -166,18 +166,9 @@ script = ExtResource("11_qnn6n")
 animation_tree = NodePath("../PS_Character_Gurl/AnimationTree")
 
 [node name="JumpSystem" type="Node" parent="CHARACTER"]
-script = ExtResource("13_4gvko")
+script = ExtResource("14_n6c2m")
 max_air_jumps = 3
 coyote_time = 0.5
-
-[node name="GamepadComponent" type="Node" parent="CHARACTER"]
-script = ExtResource("15_pdvjg")
-
-[node name="ClickNavigationComponent" type="Node" parent="CHARACTER" node_paths=PackedStringArray("character", "camera", "destination_marker")]
-script = ExtResource("16_hs6wg")
-character = NodePath("..")
-camera = NodePath("../../CAMERARIG/SpringArm3D/Camera3D")
-destination_marker = NodePath("../../CURSOR")
 
 [node name="CharacterDebugHelper" type="Node" parent="CHARACTER"]
 script = ExtResource("17_mi48c")
