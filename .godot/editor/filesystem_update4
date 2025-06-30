@@ -1,3 +1,7 @@
-res://SCENE.tscn
+res://SCENE_3C.tscn
 res://AnimationTreeMove1d.tres
+res://Scripts/3C/Character3CManager.gd
 res://Scripts/InputComponents/ClickNavigationComponent.gd
+res://THEORY/3C_AdpatationToFramework.md
+res://MARKER.tscn
+res://SCENE.tscn
