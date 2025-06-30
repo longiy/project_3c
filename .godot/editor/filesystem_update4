@@ -28,3 +28,4 @@ res://Scripts/Character/States/StateJumping.gd
 res://Scripts/Character/States/StateAirborne.gd
 res://Scripts/Character/States/StateLanding.gd
 res://Scripts/Character/State.gd
+res://Scripts/Character/CharacterState.gd
