@@ -7,7 +7,7 @@ extends CharacterBody3D
 @export_group("Components")
 @export var animation_controller: AnimationManager
 @export var camera: Camera3D
-@export var input_controller: InputController
+@export var input_manager: InputManager
 @export var jump_system: JumpSystem
 @export var debug_helper: CharacterDebugHelper
 
@@ -54,19 +54,19 @@ func setup_components():
 		movement_manager.setup_camera_reference(camera)
 
 func connect_signals():
-	if not input_controller or not movement_manager:
+	if not input_manager or not movement_manager:
 		return
 	
 	# Connect input signals to movement manager
-	input_controller.movement_started.connect(_on_movement_started)
-	input_controller.movement_updated.connect(_on_movement_updated)
-	input_controller.movement_stopped.connect(_on_movement_stopped)
-	input_controller.sprint_started.connect(_on_sprint_started)
-	input_controller.sprint_stopped.connect(_on_sprint_stopped)
-	input_controller.slow_walk_started.connect(_on_slow_walk_started)
-	input_controller.slow_walk_stopped.connect(_on_slow_walk_stopped)
-	input_controller.jump_pressed.connect(_on_jump_pressed)
-	input_controller.reset_pressed.connect(_on_reset_pressed)
+	input_manager.movement_started.connect(_on_movement_started)
+	input_manager.movement_updated.connect(_on_movement_updated)
+	input_manager.movement_stopped.connect(_on_movement_stopped)
+	input_manager.sprint_started.connect(_on_sprint_started)
+	input_manager.sprint_stopped.connect(_on_sprint_stopped)
+	input_manager.slow_walk_started.connect(_on_slow_walk_started)
+	input_manager.slow_walk_stopped.connect(_on_slow_walk_stopped)
+	input_manager.jump_pressed.connect(_on_jump_pressed)
+	input_manager.reset_pressed.connect(_on_reset_pressed)
 	
 	# Connect movement manager to animation controller
 	if animation_controller:

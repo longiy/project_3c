@@ -22,7 +22,7 @@ signal navigation_cancelled()
 
 # Component references
 var camera_rig: CameraController
-var input_controller: InputController
+var input_manager: InputManager
 
 # Navigation state
 var click_destination = Vector3.ZERO
@@ -59,24 +59,26 @@ func find_component_references():
 		push_error("ClickNavigationComponent: No CameraController found!")
 		return
 	
-	input_controller = get_node_or_null("../InputController") as InputController
-	if not input_controller:
-		push_error("ClickNavigationComponent: No InputController found!")
+	input_manager = get_node_or_null("../InputManager") as InputManager
+	if not input_manager:
+		push_error("ClickNavigationComponent: No InputManager found!")
 		return
 
 func connect_to_input_system():
-	"""REFACTORED: Register with InputController's priority manager"""
-	var input_controller = get_node_or_null("../InputController") as InputController
-	if not input_controller:
-		push_warning("ClickNavigationComponent: No InputController found for registration")
-		return
-	
-	# Register as specialized component with priority manager
-	if input_controller.priority_manager:
-		input_controller.priority_manager.register_specialized_component("click_navigation", self)
-		print("✅ ClickNavigationComponent: Registered with InputController")
-	
-	# Note: Input events now come through InputPriorityManager's _on_click_navigation_event()
+	"""REFACTORED: Register with InputManager instead of handling input directly"""
+	if input_manager:
+		# Register as specialized input component
+		input_manager.register_click_navigation_component(self)
+		
+		# Connect to InputManager's click navigation signal
+		if input_manager.has_signal("click_navigation_requested"):
+			input_manager.click_navigation_requested.connect(_on_click_navigation_requested)
+		
+		if input_manager.has_signal("drag_navigation_updated"):
+			input_manager.drag_navigation_updated.connect(_on_drag_navigation_updated)
+		
+		if input_manager.has_signal("drag_navigation_ended"):
+			input_manager.drag_navigation_ended.connect(_on_drag_navigation_ended)
 
 func _physics_process(delta):
 	if is_arrival_delay:
@@ -84,10 +86,10 @@ func _physics_process(delta):
 		if arrival_timer <= 0:
 			complete_arrival()
 
-# === SIGNAL HANDLERS (Called by InputPriorityManager) ===
+# === SIGNAL HANDLERS (Called by InputManager) ===
 
 func _on_click_navigation_requested(screen_pos: Vector2):
-	"""Handle click navigation request from InputPriorityManager"""
+	"""Handle click navigation request from InputManager"""
 	if not camera_rig or not camera_rig.is_in_click_navigation_mode():
 		return
 	
@@ -99,7 +101,7 @@ func _on_click_navigation_requested(screen_pos: Vector2):
 		set_destination(world_pos)
 
 func _on_drag_navigation_updated(screen_pos: Vector2):
-	"""Handle drag navigation update from InputPriorityManager"""
+	"""Handle drag navigation update from InputManager"""
 	if not is_dragging:
 		return
 	
@@ -111,7 +113,7 @@ func _on_drag_navigation_updated(screen_pos: Vector2):
 		set_destination(world_pos)
 
 func _on_drag_navigation_ended():
-	"""Handle drag navigation end from InputPriorityManager"""
+	"""Handle drag navigation end from InputManager"""
 	is_dragging = false
 
 # === PATHFINDING LOGIC ===
@@ -144,7 +146,7 @@ func set_destination(world_pos: Vector3):
 	# Emit signal for other systems
 	destination_set.emit(world_pos)
 
-# === PUBLIC INTERFACE (Called by InputPriorityManager) ===
+# === PUBLIC INTERFACE (Called by InputManager) ===
 
 func is_active() -> bool:
 	"""Check if click navigation is providing movement input"""
@@ -173,7 +175,7 @@ func get_movement_input() -> Vector2:
 	return input_2d
 
 func cancel_input():
-	"""Cancel current navigation (called by InputPriorityManager for WASD override)"""
+	"""Cancel current navigation (called by InputManager for WASD override)"""
 	var current_time = Time.get_ticks_msec() / 1000.0
 	if current_time - last_cancel_time < cancel_cooldown:
 		return
@@ -253,6 +255,6 @@ func get_debug_info() -> Dictionary:
 		"distance_to_dest": character.global_position.distance_to(click_destination) if has_destination else 0.0,
 		"arrival_delay": is_arrival_delay,
 		"marker_visible": destination_marker.visible if destination_marker else false,
-		"input_controller_connected": input_controller != null,
-		"registered_with_input": input_controller != null
+		"input_manager_connected": input_manager != null,
+		"registered_with_input": true if input_manager else false
 	}
