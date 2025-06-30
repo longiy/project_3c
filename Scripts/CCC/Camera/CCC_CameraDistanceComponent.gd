@@ -8,7 +8,7 @@ signal zoom_input_received(zoom_delta: float)
 
 # === EXPORTS ===
 @export_group("Required References")
-@export var camera_core: CameraCore
+@export var camera_core: CCC_CameraCore
 @export var spring_arm: SpringArm3D  # SpringArm3D that controls distance
 @export var config_component: Node  # 3CConfigComponent
 

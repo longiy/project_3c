@@ -22,3 +22,6 @@ res://Scripts/CCC/Config/CCC_Presets.gd
 res://Scripts/CCC/Camera/CCC_OrbitalCameraComponent.gd
 res://THEORY/3C_AdpatationToFramework.md
 res://THEORY/ccc_refactor_plan.md
+res://Assets/SCENE_CCC_controller.tscn
+res://SCENEX_CCC.tscn
+res://SCENE_CCC_controller.tscn

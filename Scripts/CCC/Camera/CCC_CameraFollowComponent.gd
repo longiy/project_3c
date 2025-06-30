@@ -9,7 +9,7 @@ signal follow_position_changed(new_position: Vector3)
 
 # === EXPORTS ===
 @export_group("Required References")
-@export var camera_core: CameraCore
+@export var camera_core: CCC_CameraCore
 @export var camera_rig: Node3D  # The rig that follows the target
 @export var target_node: Node3D  # What to follow
 @export var config_component: Node  # 3CConfigComponent

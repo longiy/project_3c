@@ -310,7 +310,7 @@ func toggle_performance_info():
 
 # === CONFIGURATION ===
 
-func configure_from_3c(config: CharacterConfig):
+func configure_from_3c(config: CCC_CharacterConfig):
 	"""Configure debug UI from 3C config (if needed)"""
 	# Debug UI doesn't need configuration, but method exists for consistency
 	pass

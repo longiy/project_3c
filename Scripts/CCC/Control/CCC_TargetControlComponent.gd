@@ -10,7 +10,7 @@ signal navigation_failed(reason: String)
 
 # === EXPORTS ===
 @export_group("Required References")
-@export var camera_core: CameraCore
+@export var camera_core: CCC_CameraCore
 @export var target_movement_component: Node  # TargetMovementComponent
 @export var config_component: Node  # 3CConfigComponent
 

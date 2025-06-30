@@ -247,7 +247,7 @@ func reset_to_idle():
 
 # === CONFIGURATION ===
 
-func configure_from_3c(config: CharacterConfig):
+func configure_from_3c(config: CCC_CharacterConfig):
 	"""Configure animation system from 3C config"""
 	if not config:
 		return

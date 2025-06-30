@@ -266,7 +266,7 @@ func get_action_mappings() -> Dictionary:
 
 # === CONFIGURATION ===
 
-func configure_from_3c(config: CharacterConfig):
+func configure_from_3c(config: CCC_CharacterConfig):
 	"""Configure device component from 3C config"""
 	if not config:
 		return
