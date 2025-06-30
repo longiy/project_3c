@@ -1,3 +1,9 @@
 res://SCENE.tscn
 res://AnimationTreeMove1d.tres
-res://Scripts/InputComponents/ClickNavigationComponent.gd
+res://THEORY/3C_AdpatationToFramework.md
+res://Scripts/3CX/Debug3CUI.gd
+res://Scripts/3CX/3CPresets.gd
+res://Scripts/3CX/Camera3CManager.gd
+res://Scripts/3CX/Control3CManager.gd
+res://Scripts/3CX/Character3CManager.gd
+res://Scripts/3CX/CharacterConfig.gd

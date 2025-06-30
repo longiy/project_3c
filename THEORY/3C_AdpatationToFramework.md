@@ -30,10 +30,10 @@ CHARACTER/
 │   ├── FixedCamera.gd
 │   └── FirstPersonCamera.gd
 └── ControlComponent/ (Control axis)
-    ├── DirectControl.gd
-    ├── TargetBasedControl.gd
-    ├── GuidedControl.gd
-    └── ConstructiveControl.gd
+	├── DirectControl.gd
+	├── TargetBasedControl.gd
+	├── GuidedControl.gd
+	└── ConstructiveControl.gd
 ```
 
 ## Phase 1: Create 3C Configuration Resource
