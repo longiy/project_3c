@@ -1,4 +1,4 @@
-# 3C Framework Refactor for Your Godot Project X
+ 3C Framework Refactor for Your Godot Project X
 
 Looking at your current project structure and the 3C framework we've developed, here's how to refactor your character controller to explicitly use the 3C architecture:
 
