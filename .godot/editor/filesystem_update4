@@ -1,3 +1,14 @@
 res://SCENE.tscn
 res://AnimationTreeMove1d.tres
 res://Scripts/InputComponents/ClickNavigationComponent.gd
+res://Scripts/3C/CharacterConfig.gd
+res://Scripts/3C/ControllerCharacter.gd
+res://Scripts/3C/3CDebugUI.gd
+res://Scripts/3C/MovementManager.gd
+res://Scripts/3C/CameraRig.gd
+res://Scripts/3C/3CPresets.gd
+res://Scripts/3C/Simple3CTest.gd
+res://Scripts/3C/CharacterStatesBase.gd
+res://Scripts/Character/States/StateIdle.gd
+res://Scripts/Character/States/StateWalking.gd
+res://Scripts/Character/States/StateRunning.gd
