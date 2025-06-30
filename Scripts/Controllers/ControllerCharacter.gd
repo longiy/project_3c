@@ -1,4 +1,4 @@
-# ControllerCharacter.gd - UPDATED: Bridge new Control system with existing Character modules
+# ControllerCharacter.gd - Simplified character controller
 extends CharacterBody3D
 
 @export_group("Physics")
@@ -7,7 +7,7 @@ extends CharacterBody3D
 @export_group("Components")
 @export var animation_controller: AnimationManager
 @export var camera: Camera3D
-@export var input_controller: InputController  # UPDATED: Changed from input_manager
+@export var input_controller: InputController
 @export var jump_system: JumpSystem
 @export var debug_helper: CharacterDebugHelper
 
@@ -42,31 +42,22 @@ func setup_components():
 		push_error("No CharacterStateMachine found!")
 		return
 	
-	# Get or create movement manager
+	# Create or get movement manager
 	movement_manager = get_node_or_null("MovementManager")
 	if not movement_manager:
 		movement_manager = MovementManager.new()
 		movement_manager.name = "MovementManager"
 		add_child(movement_manager)
 	
-	# UPDATED: Get InputController instead of InputManager
-	if not input_controller:
-		input_controller = get_node_or_null("InputController") as InputController
-		if not input_controller:
-			push_error("No InputController found!")
-			return
-	
-	# Setup camera reference for movement
-	if camera and movement_manager:
+	# Setup camera reference
+	if camera:
 		movement_manager.setup_camera_reference(camera)
 
 func connect_signals():
-	"""UPDATED: Connect new InputController signals to existing systems"""
 	if not input_controller or not movement_manager:
-		push_error("Missing InputController or MovementManager for signal connections")
 		return
 	
-	# Connect InputController signals to movement manager
+	# Connect input signals to movement manager
 	input_controller.movement_started.connect(_on_movement_started)
 	input_controller.movement_updated.connect(_on_movement_updated)
 	input_controller.movement_stopped.connect(_on_movement_stopped)
@@ -78,12 +69,9 @@ func connect_signals():
 	input_controller.reset_pressed.connect(_on_reset_pressed)
 	
 	# Connect movement manager to animation controller
-	if animation_controller and movement_manager:
+	if animation_controller:
 		movement_manager.movement_changed.connect(animation_controller._on_movement_changed)
 		movement_manager.mode_changed.connect(animation_controller._on_mode_changed)
-		print("✅ ControllerCharacter: Connected movement to animation")
-	
-	print("✅ ControllerCharacter: All signal connections established")
 
 func _physics_process(delta):
 	if state_machine:
@@ -91,50 +79,37 @@ func _physics_process(delta):
 	
 	emit_ground_state_changes()
 
-# === SIGNAL HANDLERS (Updated for new InputController) ===
+# === SIGNAL HANDLERS ===
 
 func _on_movement_started(direction: Vector2, magnitude: float):
-	"""Handle movement start from InputController"""
-	if movement_manager:
-		movement_manager.handle_movement_action("move_start", {"direction": direction, "magnitude": magnitude})
+	movement_manager.handle_movement_action("move_start", {"direction": direction, "magnitude": magnitude})
 
 func _on_movement_updated(direction: Vector2, magnitude: float):
-	"""Handle movement update from InputController"""
-	if movement_manager:
-		movement_manager.handle_movement_action("move_update", {"direction": direction, "magnitude": magnitude})
+	movement_manager.handle_movement_action("move_update", {"direction": direction, "magnitude": magnitude})
 
 func _on_movement_stopped():
-	"""Handle movement stop from InputController"""
-	if movement_manager:
-		movement_manager.handle_movement_action("move_end")
+	movement_manager.handle_movement_action("move_end")
 
 func _on_sprint_started():
-	"""Handle sprint start from InputController"""
-	if movement_manager:
-		movement_manager.handle_mode_action("sprint_start")
+	movement_manager.handle_mode_action("sprint_start")
 
 func _on_sprint_stopped():
-	"""Handle sprint stop from InputController"""
-	if movement_manager:
-		movement_manager.handle_mode_action("sprint_end")
+	movement_manager.handle_mode_action("sprint_end")
 
 func _on_slow_walk_started():
-	"""Handle slow walk start from InputController"""
-	if movement_manager:
-		movement_manager.handle_mode_action("slow_walk_start")
+	movement_manager.handle_mode_action("slow_walk_start")
 
 func _on_slow_walk_stopped():
-	"""Handle slow walk stop from InputController"""
-	if movement_manager:
-		movement_manager.handle_mode_action("slow_walk_end")
+	movement_manager.handle_mode_action("slow_walk_end")
 
 func _on_jump_pressed():
-	"""Handle jump input from InputController"""
+	"""FIXED: Handle both ground and air jumps properly"""
 	if not jump_system:
 		return
 	
 	# Let JumpSystem decide what type of jump to perform
 	if jump_system.can_jump_at_all():
+		# JumpSystem will automatically determine jump type and force
 		jump_system.perform_jump()
 		
 		# Transition to jumping state
@@ -152,98 +127,92 @@ func _on_jump_pressed():
 				  " Air: ", jump_system.air_jumps_remaining, 
 				  " Coyote: ", jump_system.coyote_timer)
 
-func _on_reset_pressed():
-	"""Handle reset input from InputController"""
-	reset_character()
 
-# === MOVEMENT INTERFACE (Unchanged) ===
-
-func apply_ground_movement(delta: float):
-	if movement_manager:
-		movement_manager.apply_ground_movement(delta)
-
-func apply_air_movement(delta: float):
-	if movement_manager:
-		movement_manager.apply_air_movement(delta)
-
-func get_movement_speed() -> float:
-	return movement_manager.get_movement_speed() if movement_manager else 0.0
-
-func get_target_state() -> String:
-	return movement_manager.get_target_state() if movement_manager else "idle"
-
-func apply_gravity(delta: float):
-	if not is_on_floor():
-		velocity.y -= base_gravity * gravity_multiplier * delta
-
-# === GROUND STATE DETECTION (Unchanged) ===
-
-func emit_ground_state_changes():
-	"""Emit ground state changes for JumpSystem"""
-	var current_grounded = is_on_floor()
-	if current_grounded != last_emitted_grounded:
-		last_emitted_grounded = current_grounded
-		ground_state_changed.emit(current_grounded)
-
-func update_ground_state():
-	"""Manual ground state update for compatibility"""
-	if jump_system:
-		jump_system.update_ground_state()
-
-# === JUMP INTERFACE (Unchanged) ===
-
+# UPDATED: These methods now delegate to JumpSystem
 func can_jump() -> bool:
 	return jump_system.can_jump() if jump_system else false
 
 func can_air_jump() -> bool:
 	return jump_system.can_air_jump() if jump_system else false
 
-# === CHARACTER MANAGEMENT (Unchanged) ===
+func _on_reset_pressed():
+	reset_character()
+
+# === MOVEMENT INTERFACE ===
+
+func apply_ground_movement(delta: float):
+	movement_manager.apply_ground_movement(delta)
+
+func apply_air_movement(delta: float):
+	movement_manager.apply_air_movement(delta)
+
+func get_movement_speed() -> float:
+	return movement_manager.get_movement_speed()
+
+func get_target_speed() -> float:
+	return movement_manager.get_target_speed()
+
+# === MOVEMENT MODE PROPERTIES ===
+
+var is_running: bool:
+	get:
+		return movement_manager.is_running if movement_manager else false
+
+var is_slow_walking: bool:
+	get:
+		return movement_manager.is_slow_walking if movement_manager else false
+
+# === PHYSICS ===
+
+func apply_gravity(delta: float):
+	if not is_on_floor():
+		velocity.y -= (base_gravity * gravity_multiplier) * delta
+
+# === JUMP SYSTEM ===
+
+func perform_jump(jump_force: float):
+	if jump_system:
+		var was_grounded = is_on_floor()
+		jump_system.perform_jump(jump_force)
+		jump_performed.emit(jump_force, not was_grounded)
+
+func update_ground_state():
+	if jump_system:
+		jump_system.update_ground_state()
+
+# === SIGNAL EMISSION ===
+
+func emit_ground_state_changes():
+	var current_grounded = is_on_floor()
+	if current_grounded != last_emitted_grounded:
+		last_emitted_grounded = current_grounded
+		ground_state_changed.emit(current_grounded)
+
+# === STATE QUERIES ===
+
+func should_transition_to_state(current_state: String) -> String:
+	return movement_manager.should_transition_to_state(current_state) if movement_manager else ""
+
+# === STATE MACHINE INTERFACE ===
+
+func get_current_state_name() -> String:
+	return state_machine.get_current_state_name() if state_machine else "none"
+
+func get_previous_state_name() -> String:
+	return state_machine.get_previous_state_name() if state_machine else "none"
+
+# === UTILITY ===
 
 func reset_character():
-	"""Reset character to spawn position"""
-	global_position = Vector3.ZERO
-	velocity = Vector3.ZERO
-	
-	if jump_system:
-		jump_system.reset_jump_state()
-	
-	if state_machine:
-		state_machine.change_state("idle")
-	
-	print("🔄 Character reset")
-
-# === DEBUG INFO (Updated for InputController) ===
+	if debug_helper:
+		debug_helper.reset_character()
 
 func get_debug_info() -> Dictionary:
-	"""Get character debug information"""
-	var info = {
-		"character": {
-			"position": global_position,
-			"velocity": velocity,
-			"is_grounded": is_on_floor(),
+	if debug_helper:
+		return debug_helper.get_comprehensive_debug_info()
+	else:
+		return {
+			"current_state": get_current_state_name(),
 			"movement_speed": get_movement_speed(),
-			"target_state": get_target_state(),
-			"is_running": movement_manager.is_running if movement_manager else false,
-			"is_slow_walking": movement_manager.is_slow_walking if movement_manager else false
+			"is_grounded": is_on_floor()
 		}
-	}
-	
-	# Add component debug info
-	if input_controller:
-		info["input"] = input_controller.get_debug_info()
-	
-	if movement_manager:
-		info["movement"] = movement_manager.get_debug_info() if movement_manager.has_method("get_debug_info") else {"error": "No debug method"}
-	
-	if jump_system:
-		info["jump"] = jump_system.get_debug_info()
-	
-	if state_machine:
-		info["state"] = {
-			"current_state": state_machine.current_state.state_name if state_machine.current_state else "none",
-			"previous_state": state_machine.previous_state.state_name if state_machine.previous_state else "none",
-			"transition_count": state_machine.transition_count
-		}
-	
-	return info
