@@ -21,7 +21,7 @@ signal click_navigation(world_position: Vector3)
 
 # === STATE ===
 var character: CharacterBody3D
-var camera_rig: CameraRig
+var camera_rig: CameraController
 
 var current_raw_input = Vector2.ZERO
 var last_sent_input = Vector2.ZERO
@@ -43,9 +43,9 @@ func _ready():
 	
 	movement_update_interval = 1.0 / movement_update_frequency
 	
-	camera_rig = get_node_or_null("../../CAMERARIG") as CameraRig
+	camera_rig = get_node_or_null("../../CAMERARIG") as CameraController
 	if not camera_rig:
-		push_warning("No CameraRig found - click navigation may not work")
+		push_warning("No CameraController found - click navigation may not work")
 	
 	call_deferred("find_input_components")
 
