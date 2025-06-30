@@ -24,6 +24,13 @@ func _ready():
 			push_error("No Character3CManager found for Debug3CUI")
 			return
 	
+	# Wait for character controller to be ready and have a config
+	if not character_controller.active_3c_config:
+		await get_tree().process_frame
+		if not character_controller.active_3c_config:
+			push_error("Character3CManager has no active_3c_config")
+			return
+	
 	setup_ui()
 	create_preset_buttons()
 	create_parameter_sliders()
@@ -98,22 +105,28 @@ func create_preset_buttons():
 
 func create_parameter_sliders():
 	"""Create real-time parameter adjustment sliders"""
+	if not character_controller or not character_controller.active_3c_config:
+		push_error("Debug3CUI: No character controller or config found")
+		return
+	
+	var config = character_controller.active_3c_config
+	
 	# Character parameters
-	add_parameter_slider("Walk Speed", "walk_speed", 0.5, 8.0, character_controller.active_3c_config.walk_speed)
-	add_parameter_slider("Run Speed", "run_speed", 2.0, 15.0, character_controller.active_3c_config.run_speed)
-	add_parameter_slider("Jump Height", "jump_height", 1.0, 10.0, character_controller.active_3c_config.jump_height)
-	add_parameter_slider("Acceleration", "acceleration", 1.0, 30.0, character_controller.active_3c_config.acceleration)
+	add_parameter_slider("Walk Speed", "walk_speed", 0.5, 8.0, config.walk_speed)
+	add_parameter_slider("Run Speed", "run_speed", 2.0, 15.0, config.run_speed)
+	add_parameter_slider("Jump Height", "jump_height", 1.0, 10.0, config.jump_height)
+	add_parameter_slider("Acceleration", "acceleration", 1.0, 30.0, config.acceleration)
 	
 	# Camera parameters
-	add_parameter_slider("Camera Distance", "camera_distance", 1.0, 15.0, character_controller.active_3c_config.camera_distance)
-	add_parameter_slider("Camera Height", "camera_height", 0.5, 8.0, character_controller.active_3c_config.camera_height)
-	add_parameter_slider("Camera Smoothing", "camera_smoothing", 0.1, 20.0, character_controller.active_3c_config.camera_smoothing)
-	add_parameter_slider("FOV", "camera_fov", 30.0, 120.0, character_controller.active_3c_config.camera_fov)
+	add_parameter_slider("Camera Distance", "camera_distance", 1.0, 15.0, config.camera_distance)
+	add_parameter_slider("Camera Height", "camera_height", 0.5, 8.0, config.camera_height)
+	add_parameter_slider("Camera Smoothing", "camera_smoothing", 0.1, 20.0, config.camera_smoothing)
+	add_parameter_slider("FOV", "camera_fov", 30.0, 120.0, config.camera_fov)
 	
 	# Control parameters
-	add_parameter_slider("Mouse Sensitivity", "mouse_sensitivity", 0.1, 5.0, character_controller.active_3c_config.mouse_sensitivity)
-	add_parameter_slider("Input Deadzone", "input_deadzone", 0.0, 0.3, character_controller.active_3c_config.input_deadzone)
-	add_parameter_slider("Control Precision", "control_precision", 0.0, 1.0, character_controller.active_3c_config.control_precision)
+	add_parameter_slider("Mouse Sensitivity", "mouse_sensitivity", 0.1, 5.0, config.mouse_sensitivity)
+	add_parameter_slider("Input Deadzone", "input_deadzone", 0.0, 0.3, config.input_deadzone)
+	add_parameter_slider("Control Precision", "control_precision", 0.0, 1.0, config.control_precision)
 
 func add_parameter_slider(label_text: String, property: String, min_val: float, max_val: float, current_val: float):
 	"""Add a parameter slider to the UI"""
@@ -148,8 +161,9 @@ func add_parameter_slider(label_text: String, property: String, min_val: float, 
 
 func create_info_displays():
 	"""Create information display labels"""
+	var config_name = character_controller.active_3c_config.config_name if character_controller.active_3c_config else "No Config"
 	current_config_label = Label.new()
-	current_config_label.text = "Current Config: " + character_controller.active_3c_config.config_name
+	current_config_label.text = "Current Config: " + config_name
 	info_container.add_child(current_config_label)
 	
 	character_info_label = Label.new()
@@ -195,7 +209,7 @@ func update_slider_values():
 
 func update_info_displays():
 	"""Update information displays"""
-	if not character_controller:
+	if not character_controller or not character_controller.active_3c_config:
 		return
 	
 	# Character info

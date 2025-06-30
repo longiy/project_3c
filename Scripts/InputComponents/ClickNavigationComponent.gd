@@ -15,7 +15,7 @@ class_name ClickNavigationComponent
 @export_group("Optional Visual Feedback")
 @export var marker_hide_delay = 0.3
 
-var camera_rig: CameraRig
+var camera_rig: Camera3CManager
 
 # Navigation state
 var click_destination = Vector3.ZERO
@@ -39,9 +39,9 @@ func _ready():
 		push_error("ClickNavigationComponent: No camera assigned!")
 		return
 	
-	camera_rig = get_node_or_null("../../CAMERARIG") as CameraRig
+	camera_rig = get_node_or_null("../../CAMERARIG") as Camera3CManager
 	if not camera_rig:
-		push_error("ClickNavigationComponent: No CameraRig found!")
+		push_error("ClickNavigationComponent: No Camera3CManager found!")
 		return
 
 # FIXED: Listen to camera rig input events instead of InputManager

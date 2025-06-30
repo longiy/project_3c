@@ -20,7 +20,7 @@ signal mode_changed(new_mode: String)
 
 var camera_3c_manager: Camera3CManager
 var control_3c_manager: Control3CManager
-var state_machine: CharacterStateMachine
+var state_machine: Node  # Changed from CharacterStateMachine to Node to accept any state machine type
 
 # === MOVEMENT STATE ===
 var current_movement_mode: String = "idle"
@@ -50,24 +50,46 @@ func setup_character():
 	
 	# Load default config if none provided
 	if not active_3c_config:
-		active_3c_config = load("res://Scripts/3C/Presets/DefaultConfig.tres")
-		if not active_3c_config:
-			active_3c_config = CharacterConfig.new()
+		# Create default config instead of loading from file
+		active_3c_config = CharacterConfig.new()
+		active_3c_config.config_name = "Default 3C Config"
+		print("✅ Character3CManager: Created default 3C config")
 
 func setup_3c_components():
 	# Get or create 3C managers
 	camera_3c_manager = get_node_or_null("../CAMERARIG") as Camera3CManager
-	control_3c_manager = get_node_or_null("Control3CManager") as Control3CManager
+	if not camera_3c_manager:
+		push_warning("No Camera3CManager found - camera integration disabled")
 	
+	control_3c_manager = get_node_or_null("Control3CManager") as Control3CManager
 	if not control_3c_manager:
+		# Try to find existing InputManager to replace
+		var existing_input = get_node_or_null("InputManager")
+		if existing_input:
+			print("⚠️ Found old InputManager - please replace with Control3CManager")
+		
 		control_3c_manager = Control3CManager.new()
 		control_3c_manager.name = "Control3CManager"
 		add_child(control_3c_manager)
+		print("✅ Character3CManager: Created Control3CManager")
 
 func setup_state_machine():
-	state_machine = get_node("CharacterStateMachine") as CharacterStateMachine
+	# Try multiple possible paths for state machine
+	var possible_paths = [
+		"CharacterStateMachine",
+		"CharacterStateMachine3C", 
+		"StateMachine",
+		"./CharacterStateMachine"
+	]
+	
+	for path in possible_paths:
+		state_machine = get_node_or_null(path)
+		if state_machine:
+			print("✅ Character3CManager: Found state machine at path: ", path)
+			break
+	
 	if not state_machine:
-		push_error("No CharacterStateMachine found!")
+		push_error("No CharacterStateMachine found! Tried paths: " + str(possible_paths))
 		return
 
 func configure_3c_system():
@@ -120,15 +142,24 @@ func connect_control_signals():
 		return
 	
 	# Connect input signals
-	control_3c_manager.movement_started.connect(_on_movement_started)
-	control_3c_manager.movement_updated.connect(_on_movement_updated)
-	control_3c_manager.movement_stopped.connect(_on_movement_stopped)
-	control_3c_manager.sprint_started.connect(_on_sprint_started)
-	control_3c_manager.sprint_stopped.connect(_on_sprint_stopped)
-	control_3c_manager.slow_walk_started.connect(_on_slow_walk_started)
-	control_3c_manager.slow_walk_stopped.connect(_on_slow_walk_stopped)
-	control_3c_manager.jump_pressed.connect(_on_jump_pressed)
-	control_3c_manager.reset_pressed.connect(_on_reset_pressed)
+	if control_3c_manager.has_signal("movement_started"):
+		control_3c_manager.movement_started.connect(_on_movement_started)
+	if control_3c_manager.has_signal("movement_updated"):
+		control_3c_manager.movement_updated.connect(_on_movement_updated)
+	if control_3c_manager.has_signal("movement_stopped"):
+		control_3c_manager.movement_stopped.connect(_on_movement_stopped)
+	if control_3c_manager.has_signal("sprint_started"):
+		control_3c_manager.sprint_started.connect(_on_sprint_started)
+	if control_3c_manager.has_signal("sprint_stopped"):
+		control_3c_manager.sprint_stopped.connect(_on_sprint_stopped)
+	if control_3c_manager.has_signal("slow_walk_started"):
+		control_3c_manager.slow_walk_started.connect(_on_slow_walk_started)
+	if control_3c_manager.has_signal("slow_walk_stopped"):
+		control_3c_manager.slow_walk_stopped.connect(_on_slow_walk_stopped)
+	if control_3c_manager.has_signal("jump_pressed"):
+		control_3c_manager.jump_pressed.connect(_on_jump_pressed)
+	if control_3c_manager.has_signal("reset_pressed"):
+		control_3c_manager.reset_pressed.connect(_on_reset_pressed)
 
 func _physics_process(delta):
 	if state_machine:
@@ -350,3 +381,51 @@ func connect_animation_controller():
 	if animation_controller:
 		movement_changed.connect(animation_controller._on_movement_changed)
 		mode_changed.connect(animation_controller._on_mode_changed)
+
+# === LEGACY COMPATIBILITY METHODS ===
+# These methods maintain compatibility with existing state scripts
+
+func update_ground_state():
+	"""Legacy method for state compatibility"""
+	emit_ground_state_changes()
+
+func get_movement_manager():
+	"""Legacy method - returns self as movement manager"""
+	return self
+
+func set_movement_active(active: bool):
+	"""Legacy method for movement state"""
+	if active and movement_magnitude == 0:
+		movement_magnitude = 0.1
+		movement_direction = Vector2.UP
+	elif not active:
+		movement_magnitude = 0.0
+		movement_direction = Vector2.ZERO
+	update_movement_mode()
+
+func set_running(running: bool):
+	"""Legacy method for running state"""
+	is_sprinting = running
+	update_movement_mode()
+
+func set_slow_walking(slow: bool):
+	"""Legacy method for slow walking state"""
+	is_slow_walking = slow
+	update_movement_mode()
+
+func reset_jump_state():
+	"""Legacy method for jump system compatibility"""
+	if jump_system and jump_system.has_method("reset_jump_state"):
+		jump_system.reset_jump_state()
+
+func apply_gravity(delta: float):
+	"""Legacy method - apply gravity to character"""
+	if not is_on_floor():
+		velocity.y -= base_gravity * active_3c_config.character_responsiveness * delta if active_3c_config else base_gravity * delta
+
+func apply_movement(delta: float):
+	"""Legacy method - apply movement and call move_and_slide"""
+	if is_on_floor():
+		apply_ground_movement(delta)
+	else:
+		apply_air_movement(delta)

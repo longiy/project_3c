@@ -2,6 +2,9 @@
 class_name StateRunning3C
 extends CharacterStateBase3C
 
+func get_state_name() -> String:
+	return "running"
+
 func enter():
 	super.enter()
 	if character:

@@ -1,6 +1,9 @@
-# StateWalking3C.gd - Walking state for 3C Character Manager
-class_name StateWalking3C
+# StateIdle3C.gd - Idle state for 3C Character Manager
+class_name StateIdle3C
 extends CharacterStateBase3C
+
+func get_state_name() -> String:
+	return "idle"
 
 func enter():
 	super.enter()
@@ -15,10 +18,8 @@ func update(delta: float):
 
 func get_debug_info() -> Dictionary:
 	return {
-		"state": "walking",
+		"state": "idle",
 		"time_in_state": time_in_state,
 		"is_grounded": character.is_on_floor() if character else false,
-		"velocity": character.velocity if character else Vector3.ZERO,
-		"movement_direction": character.movement_direction if character else Vector2.ZERO,
-		"movement_magnitude": character.movement_magnitude if character else 0.0
+		"velocity": character.velocity if character else Vector3.ZERO
 	}

@@ -39,9 +39,22 @@ func _ready():
 func setup_camera():
 	"""Initialize camera setup"""
 	if not camera:
-		camera = get_node_or_null("Camera3D")
+		# Try multiple possible camera paths based on your scene structure
+		var possible_paths = [
+			"Camera3D",
+			"SpringArm3D/Camera3D", 
+			"./SpringArm3D/Camera3D",
+			"SpringArm3D/Camera3D",
+		]
+		
+		for path in possible_paths:
+			camera = get_node_or_null(path)
+			if camera:
+				print("✅ Camera3CManager: Found Camera3D at path: ", path)
+				break
+		
 		if not camera:
-			push_error("No Camera3D found in Camera3CManager")
+			push_error("No Camera3D found in Camera3CManager. Tried paths: " + str(possible_paths))
 			return
 	
 	if not target:

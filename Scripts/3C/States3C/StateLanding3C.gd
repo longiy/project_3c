@@ -5,6 +5,9 @@ extends CharacterStateBase3C
 @export var landing_duration: float = 0.2
 @export var auto_transition_to_movement: bool = true
 
+func get_state_name() -> String:
+	return "landing"
+
 func enter():
 	super.enter()
 	if character:
