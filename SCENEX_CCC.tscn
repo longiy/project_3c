@@ -129,6 +129,7 @@ parameters/Move/blend_position = -0.844419
 script = ExtResource("4_s3my3")
 character_core = NodePath("../../CharacterBody")
 config_component = NodePath("../../../Config/CCC_ConfigComponent")
+movement_mode = 0
 
 [node name="CCC_DirectMovementComponent" type="Node" parent="CCC/CharacterCore/CharacterComponents" node_paths=PackedStringArray("character_core", "camera_core", "config_component")]
 script = ExtResource("5_8usgn")
@@ -193,11 +194,15 @@ script = ExtResource("13_bnnlc")
 movement_component = NodePath("../../CharacterCore/CharacterComponents/CCC_DirectMovementComponent")
 config_component = NodePath("../../Config/CCC_ConfigComponent")
 
-[node name="CCC_TargetControlComponent" type="Node" parent="CCC/ControlCore"]
+[node name="CCC_TargetControlComponent" type="Node" parent="CCC/ControlCore" node_paths=PackedStringArray("camera_core", "target_movement_component", "config_component")]
 script = ExtResource("14_11eob")
+camera_core = NodePath("../../CameraCore/SpringArm3D/Camera")
+target_movement_component = NodePath("../../CharacterCore/CharacterComponents/CCC_TargetMovementComponent")
+config_component = NodePath("../../Config/CCC_ConfigComponent")
 
-[node name="CCC_KeyboardMouseComponent" type="Node" parent="CCC/ControlCore"]
+[node name="CCC_KeyboardMouseComponent" type="Node" parent="CCC/ControlCore" node_paths=PackedStringArray("config_component")]
 script = ExtResource("15_1g083")
+config_component = NodePath("../../Config/CCC_ConfigComponent")
 
 [node name="Config" type="Node3D" parent="CCC"]
 
@@ -219,5 +224,17 @@ offset_left = 10.0
 offset_top = 10.0
 offset_right = 50.0
 offset_bottom = 33.0
+
+[node name="PresetContainer" type="VBoxContainer" parent="CCC/Debug/CCC_DebugUI"]
+layout_mode = 0
+offset_top = 217.0
+offset_right = 40.0
+offset_bottom = 257.0
+
+[node name="ParameterContainer" type="VBoxContainer" parent="CCC/Debug/CCC_DebugUI"]
+layout_mode = 0
+offset_top = 497.0
+offset_right = 40.0
+offset_bottom = 537.0
 
 [editable path="CCC/CharacterCore/CharacterBody/CharacterModel"]
