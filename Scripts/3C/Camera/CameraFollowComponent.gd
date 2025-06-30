@@ -182,11 +182,11 @@ func is_at_target() -> bool:
 	"""Check if camera is at target position"""
 	return get_distance_to_target() < 0.1
 
-def stop_following():
+func stop_following():
 	"""Stop following current target"""
 	set_follow_target(null)
 
-def resume_following():
+func resume_following():
 	"""Resume following if target exists"""
 	if target_node:
 		follow_active = true

@@ -233,17 +233,17 @@ func get_progress() -> float:
 	
 	return traveled_distance / total_distance if total_distance > 0 else 0.0
 
-def force_complete_navigation():
+func force_complete_navigation():
 	"""Force complete current navigation (for scripted sequences)"""
 	complete_navigation()
 
 # === CONFIGURATION ===
 
-func get_config_value(property_name: String, default_value):
+func get_config_value(property_name: String, funcault_value):
 	"""Get configuration value safely"""
 	if config_component and config_component.has_method("get_config_value"):
-		return config_component.get_config_value(property_name, default_value)
-	return default_value
+		return config_component.get_config_value(property_name, funcault_value)
+	return funcault_value
 
 # === DEBUG INFO ===
 

@@ -1,223 +1,188 @@
-# TargetControlComponent.gd - Click-to-move control handling
+# DirectControlComponent.gd - Direct WASD control handling
 extends Node
-class_name TargetControlComponent
+class_name DirectControlComponent
 
 # === SIGNALS ===
-signal click_target_received(world_position: Vector3)
-signal navigation_started(destination: Vector3)
-signal navigation_completed()
-signal navigation_failed(reason: String)
+signal movement_input_received(direction: Vector2, magnitude: float)
+signal jump_input_received()
+signal sprint_input_received(active: bool)
 
 # === EXPORTS ===
 @export_group("Required References")
-@export var camera_core: CameraCore
-@export var target_movement_component: Node  # TargetMovementComponent
+@export var movement_component: Node  # DirectMovementComponent
 @export var config_component: Node  # 3CConfigComponent
 
-@export_group("Click Properties")
-@export var ground_layer_mask: int = 1  # Which layers to raycast against
-@export var show_destination_marker: bool = true
+@export_group("Control Properties")
+@export var enable_input_smoothing: bool = false
 @export var enable_debug_output: bool = false
 
-# === CLICK STATE ===
-var last_click_position: Vector3 = Vector3.ZERO
-var click_pending: bool = false
-var navigation_active: bool = false
+# === INPUT STATE ===
+var current_input: Vector2 = Vector2.ZERO
+var raw_input: Vector2 = Vector2.ZERO
+var sprint_active: bool = false
+var input_magnitude: float = 0.0
 
 func _ready():
 	validate_setup()
 	
 	if enable_debug_output:
-		print("TargetControlComponent: Initialized")
+		print("DirectControlComponent: Initialized")
 
 func validate_setup():
 	"""Validate required references"""
-	if not camera_core:
-		push_error("TargetControlComponent: camera_core reference required")
-	
-	if not target_movement_component:
-		push_error("TargetControlComponent: target_movement_component reference required")
+	if not movement_component:
+		push_error("DirectControlComponent: movement_component reference required")
 	
 	if not config_component:
-		push_error("TargetControlComponent: config_component reference required")
+		push_error("DirectControlComponent: config_component reference required")
 
-# === INPUT HANDLING ===
+func _process(delta):
+	"""Process continuous input"""
+	process_movement_input(delta)
+	process_action_input()
+
+# === INPUT PROCESSING ===
+
+func process_movement_input(delta: float):
+	"""Process WASD movement input"""
+	# Get raw input
+	raw_input = Vector2.ZERO
+	
+	if Input.is_action_pressed("move_forward"):
+		raw_input.y += 1.0
+	if Input.is_action_pressed("move_backward"):
+		raw_input.y -= 1.0
+	if Input.is_action_pressed("move_left"):
+		raw_input.x -= 1.0
+	if Input.is_action_pressed("move_right"):
+		raw_input.x += 1.0
+	
+	# Apply deadzone
+	var deadzone = get_config_value("input_deadzone", 0.1)
+	if raw_input.length() < deadzone:
+		raw_input = Vector2.ZERO
+	
+	# Apply input smoothing if enabled
+	if enable_input_smoothing and raw_input.length() > 0:
+		var smoothing_speed = get_config_value("input_smoothing", 0.0)
+		if smoothing_speed > 0:
+			current_input = current_input.lerp(raw_input.normalized(), smoothing_speed * delta)
+		else:
+			current_input = raw_input.normalized()
+	else:
+		current_input = raw_input.normalized() if raw_input.length() > 0 else Vector2.ZERO
+	
+	# Calculate input magnitude for speed control
+	input_magnitude = raw_input.length()
+	
+	# Send to movement component
+	if movement_component and movement_component.has_method("handle_movement_input"):
+		movement_component.handle_movement_input(current_input)
+	
+	# Emit signal for other components
+	if current_input.length() > 0:
+		movement_input_received.emit(current_input, input_magnitude)
+
+func process_action_input():
+	"""Process action inputs like jump and sprint"""
+	# Jump input
+	if Input.is_action_just_pressed("jump"):
+		if movement_component and movement_component.has_method("handle_jump_input"):
+			movement_component.handle_jump_input()
+		
+		jump_input_received.emit()
+		
+		if enable_debug_output:
+			print("DirectControlComponent: Jump input processed")
+	
+	# Sprint input
+	var new_sprint_state = Input.is_action_pressed("sprint")
+	if new_sprint_state != sprint_active:
+		sprint_active = new_sprint_state
+		sprint_input_received.emit(sprint_active)
+		
+		if enable_debug_output:
+			print("DirectControlComponent: Sprint ", "activated" if sprint_active else "deactivated")
+
+# === INPUT HANDLING METHOD (for InputManager) ===
 
 func handle_input(event: InputEvent):
 	"""Handle input events routed from InputManager"""
-	if event is InputEventMouseButton:
-		handle_mouse_click(event)
-
-func handle_mouse_click(event: InputEventMouseButton):
-	"""Handle mouse click for navigation"""
-	# Only process left click on press
-	if event.button_index != MOUSE_BUTTON_LEFT or not event.pressed:
-		return
+	# This method is called by InputManagerComponent
+	# Most WASD input is handled in _process, but special events can be handled here
 	
-	# Only process if mouse is visible (not captured for camera)
-	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		return
-	
-	var click_position = perform_ground_raycast(event.position)
-	
-	if click_position != Vector3.ZERO:
-		process_click_navigation(click_position)
-	else:
+	if event.is_action_pressed("toggle_camera_mode"):
+		# Handle camera mode toggle if needed
 		if enable_debug_output:
-			print("TargetControlComponent: Click raycast failed")
+			print("DirectControlComponent: Camera toggle received")
+	
+	# Handle gamepad input if needed
+	if event is InputEventJoypadMotion:
+		handle_gamepad_input(event)
 
-# === RAYCAST LOGIC ===
-
-func perform_ground_raycast(screen_position: Vector2) -> Vector3:
-	"""Perform raycast from camera to ground"""
-	if not camera_core:
-		return Vector3.ZERO
-	
-	var viewport = camera_core.get_viewport()
-	if not viewport:
-		return Vector3.ZERO
-	
-	# Create raycast from camera
-	var ray_origin = camera_core.project_ray_origin(screen_position)
-	var ray_direction = camera_core.project_ray_normal(screen_position)
-	
-	# Setup raycast query
-	var space_state = camera_core.get_world_3d().direct_space_state
-	var query = PhysicsRayQueryParameters3D.create(
-		ray_origin,
-		ray_origin + ray_direction * 1000.0,  # Cast far
-		ground_layer_mask
-	)
-	
-	var result = space_state.intersect_ray(query)
-	
-	if result:
-		if enable_debug_output:
-			print("TargetControlComponent: Ground hit at ", result.position)
-		return result.position
-	
-	return Vector3.ZERO
-
-# === NAVIGATION PROCESSING ===
-
-func process_click_navigation(world_position: Vector3):
-	"""Process click navigation to world position"""
-	last_click_position = world_position
-	click_pending = true
-	
-	# Emit signal for other components
-	click_target_received.emit(world_position)
-	
-	# Send to target movement component
-	if target_movement_component and target_movement_component.has_method("navigate_to_position"):
-		target_movement_component.navigate_to_position(world_position)
-		navigation_active = true
-		navigation_started.emit(world_position)
+func handle_gamepad_input(event: InputEventJoypadMotion):
+	"""Handle gamepad stick input"""
+	# Left stick for movement
+	if event.axis == JOY_AXIS_LEFT_X or event.axis == JOY_AXIS_LEFT_Y:
+		var stick_input = Vector2(
+			Input.get_joy_axis(0, JOY_AXIS_LEFT_X),
+			-Input.get_joy_axis(0, JOY_AXIS_LEFT_Y)  # Invert Y for forward movement
+		)
 		
-		if enable_debug_output:
-			print("TargetControlComponent: Navigation started to ", world_position)
-	
-	# Show destination marker if enabled
-	if show_destination_marker:
-		show_destination_visual(world_position)
+		# Apply deadzone
+		var deadzone = get_config_value("input_deadzone", 0.1)
+		if stick_input.length() < deadzone:
+			stick_input = Vector2.ZERO
+		
+		# Send to movement component
+		if movement_component and movement_component.has_method("handle_movement_input"):
+			movement_component.handle_movement_input(stick_input)
+		
+		if enable_debug_output and stick_input.length() > 0:
+			print("DirectControlComponent: Gamepad movement input: ", stick_input)
 
-func show_destination_visual(position: Vector3):
-	"""Show visual marker at destination (placeholder for now)"""
-	# This could spawn a visual marker, play a particle effect, etc.
-	# For now, just debug output
+# === INPUT MODIFIERS ===
+
+func set_input_sensitivity(sensitivity: float):
+	"""Set input sensitivity multiplier"""
+	# Could modify input processing here
 	if enable_debug_output:
-		print("TargetControlComponent: Destination marker shown at ", position)
+		print("DirectControlComponent: Input sensitivity set to ", sensitivity)
 
-# === NAVIGATION CALLBACKS ===
-
-func _on_navigation_completed():
-	"""Called when navigation reaches destination"""
-	navigation_active = false
-	click_pending = false
-	navigation_completed.emit()
-	
-	if enable_debug_output:
-		print("TargetControlComponent: Navigation completed")
-
-func _on_navigation_failed(reason: String):
-	"""Called when navigation fails"""
-	navigation_active = false
-	click_pending = false
-	navigation_failed.emit(reason)
-	
-	if enable_debug_output:
-		print("TargetControlComponent: Navigation failed - ", reason)
-
-# === NAVIGATION CONTROL ===
-
-func cancel_navigation():
-	"""Cancel current navigation"""
-	if navigation_active and target_movement_component:
-		if target_movement_component.has_method("cancel_navigation"):
-			target_movement_component.cancel_navigation()
-	
-	navigation_active = false
-	click_pending = false
-	
-	if enable_debug_output:
-		print("TargetControlComponent: Navigation cancelled")
-
-func is_navigation_possible(world_position: Vector3) -> bool:
-	"""Check if navigation to position is possible"""
-	# Basic validation - could be enhanced with pathfinding checks
-	return world_position != Vector3.ZERO
+func enable_sprint_modifier(enabled: bool):
+	"""Enable/disable sprint input processing"""
+	if not enabled:
+		sprint_active = false
+		sprint_input_received.emit(false)
 
 # === PUBLIC API ===
 
-func get_last_click_position() -> Vector3:
-	"""Get last clicked world position"""
-	return last_click_position
+func get_current_input() -> Vector2:
+	"""Get current processed input direction"""
+	return current_input
 
-func is_navigation_active() -> bool:
-	"""Check if navigation is currently active"""
-	return navigation_active
+func get_raw_input() -> Vector2:
+	"""Get raw unprocessed input"""
+	return raw_input
 
-func is_click_pending() -> bool:
-	"""Check if a click is pending processing"""
-	return click_pending
+func get_input_magnitude() -> float:
+	"""Get input magnitude for speed calculations"""
+	return input_magnitude
 
-func set_ground_layer_mask(mask: int):
-	"""Set which layers to raycast against"""
-	ground_layer_mask = mask
+func is_sprint_active() -> bool:
+	"""Check if sprint is currently active"""
+	return sprint_active
 
-func set_destination_marker_enabled(enabled: bool):
-	"""Enable/disable destination marker display"""
-	show_destination_marker = enabled
+func is_movement_input_active() -> bool:
+	"""Check if any movement input is active"""
+	return current_input.length() > 0
 
-# === RAYCAST UTILITIES ===
-
-func test_ground_position(world_position: Vector3) -> bool:
-	"""Test if a world position is valid ground"""
-	# Cast straight down from position
-	var space_state = camera_core.get_world_3d().direct_space_state
-	var query = PhysicsRayQueryParameters3D.create(
-		world_position + Vector3(0, 1, 0),  # Start slightly above
-		world_position + Vector3(0, -1, 0), # Cast down
-		ground_layer_mask
-	)
-	
-	var result = space_state.intersect_ray(query)
-	return result != null
-
-func get_ground_height_at_position(world_position: Vector3) -> float:
-	"""Get ground height at specific world position"""
-	var space_state = camera_core.get_world_3d().direct_space_state
-	var query = PhysicsRayQueryParameters3D.create(
-		Vector3(world_position.x, world_position.y + 10, world_position.z),
-		Vector3(world_position.x, world_position.y - 10, world_position.z),
-		ground_layer_mask
-	)
-	
-	var result = space_state.intersect_ray(query)
-	if result:
-		return result.position.y
-	
-	return world_position.y
+func clear_input():
+	"""Clear all input (for cutscenes, etc.)"""
+	current_input = Vector2.ZERO
+	raw_input = Vector2.ZERO
+	input_magnitude = 0.0
+	sprint_active = false
 
 # === CONFIGURATION ===
 
@@ -230,13 +195,13 @@ func get_config_value(property_name: String, default_value):
 # === DEBUG INFO ===
 
 func get_debug_info() -> Dictionary:
-	"""Get debug information about target control component"""
+	"""Get debug information about direct control component"""
 	return {
-		"last_click_position": last_click_position,
-		"navigation_active": navigation_active,
-		"click_pending": click_pending,
-		"ground_layer_mask": ground_layer_mask,
-		"destination_marker_enabled": show_destination_marker,
-		"mouse_mode": Input.mouse_mode,
-		"can_receive_clicks": Input.mouse_mode == Input.MOUSE_MODE_VISIBLE
+		"current_input": current_input,
+		"raw_input": raw_input,
+		"input_magnitude": input_magnitude,
+		"sprint_active": sprint_active,
+		"input_smoothing": enable_input_smoothing,
+		"movement_active": is_movement_input_active(),
+		"deadzone": get_config_value("input_deadzone", 0.1)
 	}

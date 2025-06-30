@@ -69,37 +69,11 @@ func cache_components():
 	"""Cache component references for faster access"""
 	component_cache.clear()
 	
-	if not character_controller:
-		return
-	
-	# Cache all 3C components
-	cache_components_recursive(character_controller)
-
-func cache_components_recursive(node: Node):
-	"""Recursively cache all 3C components"""
-	# Check if this node is a 3C component
-	if is_3c_component(node):
-		component_cache[node.get_script().get_global_name()] = node
-	
-	# Check children
-	for child in node.get_children():
-		cache_components_recursive(child)
-
-func is_3c_component(node: Node) -> bool:
-	"""Check if node is a 3C framework component"""
-	if not node.get_script():
-		return false
-	
-	var class_name = node.get_script().get_global_name()
-	var 3c_components = [
-		"CharacterCore", "CameraCore", "AvatarComponent",
-		"DirectMovementComponent", "TargetMovementComponent",
-		"OrbitalCameraComponent", "CameraDistanceComponent", "CameraFollowComponent",
-		"InputManagerComponent", "DirectControlComponent", "TargetControlComponent",
-		"AnimationManagerComponent", "ThreeCConfigComponent"
-	]
-	
-	return class_name in 3c_components
+	# Only use manually assigned references
+	if character_controller:
+		# Cache specific components you know exist
+		# Let the debug display handle missing components gracefully
+		pass
 
 func _process(delta):
 	"""Update debug display"""
@@ -108,6 +82,8 @@ func _process(delta):
 	if update_timer >= (1.0 / update_frequency):
 		update_debug_display()
 		update_timer = 0.0
+
+
 
 # === DEBUG DISPLAY ===
 
@@ -144,7 +120,7 @@ func build_performance_section() -> String:
 	
 	text += "FPS: " + str(fps) + "\n"
 	text += "Frame Time: " + str(1000.0 / fps).pad_decimals(2) + "ms\n"
-	text += "Memory: " + str(OS.get_static_memory_usage(true) / 1024 / 1024) + "MB\n"
+	text += "Memory: " + str(OS.get_static_memory_usage() / 1024 / 1024) + "MB\n"
 	text += "\n"
 	
 	return text

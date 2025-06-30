@@ -179,4 +179,120 @@ func remap_action(action_name: String, new_key: String):
 	if action_name in action_mappings:
 		action_mappings[action_name] = new_key
 		
-		if enable_
+		if enable_debug_output:
+			print("KeyboardMouseComponent: Remapped ", action_name, " to ", new_key)
+
+func get_action_mapping(action_name: String) -> String:
+	"""Get current mapping for action"""
+	return action_mappings.get(action_name, "")
+
+func reset_default_mappings():
+	"""Reset to default key mappings"""
+	action_mappings = {
+		"move_forward": "w",
+		"move_backward": "s", 
+		"move_left": "a",
+		"move_right": "d",
+		"jump": "space",
+		"sprint": "shift",
+		"toggle_camera_mode": "mouse_right"
+	}
+
+# === DEVICE DETECTION ===
+
+func is_mouse_available() -> bool:
+	"""Check if mouse is available"""
+	return Input.get_connected_joypads().size() >= 0  # Mouse is always available
+
+func is_keyboard_available() -> bool:
+	"""Check if keyboard is available"""
+	return true  # Keyboard is always available on PC
+
+func get_input_device_info() -> Dictionary:
+	"""Get information about input devices"""
+	return {
+		"mouse_available": is_mouse_available(),
+		"keyboard_available": is_keyboard_available(),
+		"mouse_captured": mouse_captured,
+		"mouse_sensitivity": current_mouse_sensitivity,
+		"input_deadzone": current_deadzone
+	}
+
+# === INPUT VALIDATION ===
+
+func is_input_enabled() -> bool:
+	"""Check if input processing is enabled"""
+	return enable_mouse_input or enable_keyboard_input
+
+func validate_input_event(event: InputEvent) -> bool:
+	"""Validate if input event should be processed"""
+	if event is InputEventMouseMotion and not enable_mouse_input:
+		return false
+	
+	if event is InputEventKey and not enable_keyboard_input:
+		return false
+	
+	return true
+
+# === PUBLIC API ===
+
+func get_mouse_sensitivity() -> float:
+	"""Get current mouse sensitivity"""
+	return current_mouse_sensitivity
+
+func get_input_deadzone() -> float:
+	"""Get current input deadzone"""
+	return current_deadzone
+
+func is_mouse_captured() -> bool:
+	"""Check if mouse is captured"""
+	return mouse_captured
+
+func enable_mouse_input_processing(enabled: bool):
+	"""Enable/disable mouse input processing"""
+	enable_mouse_input = enabled
+
+func enable_keyboard_input_processing(enabled: bool):
+	"""Enable/disable keyboard input processing"""
+	enable_keyboard_input = enabled
+
+func force_release_mouse():
+	"""Force release mouse (for cutscenes, menus, etc.)"""
+	release_mouse_capture()
+
+func get_action_mappings() -> Dictionary:
+	"""Get all current action mappings"""
+	return action_mappings.duplicate()
+
+# === CONFIGURATION ===
+
+func configure_from_3c(config: CharacterConfig):
+	"""Configure device component from 3C config"""
+	if not config:
+		return
+	
+	current_mouse_sensitivity = config.mouse_sensitivity
+	current_deadzone = config.input_deadzone
+	
+	if enable_debug_output:
+		print("KeyboardMouseComponent: Configured from 3C config")
+
+func get_config_value(property_name: String, default_value):
+	"""Get configuration value safely"""
+	if config_component and config_component.has_method("get_config_value"):
+		return config_component.get_config_value(property_name, default_value)
+	return default_value
+
+# === DEBUG INFO ===
+
+func get_debug_info() -> Dictionary:
+	"""Get debug information about keyboard/mouse component"""
+	return {
+		"mouse_input_enabled": enable_mouse_input,
+		"keyboard_input_enabled": enable_keyboard_input,
+		"mouse_captured": mouse_captured,
+		"mouse_sensitivity": current_mouse_sensitivity,
+		"input_deadzone": current_deadzone,
+		"action_mappings": action_mappings,
+		"device_info": get_input_device_info()
+	}
