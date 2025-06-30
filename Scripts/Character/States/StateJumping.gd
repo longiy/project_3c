@@ -1,23 +1,38 @@
-# StateJumping.gd - Simplified
-class_name StateJumping
+# StateJumping.gd - Refactored for modular architecture
 extends CharacterStateBase
+class_name StateJumping
 
-var jump_grace_time = 0.05
+@export var jump_transition_threshold = 0.1
 
 func enter():
 	super.enter()
+	# Jump is performed by actions module before state transition
 
 func update(delta: float):
 	super.update(delta)
 	
-	character.apply_gravity(delta)
+	# Apply physics
+	apply_gravity(delta)
 	apply_air_movement(delta)
-	character.move_and_slide()
+	perform_move_and_slide()
 	
-	# Override base class transitions - jumping has specific timing
-	if time_in_state > jump_grace_time:
-		change_to("airborne")
+	# Check for transitions
+	var velocity = get_velocity()
+	
+	# Transition to airborne when upward velocity slows
+	if velocity.y <= jump_transition_threshold:
+		change_state("airborne")
+		return
+	
+	# Handle air jump input
+	if actions_module and actions_module.can_air_jump():
+		if actions_module.jump_buffer_timer > 0:
+			actions_module.perform_jump()
+			# Stay in jumping state for air jumps
 
-# Override to prevent base class movement transitions during jump grace period
-func can_do_movement_transitions() -> bool:
-	return false
+func get_debug_info() -> Dictionary:
+	var base_info = super.get_debug_info()
+	base_info["state_type"] = "jumping"
+	base_info["upward_velocity"] = get_velocity().y
+	base_info["jump_threshold"] = jump_transition_threshold
+	return base_info

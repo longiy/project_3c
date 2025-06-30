@@ -1,28 +1,46 @@
-# StateLanding.gd - Simplified
-class_name StateLanding
+# StateLanding.gd - Refactored for modular architecture
 extends CharacterStateBase
+class_name StateLanding
 
-var landing_recovery_time = 0.1
+@export var landing_duration = 0.2
+var landing_timer = 0.0
 
 func enter():
 	super.enter()
-	character.update_ground_state()
+	landing_timer = landing_duration
 	
-	# Reduce velocity on landing
-	character.velocity.x *= 0.8
-	character.velocity.z *= 0.8
+	# Ensure ground state is updated
+	if physics_module:
+		physics_module.update_ground_state()
 
 func update(delta: float):
 	super.update(delta)
 	
-	character.apply_gravity(delta)
+	# Apply physics
+	apply_gravity(delta)
 	apply_ground_movement(delta)
-	character.move_and_slide()
+	perform_move_and_slide()
 	
-	# Override base class transitions - landing has recovery time
-	if time_in_state > landing_recovery_time:
-		handle_movement_transitions()
+	# Update landing timer
+	landing_timer -= delta
+	
+	# Check for early transitions
+	if check_for_jump_transition():
+		return
+	
+	if not is_grounded():
+		change_state("airborne")
+		return
+	
+	# Complete landing after timer expires
+	if landing_timer <= 0:
+		# Transition based on movement
+		if check_for_movement_transitions():
+			return
 
-# Override to prevent immediate transitions during recovery
-func can_do_movement_transitions() -> bool:
-	return time_in_state > landing_recovery_time
+func get_debug_info() -> Dictionary:
+	var base_info = super.get_debug_info()
+	base_info["state_type"] = "landing"
+	base_info["landing_timer"] = landing_timer
+	base_info["landing_duration"] = landing_duration
+	return base_info
