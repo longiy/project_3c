@@ -1,4 +1,4 @@
-# CameraController.gd - Main camera coordinator (modular refactor)
+# CameraController.gd - UPDATED: Compatible with new Control module architecture
 extends Node3D
 class_name CameraController
 
@@ -59,10 +59,14 @@ var is_externally_controlled = false
 var mode_switch_cooldown = 0.0
 var mode_switch_delay = 0.2
 
+# UPDATED: Input system compatibility
+var input_controller: InputController
+
 func _ready():
 	setup_camera_controller()
 	setup_modules()
 	setup_target()
+	setup_input_system_integration()
 	set_camera_mode(CameraMode.ORBIT)
 
 func _input(event):
@@ -80,51 +84,113 @@ func _process(delta):
 # === SETUP ===
 
 func setup_camera_controller():
-	if not spring_arm or not camera:
-		push_error("CameraController: Missing SpringArm3D or Camera3D children")
-		return
-	
-	# Initialize values
-	camera_rotation_x = deg_to_rad(-20.0)
-	camera_rotation_y = 0.0
-	
+	"""Initialize camera controller"""
 	current_distance = default_distance
 	target_distance = default_distance
-	spring_arm.spring_length = current_distance
-	
 	current_fov = default_fov
 	target_fov = default_fov
+	
+	if not spring_arm:
+		push_error("SpringArm3D not found! Camera will not work.")
+		return
+	
+	if not camera:
+		push_error("Camera3D not found! Camera will not work.")
+		return
+	
+	spring_arm.spring_length = current_distance
 	camera.fov = current_fov
 
 func setup_modules():
-	# Create and add modules
+	"""Create and setup camera modules"""
+	# Create input module
 	input_module = CameraInput.new()
 	input_module.name = "CameraInput"
 	input_module.setup_controller_reference(self)
 	add_child(input_module)
 	
+	# Create responder module
 	responder_module = CameraResponder.new()
 	responder_module.name = "CameraResponder"
 	responder_module.setup_controller_reference(self)
 	add_child(responder_module)
 
 func setup_target():
+	"""Setup target following"""
+	if not target_node:
+		target_node = get_node_or_null("../CHARACTER")
+		if target_node:
+			print("✅ CameraController: Auto-detected target: ", target_node.name)
+	
 	if target_node:
-		target_position = target_node.global_position + Vector3(0, follow_height_offset, 0)
+		target_position = target_node.global_position
 		global_position = target_position
 		target_acquired.emit(target_node)
 
-# === CORE CAMERA LOGIC ===
+func setup_input_system_integration():
+	"""UPDATED: Setup integration with new input system"""
+	input_controller = get_node_or_null("../CHARACTER/InputController") as InputController
+	if not input_controller:
+		push_warning("CameraController: No InputController found - some features may not work")
+		return
+	
+	print("✅ CameraController: Connected to InputController")
+
+# === CAMERA MODE MANAGEMENT ===
+
+func set_camera_mode(mode: CameraMode):
+	"""Set camera mode and handle transitions"""
+	if current_mode == mode:
+		return
+	
+	var old_mode = current_mode
+	current_mode = mode
+	
+	# Handle mode-specific setup
+	match mode:
+		CameraMode.ORBIT:
+			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+			mouse_mode_changed.emit(true)
+		CameraMode.CLICK_NAVIGATION:
+			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+			mouse_mode_changed.emit(false)
+	
+	camera_mode_changed.emit(get_mode_name(mode))
+	print("🎥 Camera mode changed: ", get_mode_name(old_mode), " → ", get_mode_name(mode))
+
+func toggle_camera_mode():
+	"""Toggle between camera modes"""
+	match current_mode:
+		CameraMode.ORBIT:
+			set_camera_mode(CameraMode.CLICK_NAVIGATION)
+		CameraMode.CLICK_NAVIGATION:
+			set_camera_mode(CameraMode.ORBIT)
+
+func get_mode_name(mode: CameraMode) -> String:
+	"""Get mode name for debugging"""
+	match mode:
+		CameraMode.ORBIT:
+			return "ORBIT"
+		CameraMode.CLICK_NAVIGATION:
+			return "CLICK_NAVIGATION"
+		_:
+			return "UNKNOWN"
+
+# === TARGET FOLLOWING ===
 
 func update_target_following(delta: float):
+	"""Update camera target following"""
 	if not target_node:
 		return
 	
-	var desired_position = target_node.global_position + Vector3(0, follow_height_offset, 0)
-	target_position = target_position.lerp(desired_position, follow_smoothing * delta)
+	var target_pos = target_node.global_position + Vector3(0, follow_height_offset, 0)
+	target_position = target_position.lerp(target_pos, follow_smoothing * delta)
 	global_position = target_position
 
+# === CAMERA PROPERTIES ===
+
 func update_camera_properties(delta: float):
+	"""Update camera distance and FOV smoothing"""
 	# Smooth distance
 	current_distance = lerp(current_distance, target_distance, distance_smoothing * delta)
 	spring_arm.spring_length = current_distance
@@ -134,84 +200,30 @@ func update_camera_properties(delta: float):
 	camera.fov = current_fov
 
 func apply_camera_transforms():
+	"""Apply rotation transforms to camera"""
 	rotation.y = camera_rotation_y
 	spring_arm.rotation.x = camera_rotation_x
 
-# === MODE MANAGEMENT ===
-
-func toggle_camera_mode():
-	if mode_switch_cooldown > 0:
-		return
-	
-	match current_mode:
-		CameraMode.ORBIT:
-			set_camera_mode(CameraMode.CLICK_NAVIGATION)
-		CameraMode.CLICK_NAVIGATION:
-			set_camera_mode(CameraMode.ORBIT)
-	
-	mode_switch_cooldown = mode_switch_delay
-
-func set_camera_mode(mode: CameraMode):
-	if current_mode == mode:
-		return
-	
-	var old_mode_name = get_mode_name(current_mode)
-	current_mode = mode
-	var new_mode_name = get_mode_name(current_mode)
-	
-	match current_mode:
-		CameraMode.ORBIT:
-			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-			print("📹 CameraController: Switched to ORBIT mode")
-		CameraMode.CLICK_NAVIGATION:
-			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-			print("📹 CameraController: Switched to CLICK_NAVIGATION mode")
-	
-	camera_mode_changed.emit(new_mode_name)
-	mouse_mode_changed.emit(Input.mouse_mode == Input.MOUSE_MODE_CAPTURED)
-
-func get_mode_name(mode: CameraMode) -> String:
-	match mode:
-		CameraMode.ORBIT:
-			return "ORBIT"
-		CameraMode.CLICK_NAVIGATION:
-			return "CLICK_NAVIGATION"
-		_:
-			return "UNKNOWN"
-
-# === CAMERA CONTROL API (Called by modules) ===
+# === INPUT HANDLING (Called by CameraInput module) ===
 
 func apply_mouse_orbit(mouse_delta: Vector2, sensitivity: float, invert_y: bool):
-	var look_delta = mouse_delta * sensitivity
+	"""Apply mouse orbit movement"""
+	var y_modifier = -1.0 if invert_y else 1.0
 	
-	if invert_y:
-		look_delta.y = -look_delta.y
-	
-	camera_rotation_y -= look_delta.x
+	camera_rotation_y -= mouse_delta.x * sensitivity
 	camera_rotation_x = clamp(
-		camera_rotation_x - look_delta.y,
+		camera_rotation_x + mouse_delta.y * sensitivity * y_modifier,
 		deg_to_rad(-80.0),
 		deg_to_rad(50.0)
 	)
 
 func apply_zoom(zoom_delta: float):
+	"""Apply zoom input"""
 	target_distance = clamp(
 		target_distance + zoom_delta,
 		min_distance,
 		max_distance
 	)
-
-func set_camera_fov(fov: float, transition_time: float = 0.0):
-	target_fov = fov
-	if transition_time <= 0:
-		current_fov = fov
-		camera.fov = fov
-
-func set_camera_distance(distance: float, transition_time: float = 0.0):
-	target_distance = clamp(distance, min_distance, max_distance)
-	if transition_time <= 0:
-		current_distance = target_distance
-		spring_arm.spring_length = current_distance
 
 # === PUBLIC API ===
 
@@ -228,10 +240,35 @@ func is_in_click_navigation_mode() -> bool:
 	return current_mode == CameraMode.CLICK_NAVIGATION
 
 func get_camera_forward() -> Vector3:
+	"""Get camera forward direction for character movement"""
 	return -camera.global_transform.basis.z
 
 func get_camera_right() -> Vector3:
+	"""Get camera right direction for character movement"""
 	return camera.global_transform.basis.x
+
+# === UPDATED: Control System Integration ===
+
+func notify_input_system_of_mode_change():
+	"""UPDATED: Notify input system of camera mode changes"""
+	if input_controller:
+		input_controller.set_input_mode(get_mode_name(current_mode).to_lower())
+
+# === STATE RESPONSES (Signal-driven) ===
+
+func set_camera_fov(fov: float, transition_time: float = 0.0):
+	"""Set camera FOV with optional transition"""
+	target_fov = fov
+	if transition_time <= 0:
+		current_fov = fov
+		camera.fov = fov
+
+func set_camera_distance(distance: float, transition_time: float = 0.0):
+	"""Set camera distance with optional transition"""
+	target_distance = clamp(distance, min_distance, max_distance)
+	if transition_time <= 0:
+		current_distance = target_distance
+		spring_arm.spring_length = current_distance
 
 # === DEBUG INFO ===
 
@@ -245,5 +282,6 @@ func get_camera_debug_info() -> Dictionary:
 		"external_control": is_externally_controlled,
 		"position": global_position,
 		"rotation_deg": Vector2(rad_to_deg(camera_rotation_x), rad_to_deg(camera_rotation_y)),
-		"fov": current_fov
+		"fov": current_fov,
+		"input_controller_connected": input_controller != null
 	}

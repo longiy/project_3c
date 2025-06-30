@@ -12,3 +12,6 @@ res://Scripts/CCC/Control/InputController.gd
 res://Scripts/CCC/Control/RawInputProcessor.gd
 res://Scripts/CCC/Control/KeyboardInput.gd
 res://Scripts/CCC/Control/GamepadComponent.gd
+res://Scripts/Controllers/ControllerCharacter.gd
+res://Scripts/CCC/Control/InputPriorityManager.gd
+res://Scripts/CCC/Control/ClickNavigationComponent.gd
