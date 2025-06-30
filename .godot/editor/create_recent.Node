@@ -1,5 +1,6 @@
-Node
 Node3D
+Node
+CharacterBody3D
 MeshInstance3D
 WorldEnvironment
 Sprite3D
@@ -11,4 +12,3 @@ Control
 StaticBody3D
 Camera3D
 DirectionalLight3D
-CollisionShape3D
