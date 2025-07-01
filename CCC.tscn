@@ -1,10 +1,11 @@
-[gd_scene load_steps=25 format=3 uid="uid://diueuwbtv4w82"]
+[gd_scene load_steps=26 format=3 uid="uid://diueuwbtv4w82"]
 
 [ext_resource type="Script" uid="uid://cws7m480lxvaf" path="res://Scripts/_Debug/DebugUI.gd" id="1_i47c0"]
 [ext_resource type="Script" uid="uid://c3qf8gpvlk6is" path="res://Scripts/CCC/Camera/CameraController.gd" id="2_i47c0"]
 [ext_resource type="Script" uid="uid://3p6o5qjhb1gg" path="res://Scripts/CCC/CCC_CharacterController.gd" id="3_dohcx"]
 [ext_resource type="Script" uid="uid://deibi5xmtfs1h" path="res://Scripts/Character/CharacterStateMachine.gd" id="4_dohcx"]
 [ext_resource type="Script" uid="uid://dpqmftmq6s2af" path="res://Scripts/CCC/CCC_ControlManager.gd" id="4_jkhd2"]
+[ext_resource type="Resource" uid="uid://3t743no7sjxi" path="res://Scripts/CCC/CCC_Preset.tres" id="4_v1ubw"]
 [ext_resource type="Script" uid="uid://mwfti1hv45ue" path="res://Scripts/Character/States/StateIdle.gd" id="5_jkhd2"]
 [ext_resource type="Script" uid="uid://bp6lhvdx2pgx6" path="res://Scripts/CCC/CCC_CharacterManager.gd" id="6_qo6m7"]
 [ext_resource type="Script" uid="uid://1uqst38ejbn3" path="res://Scripts/Character/States/StateAirborne.gd" id="6_v1ubw"]
@@ -71,7 +72,7 @@ camera_manager = NodePath("CCC_CameraManager")
 animation_controller = NodePath("AnimationManager")
 jump_system = NodePath("JumpSystem")
 debug_helper = NodePath("CharacterDebugHelper")
-ccc_preset = 2
+preset_manager = ExtResource("4_v1ubw")
 
 [node name="CCC_ControlManager" type="Node" parent="CHARACTER" node_paths=PackedStringArray("input_manager")]
 script = ExtResource("4_jkhd2")
@@ -85,6 +86,12 @@ character_body = NodePath("..")
 [node name="CCC_CameraManager" type="Node" parent="CHARACTER" node_paths=PackedStringArray("camera_controller")]
 script = ExtResource("8_bxgjt")
 camera_controller = NodePath("../../CAMERARIG")
+
+[node name="InputManager" type="Node" parent="CHARACTER"]
+script = ExtResource("12_5dedv")
+
+[node name="MovementManager" type="Node" parent="CHARACTER"]
+script = ExtResource("14_34nj4")
 
 [node name="CharacterStateMachine" type="Node" parent="CHARACTER" node_paths=PackedStringArray("state_nodes")]
 script = ExtResource("4_dohcx")
@@ -208,12 +215,6 @@ parameters/Move/blend_position = -0.844419
 [node name="CollisionShape3D" type="CollisionShape3D" parent="CHARACTER"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.853688, 0)
 shape = SubResource("CapsuleShape3D_odeog")
-
-[node name="InputManager" type="Node" parent="CHARACTER"]
-script = ExtResource("12_5dedv")
-
-[node name="MovementManager" type="Node" parent="CHARACTER"]
-script = ExtResource("14_34nj4")
 
 [node name="CURSOR" parent="." instance=ExtResource("19_qtd55")]
 

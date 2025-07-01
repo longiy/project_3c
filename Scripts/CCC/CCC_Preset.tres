@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="CCC_PresetManager" load_steps=2 format=3 uid="uid://3t743no7sjxi"]
+
+[ext_resource type="Script" uid="uid://dyutijo5aeq1q" path="res://Scripts/CCC/CCC_PresetManager.gd" id="1_euq1v"]
+
+[resource]
+script = ExtResource("1_euq1v")
+current_preset = 0
+control_type = 0
+character_type = 0
+camera_type = 2
+movement_responsiveness = 1.0
+camera_sensitivity = 1.0
+embodiment_quality = 1.0
+enable_ai_assistance = false
+metadata/_custom_type_script = "uid://dyutijo5aeq1q"
