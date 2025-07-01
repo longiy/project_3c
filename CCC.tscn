@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://cws7m480lxvaf" path="res://Scripts/_Debug/DebugUI.gd" id="1_i47c0"]
 [ext_resource type="Script" uid="uid://c3qf8gpvlk6is" path="res://Scripts/CCC/Camera/CameraController.gd" id="2_i47c0"]
-[ext_resource type="Script" uid="uid://dt54n1ktg7wqr" path="res://Scripts/Controllers/ControllerCharacter.gd" id="3_jiddn"]
+[ext_resource type="Script" uid="uid://3p6o5qjhb1gg" path="res://Scripts/CCC/CCC_CharacterController.gd" id="3_dohcx"]
 [ext_resource type="Script" uid="uid://deibi5xmtfs1h" path="res://Scripts/Character/CharacterStateMachine.gd" id="4_dohcx"]
 [ext_resource type="Script" uid="uid://dpqmftmq6s2af" path="res://Scripts/CCC/CCC_ControlManager.gd" id="4_jkhd2"]
 [ext_resource type="Script" uid="uid://mwfti1hv45ue" path="res://Scripts/Character/States/StateIdle.gd" id="5_jkhd2"]
@@ -61,12 +61,14 @@ spring_length = 2.0
 [node name="Camera3D" type="Camera3D" parent="CAMERARIG/SpringArm3D"]
 transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 0, 0, 0)
 
-[node name="CHARACTER" type="CharacterBody3D" parent="." node_paths=PackedStringArray("animation_controller", "camera", "input_manager", "jump_system", "debug_helper")]
+[node name="CHARACTER" type="CharacterBody3D" parent="." node_paths=PackedStringArray("control_manager", "character_manager", "camera_manager", "animation_controller", "input_manager", "jump_system", "debug_helper")]
 collision_layer = 2
 slide_on_ceiling = false
-script = ExtResource("3_jiddn")
+script = ExtResource("3_dohcx")
+control_manager = NodePath("CCC_ControlManager")
+character_manager = NodePath("CCC_CharacterManager")
+camera_manager = NodePath("CCC_CameraManager")
 animation_controller = NodePath("AnimationManager")
-camera = NodePath("../CAMERARIG/SpringArm3D/Camera3D")
 input_manager = NodePath("InputManager")
 jump_system = NodePath("JumpSystem")
 debug_helper = NodePath("CharacterDebugHelper")
