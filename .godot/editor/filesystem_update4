@@ -1,3 +1,8 @@
 res://SCENE.tscn
 res://AnimationTreeMove1d.tres
 res://CCC.tscn
+res://Scripts/Character/CharacterStatesBase.gd
+res://Scripts/_Debug/CharacterDebugHelper.gd
+res://Scripts/CCC/Character/CharacterController.gd
+res://Scripts/CCC/Character/CharacterPhysics.gd
+res://Scripts/CCC/Character/CharacterActions.gd
