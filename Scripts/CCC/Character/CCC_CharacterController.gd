@@ -72,14 +72,14 @@ func get_current_state() -> String:
 func get_movement_speed() -> float:
 	return velocity.length()
 
-func is_on_floor() -> bool:
-	return super.is_on_floor()
+func is_character_on_floor() -> bool:
+	return is_on_floor()
 
 func get_debug_info() -> Dictionary:
 	var debug_info = {
 		"velocity": velocity,
 		"speed": get_movement_speed(),
-		"on_floor": is_on_floor(),
+		"on_floor": is_character_on_floor(),
 		"current_state": get_current_state()
 	}
 	

@@ -49,7 +49,7 @@ func trigger_action(action: String):
 			# Generic action handling
 			if can_perform_action():
 				action_triggered.emit(action)
-				last_action_time = Time.get_time()
+				last_action_time = Time.get_ticks_msec() / 1000.0
 
 func request_jump():
 	jump_held = true
@@ -103,7 +103,7 @@ func apply_variable_jump_height():
 	jump_ended.emit()
 
 func can_perform_action() -> bool:
-	return Time.get_time() - last_action_time >= action_cooldown
+	return (Time.get_ticks_msec() / 1000.0) - last_action_time >= action_cooldown
 
 func reset_jump_state():
 	if character.is_on_floor() and character.velocity.y <= 0:

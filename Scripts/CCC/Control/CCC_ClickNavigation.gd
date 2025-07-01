@@ -8,22 +8,19 @@ extends Node
 
 @export_group("3C Integration")
 @export var camera_controller: CCC_CameraController
+@export var character_controller: CCC_CharacterController
 
 var target_position: Vector3 = Vector3.ZERO
 var is_navigating: bool = false
 var is_active_flag: bool = true
-var character: CharacterBody3D
 
 signal navigation_started()
 signal navigation_reached()
 signal navigation_cancelled()
 
 func _ready():
-	# Find character reference
-	var parent = get_parent()
-	while parent and not parent is CharacterBody3D:
-		parent = parent.get_parent()
-	character = parent
+	if not character_controller:
+		push_error("CCC_ClickNavigation: character_controller not assigned in Inspector")
 
 func _input(event):
 	if not is_active_flag:
@@ -34,7 +31,7 @@ func _input(event):
 			handle_click(event.position)
 
 func handle_click(screen_position: Vector2):
-	if not camera_controller:
+	if not camera_controller or not character_controller:
 		return
 	
 	var camera = camera_controller.get_active_camera()
@@ -44,7 +41,7 @@ func handle_click(screen_position: Vector2):
 	var from = camera.project_ray_origin(screen_position)
 	var to = from + camera.project_ray_normal(screen_position) * 1000
 	
-	var space_state = character.get_world_3d().direct_space_state
+	var space_state = character_controller.get_world_3d().direct_space_state
 	var query = PhysicsRayQueryParameters3D.create(from, to)
 	var result = space_state.intersect_ray(query)
 	
@@ -57,10 +54,10 @@ func set_target_position(position: Vector3):
 	navigation_started.emit()
 
 func get_movement_input() -> Vector2:
-	if not is_active_flag or not is_navigating or not character:
+	if not is_active_flag or not is_navigating or not character_controller:
 		return Vector2.ZERO
 	
-	var character_position = character.global_position
+	var character_position = character_controller.global_position
 	var direction_to_target = target_position - character_position
 	direction_to_target.y = 0  # Remove vertical component
 	
@@ -97,10 +94,10 @@ func is_navigation_active() -> bool:
 	return is_navigating
 
 func get_distance_to_target() -> float:
-	if not character or not is_navigating:
+	if not character_controller or not is_navigating:
 		return 0.0
 	
-	var character_position = character.global_position
+	var character_position = character_controller.global_position
 	var direction_to_target = target_position - character_position
 	direction_to_target.y = 0
 	return direction_to_target.length()

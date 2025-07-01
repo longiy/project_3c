@@ -80,7 +80,7 @@ func update_animation_parameters():
 	animation_parameters["movement_speed"] = character_controller.get_movement_speed()
 	
 	# Update grounded state
-	animation_parameters["is_grounded"] = character_controller.is_on_floor()
+	animation_parameters["is_grounded"] = character_controller.is_character_on_floor()
 	
 	# Update movement direction
 	if character_movement:
@@ -90,8 +90,8 @@ func update_animation_parameters():
 	# Update state flags
 	if character_state:
 		var current_state = character_state.get_current_state_enum()
-		animation_parameters["is_jumping"] = current_state == CCC_CharacterState.State.JUMPING
-		animation_parameters["is_falling"] = current_state == CCC_CharacterState.State.FALLING
+		animation_parameters["is_jumping"] = current_state == CCC_CharacterState.CharacterState.JUMPING
+		animation_parameters["is_falling"] = current_state == CCC_CharacterState.CharacterState.FALLING
 
 func update_animation_tree():
 	if not animation_tree:
@@ -104,27 +104,27 @@ func update_animation_tree():
 			animation_tree.set(param_path, animation_parameters[param_name])
 
 func _on_character_state_changed(new_state):
-	var state_name = CCC_CharacterState.State.keys()[new_state]
+	var state_name = CCC_CharacterState.CharacterState.keys()[new_state]
 	play_state_animation(state_name)
 
 func _on_state_entered(state):
-	var state_name = CCC_CharacterState.State.keys()[state]
+	var state_name = CCC_CharacterState.CharacterState.keys()[state]
 	
 	match state:
-		CCC_CharacterState.State.JUMPING:
+		CCC_CharacterState.CharacterState.JUMPING:
 			trigger_animation_event("jump_start")
-		CCC_CharacterState.State.LANDING:
+		CCC_CharacterState.CharacterState.LANDING:
 			trigger_animation_event("land")
-		CCC_CharacterState.State.FALLING:
+		CCC_CharacterState.CharacterState.FALLING:
 			trigger_animation_event("fall_start")
 
 func _on_state_exited(state):
-	var state_name = CCC_CharacterState.State.keys()[state]
+	var state_name = CCC_CharacterState.CharacterState.keys()[state]
 	
 	match state:
-		CCC_CharacterState.State.JUMPING:
+		CCC_CharacterState.CharacterState.JUMPING:
 			trigger_animation_event("jump_end")
-		CCC_CharacterState.State.LANDING:
+		CCC_CharacterState.CharacterState.LANDING:
 			trigger_animation_event("land_end")
 
 func _on_movement_state_changed(is_moving: bool):
