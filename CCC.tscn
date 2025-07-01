@@ -1,13 +1,16 @@
-[gd_scene load_steps=22 format=3 uid="uid://diueuwbtv4w82"]
+[gd_scene load_steps=25 format=3 uid="uid://diueuwbtv4w82"]
 
 [ext_resource type="Script" uid="uid://cws7m480lxvaf" path="res://Scripts/_Debug/DebugUI.gd" id="1_i47c0"]
 [ext_resource type="Script" uid="uid://c3qf8gpvlk6is" path="res://Scripts/CCC/Camera/CameraController.gd" id="2_i47c0"]
 [ext_resource type="Script" uid="uid://dt54n1ktg7wqr" path="res://Scripts/Controllers/ControllerCharacter.gd" id="3_jiddn"]
 [ext_resource type="Script" uid="uid://deibi5xmtfs1h" path="res://Scripts/Character/CharacterStateMachine.gd" id="4_dohcx"]
+[ext_resource type="Script" uid="uid://dpqmftmq6s2af" path="res://Scripts/CCC/CCC_ControlManager.gd" id="4_jkhd2"]
 [ext_resource type="Script" uid="uid://mwfti1hv45ue" path="res://Scripts/Character/States/StateIdle.gd" id="5_jkhd2"]
+[ext_resource type="Script" uid="uid://bp6lhvdx2pgx6" path="res://Scripts/CCC/CCC_CharacterManager.gd" id="6_qo6m7"]
 [ext_resource type="Script" uid="uid://1uqst38ejbn3" path="res://Scripts/Character/States/StateAirborne.gd" id="6_v1ubw"]
 [ext_resource type="Script" uid="uid://c7v6qfkst2sfh" path="res://Scripts/Character/States/StateJumping.gd" id="7_qo6m7"]
 [ext_resource type="Script" uid="uid://dvxh1oyh11gby" path="res://Scripts/Character/States/StateLanding.gd" id="8_5otox"]
+[ext_resource type="Script" uid="uid://ccfgx1j5miakf" path="res://Scripts/CCC/CCC_CameraManager.gd" id="8_bxgjt"]
 [ext_resource type="Script" uid="uid://dg7vpc6xymvpp" path="res://Scripts/Character/States/StateRunning.gd" id="9_bxgjt"]
 [ext_resource type="Script" uid="uid://chw8f4cb3xd47" path="res://Scripts/Character/States/StateWalking.gd" id="10_tsdtt"]
 [ext_resource type="Script" uid="uid://ceg85p1hqrfpk" path="res://Scripts/Controllers/AnimationManager.gd" id="11_3qd0h"]
@@ -68,6 +71,19 @@ input_manager = NodePath("InputManager")
 jump_system = NodePath("JumpSystem")
 debug_helper = NodePath("CharacterDebugHelper")
 
+[node name="CCC_ControlManager" type="Node" parent="CHARACTER" node_paths=PackedStringArray("input_manager")]
+script = ExtResource("4_jkhd2")
+input_manager = NodePath("../InputManager")
+
+[node name="CCC_CharacterManager" type="Node" parent="CHARACTER" node_paths=PackedStringArray("movement_manager", "character_body")]
+script = ExtResource("6_qo6m7")
+movement_manager = NodePath("../MovementManager")
+character_body = NodePath("..")
+
+[node name="CCC_CameraManager" type="Node" parent="CHARACTER" node_paths=PackedStringArray("camera_controller")]
+script = ExtResource("8_bxgjt")
+camera_controller = NodePath("../../CAMERARIG")
+
 [node name="CharacterStateMachine" type="Node" parent="CHARACTER" node_paths=PackedStringArray("state_nodes")]
 script = ExtResource("4_dohcx")
 state_nodes = [NodePath("Idle"), NodePath("Airborne"), NodePath("Jumping"), NodePath("Running"), NodePath("Walking"), NodePath("Landing")]
@@ -94,16 +110,10 @@ script = ExtResource("10_tsdtt")
 script = ExtResource("11_3qd0h")
 animation_tree = NodePath("../PS_Character_Gurl/AnimationTree")
 
-[node name="InputManager" type="Node" parent="CHARACTER"]
-script = ExtResource("12_5dedv")
-
 [node name="JumpSystem" type="Node" parent="CHARACTER"]
 script = ExtResource("13_ecfeb")
 max_air_jumps = 3
 coyote_time = 0.5
-
-[node name="MovementManager" type="Node" parent="CHARACTER"]
-script = ExtResource("14_34nj4")
 
 [node name="GamepadComponent" type="Node" parent="CHARACTER"]
 script = ExtResource("15_wuswd")
@@ -196,6 +206,12 @@ parameters/Move/blend_position = -0.844419
 [node name="CollisionShape3D" type="CollisionShape3D" parent="CHARACTER"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.853688, 0)
 shape = SubResource("CapsuleShape3D_odeog")
+
+[node name="InputManager" type="Node" parent="CHARACTER"]
+script = ExtResource("12_5dedv")
+
+[node name="MovementManager" type="Node" parent="CHARACTER"]
+script = ExtResource("14_34nj4")
 
 [node name="CURSOR" parent="." instance=ExtResource("19_qtd55")]
 

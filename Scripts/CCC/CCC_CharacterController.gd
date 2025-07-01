@@ -1,9 +1,9 @@
-# CCC_CharacterController.gd - 3C Architecture Coordinator (Renamed from ControllerCharacter)
+# CCC_CharacterController.gd - CCC Architecture Coordinator (Renamed from ControllerCharacter)
 extends CharacterBody3D
 class_name CCC_CharacterController
 
-# === 3C MANAGERS ===
-@export_group("3C Managers")
+# === CCC MANAGERS ===
+@export_group("CCC Managers")
 @export var control_manager: CCC_ControlManager
 @export var character_manager: CCC_CharacterManager
 @export var camera_manager: CCC_CameraManager
@@ -31,15 +31,28 @@ var movement_manager: MovementManager  # Referenced by character_manager
 var last_emitted_grounded: bool = true
 var base_gravity: float
 
-# === 3C STATUS ===
+# === CCC STATUS ===
 var ccc_architecture_active: bool = false
 
 func _ready():
 	setup_character()
-	setup_3c_managers()
+	setup_CCC_managers()
 	setup_legacy_components()
 	connect_signals()
-	print("✅ CCC_CharacterController: 3C Architecture initialized")
+	print("✅ CCC_CharacterController: CCC Architecture initialized")
+
+ # Add validation
+	call_deferred("validate_and_debug")
+
+func validate_and_debug():
+	print("\n=== CCC VALIDATION ===")
+	print("3C Active: ", is_ccc_architecture_active())
+	validate_ccc_setup()
+	print("\n=== DEBUG INFO ===")
+	var debug_info = get_debug_info()
+	for key in debug_info:
+		print(key, ": ", debug_info[key])
+		print("========================\n")
 
 func setup_character():
 	"""Setup basic character properties"""
@@ -49,11 +62,11 @@ func setup_character():
 	
 	last_emitted_grounded = is_on_floor()
 
-func setup_3c_managers():
-	"""Setup and validate 3C managers"""
+func setup_CCC_managers():
+	"""Setup and validate CCC managers"""
 	var managers_found = 0
 	
-	# Find or create 3C managers
+	# Find or create CCC managers
 	if not control_manager:
 		control_manager = get_node_or_null("CCC_ControlManager")
 	if control_manager:
@@ -69,16 +82,16 @@ func setup_3c_managers():
 	if camera_manager:
 		managers_found += 1
 	
-	# Check if 3C architecture is active
+	# Check if CCC architecture is active
 	if managers_found == 3:
 		ccc_architecture_active = true
-		print("🎯 CCC_CharacterController: Full 3C architecture active")
+		print("🎯 CCC_CharacterController: Full CCC architecture active")
 	elif managers_found > 0:
 		ccc_architecture_active = false
-		print("⚠️ CCC_CharacterController: Partial 3C setup - ", managers_found, "/3 managers found")
+		print("⚠️ CCC_CharacterController: Partial CCC setup - ", managers_found, "/3 managers found")
 	else:
 		ccc_architecture_active = false
-		print("📦 CCC_CharacterController: Legacy mode - no 3C managers found")
+		print("📦 CCC_CharacterController: Legacy mode - no CCC managers found")
 
 func setup_legacy_components():
 	"""Setup existing components (backward compatibility)"""
@@ -101,15 +114,15 @@ func setup_legacy_components():
 		movement_manager.setup_camera_reference(camera)
 
 func connect_signals():
-	"""Connect signals - use 3C managers if available, fallback to legacy"""
+	"""Connect signals - use CCC managers if available, fallback to legacy"""
 	if ccc_architecture_active:
-		connect_3c_signals()
+		connect_CCC_signals()
 	else:
 		connect_legacy_signals()
 
-func connect_3c_signals():
-	"""Connect signals through 3C managers"""
-	print("🔗 CCC_CharacterController: Connecting 3C signals")
+func connect_CCC_signals():
+	"""Connect signals through CCC managers"""
+	print("🔗 CCC_CharacterController: Connecting CCC signals")
 	
 	# Connect control manager signals
 	if control_manager:
@@ -157,7 +170,7 @@ func _physics_process(delta):
 	
 	emit_ground_state_changes()
 
-# === SIGNAL HANDLERS (Work with both 3C and legacy) ===
+# === SIGNAL HANDLERS (Work with both CCC and legacy) ===
 
 func _on_movement_started(direction: Vector2, magnitude: float):
 	if ccc_architecture_active and character_manager:
@@ -202,7 +215,7 @@ func _on_slow_walk_stopped():
 		movement_manager.handle_mode_action("slow_walk_end")
 
 func _on_jump_pressed():
-	"""Handle jump input (works with both 3C and legacy)"""
+	"""Handle jump input (works with both CCC and legacy)"""
 	if not jump_system:
 		return
 	
@@ -229,7 +242,7 @@ func _on_jump_pressed():
 func _on_reset_pressed():
 	reset_character()
 
-# === MOVEMENT INTERFACE (Supports both 3C and legacy) ===
+# === MOVEMENT INTERFACE (Supports both CCC and legacy) ===
 
 func apply_ground_movement(delta: float):
 	if ccc_architecture_active and character_manager:
@@ -320,17 +333,17 @@ func get_current_state_name() -> String:
 func get_previous_state_name() -> String:
 	return state_machine.get_previous_state_name() if state_machine else "none"
 
-# === 3C CONFIGURATION INTERFACE (Future implementation) ===
+# === CCC CONFIGURATION INTERFACE (Future implementation) ===
 
-func configure_3c_setup(control_type: String, character_type: String, camera_type: String):
-	"""Configure 3C setup (future implementation)"""
+func configure_CCC_setup(control_type: String, character_type: String, camera_type: String):
+	"""Configure CCC setup (future implementation)"""
 	if not ccc_architecture_active:
-		print("⚠️ CCC_CharacterController: 3C configuration requested but managers not available")
+		print("⚠️ CCC_CharacterController: CCC configuration requested but managers not available")
 		return
 	
-	print("🎯 CCC_CharacterController: Configuring 3C setup...")
+	print("🎯 CCC_CharacterController: Configuring CCC setup...")
 	
-	# TODO: Implement when adding 3C configuration system
+	# TODO: Implement when adding CCC configuration system
 	if control_manager:
 		# control_manager.configure_control_type(control_type)
 		pass
@@ -344,7 +357,7 @@ func configure_3c_setup(control_type: String, character_type: String, camera_typ
 		pass
 
 func switch_to_preset(preset_name: String):
-	"""Switch to a 3C preset configuration (future implementation)"""
+	"""Switch to a CCC preset configuration (future implementation)"""
 	# TODO: Implement preset system
 	print("🎮 CCC_CharacterController: Switching to preset: ", preset_name)
 
@@ -377,7 +390,7 @@ func get_camera_reference() -> Camera3D:
 func get_debug_info() -> Dictionary:
 	"""Get comprehensive debug information"""
 	var debug_data = {
-		"architecture": "CCC (3C)",
+		"architecture": "CCC (CCC)",
 		"ccc_active": ccc_architecture_active,
 		"current_state": get_current_state_name(),
 		"is_grounded": is_on_floor(),
@@ -385,7 +398,7 @@ func get_debug_info() -> Dictionary:
 		"position": global_position
 	}
 	
-	# Add 3C manager debug info
+	# Add CCC manager debug info
 	if ccc_architecture_active:
 		if control_manager:
 			debug_data["control"] = control_manager.get_debug_info()
@@ -408,20 +421,20 @@ func get_debug_info() -> Dictionary:
 
 # === MIGRATION HELPERS ===
 
-func is_3c_architecture_active() -> bool:
-	"""Check if 3C architecture is active"""
+func is_ccc_architecture_active() -> bool:
+	"""Check if CCC architecture is active"""
 	return ccc_architecture_active
 
-func get_3c_managers() -> Dictionary:
-	"""Get all 3C managers for external access"""
+func get_ccc_managers() -> Dictionary:
+	"""Get all CCC managers for external access"""
 	return {
 		"control": control_manager,
 		"character": character_manager,
 		"camera": camera_manager
 	}
 
-func validate_3c_setup() -> bool:
-	"""Validate that 3C setup is complete and working"""
+func validate_ccc_setup() -> bool:
+	"""Validate that CCC setup is complete and working"""
 	if not ccc_architecture_active:
 		return false
 	
@@ -443,10 +456,10 @@ func validate_3c_setup() -> bool:
 		issues.append("CCC_CameraManager missing CameraController reference")
 	
 	if issues.size() > 0:
-		print("❌ CCC_CharacterController: 3C validation failed:")
+		print("❌ CCC_CharacterController: CCC validation failed:")
 		for issue in issues:
 			print("  - ", issue)
 		return false
 	
-	print("✅ CCC_CharacterController: 3C validation passed")
+	print("✅ CCC_CharacterController: CCC validation passed")
 	return true

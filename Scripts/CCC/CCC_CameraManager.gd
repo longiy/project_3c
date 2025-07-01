@@ -1,4 +1,4 @@
-# CCC_CameraManager.gd - Camera axis wrapper for 3C architecture
+# CCC_CameraManager.gd - Camera axis wrapper for CCC architecture
 extends Node
 class_name CCC_CameraManager
 
@@ -11,7 +11,7 @@ signal mouse_mode_changed(captured: bool)
 signal target_lost()
 signal target_acquired(target: Node3D)
 
-# === 3C CAMERA CONFIGURATION (Empty for now) ===
+# === CCC CAMERA CONFIGURATION (Empty for now) ===
 enum CameraType {
 	ORBITAL,       # Player-controlled 3D camera (current orbit mode)
 	FOLLOWING,     # Auto-follow camera with smooth tracking
@@ -190,32 +190,32 @@ func get_camera_rotation() -> Vector3:
 		return Vector3(camera_controller.camera_rotation_x, camera_controller.camera_rotation_y, 0)
 	return Vector3.ZERO
 
-# === 3C CAMERA INTERFACE (Stubbed for future implementation) ===
+# === CCC CAMERA INTERFACE (Stubbed for future implementation) ===
 
 func configure_camera_type(camera_type: CameraType):
 	"""Configure the camera type (future implementation)"""
 	current_camera_type = camera_type
-	# TODO: Implement when adding 3C configuration system
+	# TODO: Implement when adding CCC configuration system
 	print("📷 CCC_CameraManager: Camera type set to ", CameraType.keys()[camera_type])
 
 func set_information_clarity(clarity: float):
 	"""Set how clearly the camera communicates spatial information (future implementation)"""
-	# TODO: Implement when adding 3C configuration system
+	# TODO: Implement when adding CCC configuration system
 	pass
 
 func set_comfort_level(comfort: float):
 	"""Set camera comfort (motion sickness prevention) (future implementation)"""
-	# TODO: Implement when adding 3C configuration system
+	# TODO: Implement when adding CCC configuration system
 	pass
 
 func enable_cinematic_mode(enabled: bool):
 	"""Enable cinematic camera behavior (future implementation)"""
-	# TODO: Implement when adding 3C configuration system
+	# TODO: Implement when adding CCC configuration system
 	pass
 
 func set_context_responsiveness(responsiveness: float):
 	"""Set how much camera responds to gameplay context (future implementation)"""
-	# TODO: Implement when adding 3C configuration system
+	# TODO: Implement when adding CCC configuration system
 	pass
 
 # === SPECIAL EFFECTS (Passthrough to CameraResponder if available) ===
