@@ -9,7 +9,6 @@ extends Node
 
 @export_group("Input Actions")
 @export var camera_mode_toggle: String = "camera_mode_toggle"
-@export var camera_reset: String = "camera_reset"
 @export var zoom_in: String = "zoom_in"
 @export var zoom_out: String = "zoom_out"
 
@@ -54,11 +53,19 @@ func handle_mouse_input(event):
 				capture_mouse()
 
 func handle_action_input(event):
-	if event.is_action_pressed(camera_mode_toggle):
+	# Check camera mode toggle
+	if InputMap.has_action(camera_mode_toggle) and event.is_action_pressed(camera_mode_toggle):
 		camera_action_triggered.emit("mode_toggle")
-	elif event.is_action_pressed(camera_reset):
-		camera_action_triggered.emit("reset")
-	elif event.is_action_pressed("ui_cancel"):
+	
+	# Check zoom actions
+	if InputMap.has_action(zoom_in) and event.is_action_pressed(zoom_in):
+		zoom_input += 1.0
+	
+	if InputMap.has_action(zoom_out) and event.is_action_pressed(zoom_out):
+		zoom_input -= 1.0
+	
+	# UI cancel always exists
+	if event.is_action_pressed("ui_cancel"):
 		if is_mouse_captured:
 			release_mouse()
 
