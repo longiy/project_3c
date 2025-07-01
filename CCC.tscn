@@ -1,22 +1,18 @@
-[gd_scene load_steps=22 format=3 uid="uid://diueuwbtv4w82"]
+[gd_scene load_steps=18 format=3 uid="uid://diueuwbtv4w82"]
 
-[ext_resource type="Script" uid="uid://cws7m480lxvaf" path="res://Scripts/OLD/_Debug/DebugUI.gd" id="1_i47c0"]
-[ext_resource type="Script" uid="uid://c3qf8gpvlk6is" path="res://Scripts/OLD/Character/Camera/CameraController.gd" id="2_i47c0"]
-[ext_resource type="Script" uid="uid://dt54n1ktg7wqr" path="res://Scripts/OLD/Controllers/ControllerCharacter.gd" id="3_jiddn"]
-[ext_resource type="Script" uid="uid://deibi5xmtfs1h" path="res://Scripts/OLD/Character/CharacterStateMachine.gd" id="4_dohcx"]
-[ext_resource type="Script" uid="uid://mwfti1hv45ue" path="res://Scripts/OLD/Character/States/StateIdle.gd" id="5_jkhd2"]
-[ext_resource type="Script" uid="uid://1uqst38ejbn3" path="res://Scripts/OLD/Character/States/StateAirborne.gd" id="6_v1ubw"]
-[ext_resource type="Script" uid="uid://c7v6qfkst2sfh" path="res://Scripts/OLD/Character/States/StateJumping.gd" id="7_qo6m7"]
-[ext_resource type="Script" uid="uid://dvxh1oyh11gby" path="res://Scripts/OLD/Character/States/StateLanding.gd" id="8_5otox"]
-[ext_resource type="Script" uid="uid://dg7vpc6xymvpp" path="res://Scripts/OLD/Character/States/StateRunning.gd" id="9_bxgjt"]
-[ext_resource type="Script" uid="uid://chw8f4cb3xd47" path="res://Scripts/OLD/Character/States/StateWalking.gd" id="10_tsdtt"]
-[ext_resource type="Script" uid="uid://ceg85p1hqrfpk" path="res://Scripts/OLD/Controllers/AnimationManager.gd" id="11_3qd0h"]
-[ext_resource type="Script" uid="uid://d2tq3l0s4tbth" path="res://Scripts/OLD/InputComponents/InputManager.gd" id="12_5dedv"]
-[ext_resource type="Script" uid="uid://bb8kly3o18vto" path="res://Scripts/OLD/Components/JumpSystem.gd" id="13_ecfeb"]
-[ext_resource type="Script" uid="uid://cmwqi3p5fw7bd" path="res://Scripts/OLD/Character/MovementManager.gd" id="14_34nj4"]
-[ext_resource type="Script" uid="uid://csay0tqtwpcea" path="res://Scripts/OLD/InputComponents/GamepadComponent.gd" id="15_wuswd"]
-[ext_resource type="Script" uid="uid://c63imyupotuj1" path="res://Scripts/OLD/InputComponents/ClickNavigationComponent.gd" id="16_5wr16"]
-[ext_resource type="Script" uid="uid://bqw3xo0kgqhjk" path="res://Scripts/OLD/_Debug/CharacterDebugHelper.gd" id="17_ok2nx"]
+[ext_resource type="Script" uid="uid://hhv84ylytpw2" path="res://Scripts/CCC/Control/CCC_InputManager.gd" id="1_0sxdo"]
+[ext_resource type="Script" uid="uid://deregny58khd5" path="res://Scripts/CCC/Character/CCC_CharacterController.gd" id="1_85dx6"]
+[ext_resource type="Script" uid="uid://c2inecs27qewu" path="res://Scripts/CCC/Character/CCC_CharacterPhysics.gd" id="2_2j1nk"]
+[ext_resource type="Script" uid="uid://wifqj1qpsivg" path="res://Scripts/CCC/Control/CCC_KeyboardInput.gd" id="2_taiec"]
+[ext_resource type="Script" uid="uid://cj36sfl402ykb" path="res://Scripts/CCC/Character/CCC_CharacterMovement.gd" id="3_121sy"]
+[ext_resource type="Script" uid="uid://4b5sjxyekmp0" path="res://Scripts/CCC/Control/CCC_ClickNavigation.gd" id="3_ps1uw"]
+[ext_resource type="Script" uid="uid://bkuljvw8m60wb" path="res://Scripts/CCC/Character/CCC_CharacterActions.gd" id="4_ld5qr"]
+[ext_resource type="Script" uid="uid://bbtedsfts054i" path="res://Scripts/CCC/Control/CCC_GamepadInput.gd" id="4_oa0io"]
+[ext_resource type="Script" uid="uid://cc5htn8wdrdgm" path="res://Scripts/CCC/Character/CCC_CharacterState.gd" id="5_0sxdo"]
+[ext_resource type="Script" uid="uid://dkwluno7ao1x5" path="res://Scripts/CCC/Camera/CCC_CameraController.gd" id="7_taiec"]
+[ext_resource type="Script" uid="uid://bmlco32l41qb" path="res://Scripts/CCC/Camera/CCC_CameraInput.gd" id="9_ps1uw"]
+[ext_resource type="Script" uid="uid://dul0up1xb4kab" path="res://Scripts/CCC/Camera/CCC_CameraResponder.gd" id="10_oa0io"]
+[ext_resource type="Script" uid="uid://cm6i41vf2wjqa" path="res://Scripts/CCC/Camera/CCC_CameraModes.gd" id="11_i47c0"]
 [ext_resource type="PackedScene" uid="uid://cbx0rhk665pls" path="res://Assets/ps_character_gurl.tscn" id="18_o63we"]
 [ext_resource type="PackedScene" uid="uid://bsprrm672tx2s" path="res://MARKER.tscn" id="19_qtd55"]
 
@@ -29,107 +25,155 @@ height = 1.70464
 
 [node name="CCC" type="Node3D"]
 
-[node name="DebugUI" type="Control" parent="." node_paths=PackedStringArray("debug_label", "character")]
+[node name="CONTROL" type="Node" parent="."]
+script = ExtResource("1_0sxdo")
+
+[node name="KeyboardInput" type="Node" parent="CONTROL"]
+script = ExtResource("2_taiec")
+
+[node name="ClickNavigation" type="Node" parent="CONTROL"]
+script = ExtResource("3_ps1uw")
+
+[node name="GamepadInput" type="Node" parent="CONTROL"]
+script = ExtResource("4_oa0io")
+
+[node name="CHARACTER" type="CharacterBody3D" parent="."]
+collision_layer = 2
+slide_on_ceiling = false
+script = ExtResource("1_85dx6")
+
+[node name="CharacterPhysics" type="Node" parent="CHARACTER"]
+script = ExtResource("2_2j1nk")
+
+[node name="CharacterMovement" type="Node" parent="CHARACTER"]
+script = ExtResource("3_121sy")
+
+[node name="CharacterActions" type="Node" parent="CHARACTER"]
+script = ExtResource("4_ld5qr")
+
+[node name="CharacterState" type="Node" parent="CHARACTER"]
+script = ExtResource("5_0sxdo")
+
+[node name="CenterLine" type="MeshInstance3D" parent="CHARACTER"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+mesh = SubResource("CapsuleMesh_uyn8p")
+
+[node name="PS_Character_Gurl" parent="CHARACTER" instance=ExtResource("18_o63we")]
+
+[node name="Skeleton3D" parent="CHARACTER/PS_Character_Gurl/rig" index="0"]
+bones/0/position = Vector3(-0.05, 1.0396, 0.0198009)
+bones/0/rotation = Quaternion(-0.606445, 0.0691453, -0.0530571, 0.790334)
+bones/1/position = Vector3(0.05, 1.0396, 0.0198009)
+bones/1/rotation = Quaternion(-0.606445, -0.0691453, 0.0530571, 0.790334)
+bones/1/scale = Vector3(1, 1, 1)
+bones/2/position = Vector3(7.10543e-15, 1.03248, -0.0158896)
+bones/2/rotation = Quaternion(0.111619, 0.754407, 0.133022, 0.633022)
+bones/2/scale = Vector3(1, 1, 1)
+bones/3/position = Vector3(-2.02098e-15, 0.859254, 0.0694327)
+bones/3/rotation = Quaternion(0.266729, 2.29781e-07, 6.3593e-08, 0.963772)
+bones/4/rotation = Quaternion(-0.243905, -4.49381e-14, -1.16303e-07, 0.969799)
+bones/5/rotation = Quaternion(-0.0984781, -1.1863e-07, -3.52185e-08, 0.995139)
+bones/5/scale = Vector3(1, 1, 1)
+bones/6/rotation = Quaternion(-0.107981, -2.66107e-14, -2.57448e-08, 0.994153)
+bones/7/rotation = Quaternion(0.194497, 2.82552e-14, 4.63718e-08, 0.980903)
+bones/8/rotation = Quaternion(-0.030985, -1.19152e-07, -3.6937e-09, 0.99952)
+bones/9/rotation = Quaternion(0.230461, 1.16e-07, 2.74731e-08, 0.973082)
+bones/14/position = Vector3(8.54825e-09, 0.859254, 0.0694327)
+bones/14/rotation = Quaternion(-0.181037, -0.709154, -0.416857, 0.539033)
+bones/15/position = Vector3(-1.84128e-08, 0.859254, 0.0694327)
+bones/15/rotation = Quaternion(-0.181037, 0.709154, 0.416857, 0.539033)
+bones/16/position = Vector3(0.0842699, 0.902649, 0.109547)
+bones/16/rotation = Quaternion(0.991458, 0.080285, -0.0969015, -0.0342907)
+bones/16/scale = Vector3(1.00879, 0.98271, 1.00879)
+bones/17/rotation = Quaternion(2.26166e-08, 0.00364237, 1.30071e-08, 0.999993)
+bones/18/rotation = Quaternion(0.303346, 0.00388639, -0.00127639, 0.952872)
+bones/18/scale = Vector3(0.998478, 0.99249, 1.00952)
+bones/19/rotation = Quaternion(-2.9972e-08, 0.0311239, 6.92166e-09, 0.999516)
+bones/20/rotation = Quaternion(-0.235608, 0.0247484, -0.0255709, 0.971197)
+bones/20/scale = Vector3(0.993422, 1.0082, 0.998665)
+bones/21/rotation = Quaternion(-0.0352473, 0.958465, -0.282832, -0.0103893)
+bones/21/scale = Vector3(0.99956, 1.00051, 0.999947)
+bones/23/position = Vector3(-0.0842699, 0.902649, 0.109547)
+bones/23/rotation = Quaternion(0.963018, -0.0962793, 0.0810121, 0.238251)
+bones/23/scale = Vector3(1.02216, 0.95712, 1.02216)
+bones/24/rotation = Quaternion(3.93121e-08, -0.00636492, -3.11751e-08, 0.99998)
+bones/24/scale = Vector3(1, 1, 1)
+bones/25/rotation = Quaternion(0.632138, -0.00641814, 0.00544633, 0.77481)
+bones/25/scale = Vector3(0.996953, 0.945406, 1.06136)
+bones/26/rotation = Quaternion(2.64188e-08, -0.0308074, 2.56036e-08, 0.999525)
+bones/27/rotation = Quaternion(-0.331431, -0.0260643, 0.0376872, 0.942366)
+bones/27/scale = Vector3(0.982168, 1.01542, 1.00423)
+bones/28/rotation = Quaternion(0.0352384, 0.958447, -0.282894, 0.0103941)
+bones/28/scale = Vector3(0.999732, 1.00032, 0.999967)
+bones/30/position = Vector3(0.0146687, 1.34801, 0.126901)
+bones/30/rotation = Quaternion(-0.649139, -0.398282, -0.277866, 0.585474)
+bones/31/position = Vector3(0.142994, 1.33507, 0.0542645)
+bones/31/rotation = Quaternion(0.0463474, -0.907711, 0.356847, -0.215807)
+bones/31/scale = Vector3(1.0098, 0.980684, 1.0098)
+bones/32/rotation = Quaternion(2.38364e-08, -0.490678, -4.31844e-08, 0.871341)
+bones/33/rotation = Quaternion(0.469931, -0.486652, 0.352782, 0.646436)
+bones/33/scale = Vector3(1.00306, 0.968489, 1.02955)
+bones/34/rotation = Quaternion(2.92282e-07, 0.587288, 9.09877e-08, 0.809378)
+bones/35/rotation = Quaternion(0.17076, 0.594063, -0.228384, 0.752177)
+bones/35/scale = Vector3(0.987508, 1.01354, 0.999762)
+bones/36/position = Vector3(-0.0146687, 1.34801, 0.126901)
+bones/36/rotation = Quaternion(-0.649139, 0.398282, 0.277866, 0.585474)
+bones/37/position = Vector3(-0.142994, 1.33507, 0.0542645)
+bones/37/rotation = Quaternion(-0.0470068, -0.860483, 0.425393, 0.276407)
+bones/37/scale = Vector3(1.01147, 0.977453, 1.01147)
+bones/38/rotation = Quaternion(-1.53765e-07, 0.38575, -3.19437e-07, 0.922603)
+bones/39/rotation = Quaternion(0.59361, 0.38403, -0.380777, 0.595951)
+bones/39/scale = Vector3(1.00369, 0.959679, 1.03821)
+bones/40/rotation = Quaternion(-3.58578e-08, 0.645392, -4.56292e-07, 0.763852)
+bones/41/rotation = Quaternion(0.479978, 0.647073, -0.141277, 0.575291)
+bones/41/scale = Vector3(0.994441, 0.997169, 1.00968)
+
+[node name="AnimationTree" parent="CHARACTER/PS_Character_Gurl" index="2"]
+parameters/Move/blend_position = -0.844419
+
+[node name="Collider" type="CollisionShape3D" parent="CHARACTER"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.853688, 0)
+shape = SubResource("CapsuleShape3D_odeog")
+
+[node name="CAMERA" type="Node" parent="."]
+script = ExtResource("7_taiec")
+
+[node name="CURSOR" parent="CAMERA" instance=ExtResource("19_qtd55")]
+
+[node name="CameraInput" type="Node" parent="CAMERA"]
+script = ExtResource("9_ps1uw")
+
+[node name="CameraResponder" type="Node" parent="CAMERA"]
+script = ExtResource("10_oa0io")
+
+[node name="CameraModes" type="Node" parent="CAMERA"]
+script = ExtResource("11_i47c0")
+
+[node name="SpringArm3D" type="SpringArm3D" parent="CAMERA"]
+spring_length = 2.0
+
+[node name="Camera3D" type="Camera3D" parent="CAMERA/SpringArm3D"]
+transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 0, 0, 0)
+
+[node name="SUPPORT" type="Node" parent="."]
+
+[node name="AnimationManager" type="Node" parent="SUPPORT"]
+
+[node name="DebugSystem" type="Node" parent="SUPPORT"]
+
+[node name="DebugUI" type="Control" parent="SUPPORT"]
 layout_mode = 3
 anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
-script = ExtResource("1_i47c0")
-debug_label = NodePath("DebugLabel")
-character = NodePath("../CHARACTER")
-show_performance_info = true
 metadata/_edit_use_anchors_ = true
 
-[node name="DebugLabel" type="Label" parent="DebugUI"]
+[node name="DebugLabel" type="Label" parent="SUPPORT/DebugUI"]
 layout_mode = 0
 offset_left = 10.0
 offset_top = 10.0
 offset_right = 50.0
 offset_bottom = 33.0
 metadata/_edit_use_anchors_ = true
-
-[node name="CAMERARIG" type="Node3D" parent="." node_paths=PackedStringArray("target_node")]
-script = ExtResource("2_i47c0")
-target_node = NodePath("../CHARACTER")
-
-[node name="SpringArm3D" type="SpringArm3D" parent="CAMERARIG"]
-spring_length = 2.0
-
-[node name="Camera3D" type="Camera3D" parent="CAMERARIG/SpringArm3D"]
-transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 0, 0, 0)
-
-[node name="CHARACTER" type="CharacterBody3D" parent="." node_paths=PackedStringArray("animation_controller", "camera", "input_manager", "jump_system", "debug_helper")]
-collision_layer = 2
-slide_on_ceiling = false
-script = ExtResource("3_jiddn")
-animation_controller = NodePath("AnimationManager")
-camera = NodePath("../CAMERARIG/SpringArm3D/Camera3D")
-input_manager = NodePath("InputManager")
-jump_system = NodePath("JumpSystem")
-debug_helper = NodePath("CharacterDebugHelper")
-
-[node name="CharacterStateMachine" type="Node" parent="CHARACTER" node_paths=PackedStringArray("state_nodes")]
-script = ExtResource("4_dohcx")
-state_nodes = [NodePath("Idle"), NodePath("Airborne"), NodePath("Jumping"), NodePath("Running"), NodePath("Walking"), NodePath("Landing")]
-
-[node name="Idle" type="Node" parent="CHARACTER/CharacterStateMachine"]
-script = ExtResource("5_jkhd2")
-
-[node name="Airborne" type="Node" parent="CHARACTER/CharacterStateMachine"]
-script = ExtResource("6_v1ubw")
-
-[node name="Jumping" type="Node" parent="CHARACTER/CharacterStateMachine"]
-script = ExtResource("7_qo6m7")
-
-[node name="Landing" type="Node" parent="CHARACTER/CharacterStateMachine"]
-script = ExtResource("8_5otox")
-
-[node name="Running" type="Node" parent="CHARACTER/CharacterStateMachine"]
-script = ExtResource("9_bxgjt")
-
-[node name="Walking" type="Node" parent="CHARACTER/CharacterStateMachine"]
-script = ExtResource("10_tsdtt")
-
-[node name="AnimationManager" type="Node" parent="CHARACTER" node_paths=PackedStringArray("animation_tree")]
-script = ExtResource("11_3qd0h")
-animation_tree = NodePath("../PS_Character_Gurl/AnimationTree")
-
-[node name="InputManager" type="Node" parent="CHARACTER"]
-script = ExtResource("12_5dedv")
-
-[node name="JumpSystem" type="Node" parent="CHARACTER"]
-script = ExtResource("13_ecfeb")
-max_air_jumps = 3
-coyote_time = 0.5
-
-[node name="MovementManager" type="Node" parent="CHARACTER"]
-script = ExtResource("14_34nj4")
-
-[node name="GamepadComponent" type="Node" parent="CHARACTER"]
-script = ExtResource("15_wuswd")
-
-[node name="ClickNavigationComponent" type="Node" parent="CHARACTER" node_paths=PackedStringArray("character", "camera", "destination_marker")]
-script = ExtResource("16_5wr16")
-character = NodePath("..")
-camera = NodePath("../../CAMERARIG/SpringArm3D/Camera3D")
-destination_marker = NodePath("../../CURSOR")
-
-[node name="CharacterDebugHelper" type="Node" parent="CHARACTER"]
-script = ExtResource("17_ok2nx")
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="CHARACTER"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
-mesh = SubResource("CapsuleMesh_uyn8p")
-
-[node name="PS_Character_Gurl" parent="CHARACTER" instance=ExtResource("18_o63we")]
-
-[node name="AnimationTree" parent="CHARACTER/PS_Character_Gurl" index="2"]
-parameters/Move/blend_position = -0.844419
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="CHARACTER"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.853688, 0)
-shape = SubResource("CapsuleShape3D_odeog")
-
-[node name="CURSOR" parent="." instance=ExtResource("19_qtd55")]
 
 [editable path="CHARACTER/PS_Character_Gurl"]
