@@ -91,6 +91,8 @@ func _on_camera_action_triggered(action: String):
 		"mode_toggle":
 			if camera_modes:
 				camera_modes.cycle_mode()
+		"reset":
+			reset_camera()
 
 func update_camera_transform():
 	var target_position = Vector3.ZERO
@@ -117,6 +119,15 @@ func create_camera_transform(target_position: Vector3) -> Transform3D:
 	transform = transform.looking_at(target_position, Vector3.UP)
 	
 	return transform
+
+func reset_camera():
+	current_pitch = 0.0
+	current_yaw = 0.0
+	target_zoom = 5.0
+	current_zoom = 5.0
+	
+	update_camera_transform()
+	camera_zoom_updated.emit(current_zoom)
 
 func set_look_angles(pitch: float, yaw: float):
 	current_pitch = clamp(pitch, -89, 89)
