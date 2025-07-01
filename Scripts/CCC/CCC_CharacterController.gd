@@ -43,6 +43,20 @@ var ccc_architecture_active: bool = false
 	#await get_tree().create_timer(3.0).timeout
 	#print("Switching back to orbital camera...")
 	#camera_manager.configure_camera_type(CCC_CameraManager.CameraType.ORBITAL)
+	
+	# Add this test (temporarily):
+func test_character_types():
+	await get_tree().create_timer(3.0).timeout
+	print("Switching to observer mode...")
+	character_manager.configure_character_type(CCC_CharacterManager.CharacterType.OBSERVER)
+
+	await get_tree().create_timer(3.0).timeout
+	print("Switching to commander mode...")
+	character_manager.configure_character_type(CCC_CharacterManager.CharacterType.COMMANDER)
+
+	await get_tree().create_timer(3.0).timeout
+	print("Switching back to avatar mode...")
+	character_manager.configure_character_type(CCC_CharacterManager.CharacterType.AVATAR)
 
 func _ready():
 	setup_character()
@@ -52,7 +66,7 @@ func _ready():
 	print("✅ CCC_CharacterController: CCC Architecture initialized")
 
 	# Add this line:
-	call_deferred("test_camera_types")
+	call_deferred("test_character_types")
 
 func validate_and_debug():
 	print("\n=== CCC VALIDATION ===")
