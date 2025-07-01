@@ -1,7 +1,7 @@
 class_name CCC_CharacterState
 extends Node
 
-enum CharacterState {
+enum State {
 	IDLE,
 	WALKING,
 	RUNNING,
@@ -16,20 +16,20 @@ enum CharacterState {
 @export var landing_detection_time: float = 0.1
 
 var character: CharacterBody3D
-var current_state: CharacterState = CharacterState.IDLE
-var previous_state: CharacterState = CharacterState.IDLE
+var current_state: State = State.IDLE
+var previous_state: State = State.IDLE
 var state_enter_time: float = 0.0
 var was_airborne: bool = false
 
-signal state_changed(new_state: CharacterState)
-signal state_entered(state: CharacterState)
-signal state_exited(state: CharacterState)
+signal state_changed(new_state: State)
+signal state_entered(state: State)
+signal state_exited(state: State)
 
 func _ready():
 	if not character:
 		character = get_parent() as CharacterBody3D
 	
-	set_state(CharacterState.IDLE)
+	set_state(State.IDLE)
 
 func update_state(delta: float):
 	var new_state = determine_state()
@@ -37,7 +37,7 @@ func update_state(delta: float):
 	if new_state != current_state:
 		change_state(new_state)
 
-func determine_state() -> CharacterState:
+func determine_state() -> State:
 	var horizontal_speed = Vector2(character.velocity.x, character.velocity.z).length()
 	var is_on_floor = character.is_on_floor()
 	var vertical_velocity = character.velocity.y
@@ -45,15 +45,15 @@ func determine_state() -> CharacterState:
 	# Check for landing first
 	if was_airborne and is_on_floor and vertical_velocity <= 0:
 		was_airborne = false
-		return CharacterState.LANDING
+		return State.LANDING
 	
 	# Airborne states
 	if not is_on_floor:
 		was_airborne = true
 		if vertical_velocity > 0:
-			return CharacterState.JUMPING
+			return State.JUMPING
 		elif vertical_velocity < falling_velocity_threshold:
-			return CharacterState.FALLING
+			return State.FALLING
 		else:
 			return current_state  # Maintain current airborne state
 	
@@ -61,88 +61,88 @@ func determine_state() -> CharacterState:
 	was_airborne = false
 	
 	# Landing state timeout
-	if current_state == CharacterState.LANDING:
-		if (Time.get_ticks_msec() / 1000.0) - state_enter_time > landing_detection_time:
+	if current_state == State.LANDING:
+		if Time.get_time() - state_enter_time > landing_detection_time:
 			# Transition to movement state based on speed
 			if horizontal_speed > movement_speed_threshold:
-				return CharacterState.WALKING
+				return State.WALKING
 			else:
-				return CharacterState.IDLE
+				return State.IDLE
 		else:
-			return CharacterState.LANDING
+			return State.LANDING
 	
 	# Normal ground movement
 	if horizontal_speed > movement_speed_threshold:
-		return CharacterState.WALKING
+		return State.WALKING
 	else:
-		return CharacterState.IDLE
+		return State.IDLE
 
-func change_state(new_state: CharacterState):
+func change_state(new_state: State):
 	if new_state == current_state:
 		return
 	
 	exit_state(current_state)
 	previous_state = current_state
 	current_state = new_state
-	state_enter_time = Time.get_ticks_msec() / 1000.0
+	state_enter_time = Time.get_time()
 	enter_state(current_state)
 	
 	state_changed.emit(current_state)
 
-func enter_state(state: CharacterState):
+func enter_state(state: State):
 	state_entered.emit(state)
 	
 	match state:
-		CharacterState.IDLE:
+		State.IDLE:
 			pass
-		CharacterState.WALKING:
+		State.WALKING:
 			pass
-		CharacterState.RUNNING:
+		State.RUNNING:
 			pass
-		CharacterState.JUMPING:
+		State.JUMPING:
 			pass
-		CharacterState.FALLING:
+		State.FALLING:
 			pass
-		CharacterState.LANDING:
+		State.LANDING:
 			pass
 
-func exit_state(state: CharacterState):
+func exit_state(state: State):
 	state_exited.emit(state)
 	
 	match state:
-		CharacterState.IDLE:
+		State.IDLE:
 			pass
-		CharacterState.WALKING:
+		State.WALKING:
 			pass
-		CharacterState.RUNNING:
+		State.RUNNING:
 			pass
-		CharacterState.JUMPING:
+		State.JUMPING:
 			pass
-		CharacterState.FALLING:
+		State.FALLING:
 			pass
-		CharacterState.LANDING:
+		State.LANDING:
 			pass
 
-func set_state(new_state: CharacterState):
+func set_state(new_state: State):
 	change_state(new_state)
 
 func get_current_state() -> String:
-	return CharacterState.keys()[current_state]
+	return State.keys()[current_state]
 
-func get_current_state_enum() -> CharacterState:
+func get_current_state_enum() -> State:
 	return current_state
 
 func get_previous_state() -> String:
-	return CharacterState.keys()[previous_state]
+	return State.keys()[previous_state]
 
 func get_time_in_current_state() -> float:
-	return (Time.get_ticks_msec() / 1000.0) - state_enter_time
+	return Time.get_time() - state_enter_time
 
 func is_airborne() -> bool:
-	return current_state == CharacterState.JUMPING or current_state == CharacterState.FALLING
+	return current_state == State.JUMPING or current_state == State.FALLING
 
 func is_grounded() -> bool:
-	return current_state == CharacterState.IDLE or current_state == CharacterState.WALKING or current_state == CharacterState.RUNNING or current_state == CharacterState.LANDING
+	return current_state == State.IDLE or current_state == State.WALKING or current_state == State.RUNNING or current_state == State.LANDING
 
 func get_debug_info() -> Dictionary:
 	return {

@@ -3,6 +3,7 @@ extends Node
 
 @export_group("Debug Settings")
 @export var enable_debug: bool = true
+@export var show_debug_overlay: bool = false
 @export var debug_update_interval: float = 0.1
 @export var max_debug_lines: int = 20
 
@@ -20,23 +21,19 @@ extends Node
 @export var input_manager: CCC_InputManager
 @export var camera_controller: CCC_CameraController
 @export var animation_manager: CCC_AnimationManager
-@export var ui_manager: CCC_UIManager
 
+var debug_overlay: Control
+var debug_label: RichTextLabel
 var debug_timer: float = 0.0
 var debug_data: Dictionary = {}
 var debug_history: Array = []
 
 signal debug_command_executed(command: String, result: String)
-signal debug_data_updated(data: Dictionary)
 
 func _ready():
 	if enable_debug:
+		setup_debug_overlay()
 		setup_debug_commands()
-		connect_signals()
-
-func connect_signals():
-	if ui_manager:
-		debug_data_updated.connect(ui_manager._on_debug_data_updated)
 
 func _process(delta):
 	if not enable_debug:
@@ -46,7 +43,7 @@ func _process(delta):
 	
 	if debug_timer >= debug_update_interval:
 		update_debug_data()
-		debug_data_updated.emit(debug_data)
+		update_debug_display()
 		debug_timer = 0.0
 
 func _input(event):
@@ -54,15 +51,30 @@ func _input(event):
 		return
 	
 	if event.is_action_pressed("debug_toggle"):
-		toggle_debug_display()
+		toggle_debug_overlay()
 	elif event.is_action_pressed("debug_reset"):
 		reset_debug_data()
 	elif event.is_action_pressed("debug_capture"):
 		capture_debug_snapshot()
 
-func toggle_debug_display():
-	if ui_manager:
-		ui_manager.toggle_debug_overlay()
+func setup_debug_overlay():
+	# Create debug overlay UI
+	debug_overlay = Control.new()
+	debug_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	debug_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	debug_overlay.visible = show_debug_overlay
+	
+	# Create debug label
+	debug_label = RichTextLabel.new()
+	debug_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	debug_label.size = Vector2(400, 600)
+	debug_label.bbcode_enabled = true
+	debug_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	debug_label.add_theme_color_override("default_color", Color.WHITE)
+	debug_label.add_theme_color_override("font_shadow_color", Color.BLACK)
+	
+	debug_overlay.add_child(debug_label)
+	get_tree().root.add_child(debug_overlay)
 
 func setup_debug_commands():
 	# Register debug commands
@@ -98,7 +110,46 @@ func update_debug_data():
 	# Add system performance data
 	debug_data["fps"] = Engine.get_frames_per_second()
 	debug_data["frame_time"] = 1.0 / Engine.get_frames_per_second() if Engine.get_frames_per_second() > 0 else 0.0
-	debug_data["memory_usage"] = OS.get_static_memory_usage()
+	debug_data["memory_usage"] = OS.get_static_memory_usage(true)
+
+func update_debug_display():
+	if not debug_overlay or not debug_label:
+		return
+	
+	var debug_text = "[font_size=12][color=yellow]3C Framework Debug[/color][/font_size]\n"
+	debug_text += "[font_size=10]FPS: " + str(debug_data.get("fps", 0)) + "\n"
+	debug_text += "Frame Time: " + str("%.2f" % debug_data.get("frame_time", 0.0)) + "ms\n\n"
+	
+	# Character System
+	debug_text += "[color=cyan]CHARACTER SYSTEM[/color]\n"
+	debug_text += "State: " + str(debug_data.get("state_current", "unknown")) + "\n"
+	debug_text += "Speed: " + str("%.2f" % debug_data.get("speed", 0.0)) + "\n"
+	debug_text += "On Floor: " + str(debug_data.get("on_floor", false)) + "\n"
+	debug_text += "Velocity: " + str(debug_data.get("velocity", Vector3.ZERO)) + "\n\n"
+	
+	# Input System
+	debug_text += "[color=green]INPUT SYSTEM[/color]\n"
+	debug_text += "Active: " + str(debug_data.get("input_movement_active", false)) + "\n"
+	debug_text += "Input: " + str(debug_data.get("input_current_input", Vector2.ZERO)) + "\n"
+	debug_text += "WASD Override: " + str(debug_data.get("input_wasd_overriding", false)) + "\n\n"
+	
+	# Camera System
+	debug_text += "[color=magenta]CAMERA SYSTEM[/color]\n"
+	debug_text += "Mode: " + str(debug_data.get("camera_modes_current", "unknown")) + "\n"
+	debug_text += "Position: " + str(debug_data.get("camera_position", Vector3.ZERO)) + "\n\n"
+	
+	# Animation System
+	if animation_manager:
+		debug_text += "[color=orange]ANIMATION SYSTEM[/color]\n"
+		debug_text += "State: " + str(debug_data.get("animation_current_state", "unknown")) + "\n"
+		debug_text += "Tree Active: " + str(debug_data.get("animation_tree_active", false)) + "\n\n"
+	
+	debug_label.text = debug_text
+
+func toggle_debug_overlay():
+	if debug_overlay:
+		show_debug_overlay = !show_debug_overlay
+		debug_overlay.visible = show_debug_overlay
 
 func reset_debug_data():
 	debug_data.clear()
@@ -106,7 +157,7 @@ func reset_debug_data():
 
 func capture_debug_snapshot():
 	var snapshot = debug_data.duplicate(true)
-	snapshot["timestamp"] = Time.get_ticks_msec() / 1000.0
+	snapshot["timestamp"] = Time.get_time()
 	debug_history.append(snapshot)
 	
 	# Limit history size
@@ -159,10 +210,8 @@ func log_debug_message(message: String, category: String = "DEBUG"):
 func get_debug_info() -> Dictionary:
 	return {
 		"debug_enabled": enable_debug,
+		"debug_overlay_visible": show_debug_overlay,
 		"debug_data_count": debug_data.size(),
 		"debug_history_count": debug_history.size(),
 		"debug_update_interval": debug_update_interval
 	}
-
-func get_current_debug_data() -> Dictionary:
-	return debug_data.duplicate()

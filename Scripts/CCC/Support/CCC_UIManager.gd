@@ -12,13 +12,11 @@ extends Node
 @export var camera_controller: CCC_CameraController
 @export var input_manager: CCC_InputManager
 @export var animation_manager: CCC_AnimationManager
-@export var debug_system: CCC_DebugSystem
 
 @export_group("UI Settings")
 @export var auto_hide_cursor: bool = true
 @export var ui_scale: float = 1.0
 @export var show_fps: bool = false
-@export var show_debug_overlay: bool = false
 
 var ui_elements: Dictionary = {}
 var active_menu: String = ""
@@ -26,8 +24,6 @@ var ui_visible: bool = true
 var crosshair: Control
 var health_bar: ProgressBar
 var status_labels: Dictionary = {}
-var debug_overlay: Control
-var debug_label: RichTextLabel
 
 signal ui_element_created(element_name: String)
 signal menu_opened(menu_name: String)
@@ -67,35 +63,9 @@ func create_core_ui_elements():
 	create_crosshair()
 	create_health_bar()
 	create_status_display()
-	create_debug_overlay()
 	
 	if show_fps:
 		create_fps_counter()
-
-func create_debug_overlay():
-	# Create debug overlay
-	debug_overlay = Control.new()
-	debug_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	debug_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	debug_overlay.visible = show_debug_overlay
-	debug_overlay.name = "DebugOverlay"
-	
-	# Create debug label
-	debug_label = RichTextLabel.new()
-	debug_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-	debug_label.size = Vector2(400, 600)
-	debug_label.bbcode_enabled = true
-	debug_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	debug_label.add_theme_color_override("default_color", Color.WHITE)
-	debug_label.add_theme_color_override("font_shadow_color", Color.BLACK)
-	debug_label.name = "DebugLabel"
-	
-	debug_overlay.add_child(debug_label)
-	hud_container.add_child(debug_overlay)
-	
-	ui_elements["debug_overlay"] = debug_overlay
-	ui_elements["debug_label"] = debug_label
-	ui_element_created.emit("debug_overlay")
 
 func create_crosshair():
 	crosshair = Control.new()
@@ -176,9 +146,6 @@ func connect_signals():
 	
 	if input_manager:
 		input_manager.input_source_changed.connect(_on_input_source_changed)
-	
-	if debug_system:
-		debug_system.debug_data_updated.connect(_on_debug_data_updated)
 
 func _process(delta):
 	update_ui_elements()
@@ -230,45 +197,6 @@ func _on_input_source_changed(source: String):
 		show_navigation_cursor()
 	else:
 		hide_navigation_cursor()
-
-func _on_debug_data_updated(data: Dictionary):
-	if not debug_label or not show_debug_overlay:
-		return
-	
-	var debug_text = "[font_size=12][color=yellow]3C Framework Debug[/color][/font_size]\n"
-	debug_text += "[font_size=10]FPS: " + str(data.get("fps", 0)) + "\n"
-	debug_text += "Frame Time: " + str("%.2f" % data.get("frame_time", 0.0)) + "ms\n\n"
-	
-	# Character System
-	debug_text += "[color=cyan]CHARACTER SYSTEM[/color]\n"
-	debug_text += "State: " + str(data.get("state_current", "unknown")) + "\n"
-	debug_text += "Speed: " + str("%.2f" % data.get("speed", 0.0)) + "\n"
-	debug_text += "On Floor: " + str(data.get("on_floor", false)) + "\n"
-	debug_text += "Velocity: " + str(data.get("velocity", Vector3.ZERO)) + "\n\n"
-	
-	# Input System
-	debug_text += "[color=green]INPUT SYSTEM[/color]\n"
-	debug_text += "Active: " + str(data.get("input_movement_active", false)) + "\n"
-	debug_text += "Input: " + str(data.get("input_current_input", Vector2.ZERO)) + "\n"
-	debug_text += "WASD Override: " + str(data.get("input_wasd_overriding", false)) + "\n\n"
-	
-	# Camera System
-	debug_text += "[color=magenta]CAMERA SYSTEM[/color]\n"
-	debug_text += "Mode: " + str(data.get("camera_modes_current", "unknown")) + "\n"
-	debug_text += "Position: " + str(data.get("camera_position", Vector3.ZERO)) + "\n\n"
-	
-	# Animation System
-	if animation_manager:
-		debug_text += "[color=orange]ANIMATION SYSTEM[/color]\n"
-		debug_text += "State: " + str(data.get("animation_current_state", "unknown")) + "\n"
-		debug_text += "Tree Active: " + str(data.get("animation_tree_active", false)) + "\n\n"
-	
-	debug_label.text = debug_text
-
-func toggle_debug_overlay():
-	show_debug_overlay = !show_debug_overlay
-	if debug_overlay:
-		debug_overlay.visible = show_debug_overlay
 
 func update_crosshair_visibility(camera_mode: int):
 	if crosshair:
@@ -349,6 +277,5 @@ func get_debug_info() -> Dictionary:
 		"ui_active_menu": active_menu,
 		"ui_elements_count": ui_elements.size(),
 		"ui_scale": ui_scale,
-		"ui_auto_hide_cursor": auto_hide_cursor,
-		"ui_debug_overlay_visible": show_debug_overlay
+		"ui_auto_hide_cursor": auto_hide_cursor
 	}
