@@ -71,6 +71,35 @@ func verify_scene_structure() -> bool:
 	
 	return true
 
+func update_debug_display():
+	var debug_label = $DebugUI/DebugLabel
+	if debug_label:
+		var debug_text = ""
+		debug_text += "CHARACTER: " + ("✓" if character_system else "✗") + "\n"
+		debug_text += "CAMERA: " + ("✓" if camera_system else "✗") + "\n" 
+		debug_text += "CONTROL: " + ("✓" if control_system else "✗") + "\n"
+		
+		# Input system status
+		if control_system and control_system.input_core:
+			debug_text += "InputCore: ✓\n"
+			var priority_mgr = control_system.input_core.input_priority_manager
+			if priority_mgr:
+				debug_text += "Active Input: " + priority_mgr.get_input_type_name(priority_mgr.get_active_input_type()) + "\n"
+			
+			# DirectControl status
+			var direct_control = get_node("CONTROL/ControlComponents/DirectControlComponent")
+			if direct_control:
+				var info = direct_control.get_debug_info()
+				debug_text += "WASD Active: " + ("✓" if info.is_active else "✗") + "\n"
+				debug_text += "Movement: " + str(info.current_movement) + "\n"
+		
+		debug_text += "Mouse Mode: " + ("Captured" if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED else "Free") + "\n"
+		debug_label.text = debug_text
+
+func _process(delta):
+	# Update debug display each frame
+	update_debug_display()
+
 func initialize_systems():
 	# Set up system cross-references if needed
 	if character_system.has_method("set_manager"):

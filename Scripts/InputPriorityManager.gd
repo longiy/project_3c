@@ -92,7 +92,7 @@ func get_input_type_from_string(type_string: String) -> InputType:
 
 func update_input_activity(input_type: InputType):
 	# Update activity timing
-	var current_time = Time.get_time()
+	var current_time = Time.get_ticks_msec() / 1000.0
 	component_last_activity[input_type] = current_time
 	
 	# Switch active input if this is a new input type with recent activity
@@ -109,7 +109,7 @@ func set_active_input(input_type: InputType):
 	
 	var old_type = active_input_type
 	active_input_type = input_type
-	last_input_time = Time.get_time()
+	last_input_time = Time.get_ticks_msec() / 1000.0
 	
 	print("InputPriorityManager: Switched from ", get_input_type_name(old_type), 
 		  " to ", get_input_type_name(active_input_type))
@@ -128,7 +128,7 @@ func apply_wasd_fallback(primary_input_type: InputType, event: InputEvent):
 			direct_component.process_fallback_input(event)
 
 func check_input_timeouts():
-	var current_time = Time.get_time()
+	var current_time = Time.get_ticks_msec() / 1000.0
 	
 	# Check if current active input has timed out
 	var time_since_active = current_time - component_last_activity.get(active_input_type, 0.0)
@@ -177,5 +177,5 @@ func get_debug_info() -> Dictionary:
 		"active_input": get_input_type_name(active_input_type),
 		"registered_components": component_names,
 		"last_input_time": last_input_time,
-		"time_since_last_input": Time.get_time() - last_input_time
+		"time_since_last_input": Time.get_ticks_msec() / 1000.0 - last_input_time
 	}

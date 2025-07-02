@@ -8,3 +8,6 @@ res://Scripts/CONTROL.gd
 res://Scripts/CameraComponents/OrbitComponent.gd
 res://Assets/ps_character_gurl.tscn
 res://Assets/ps_character_gurl.tres
+res://Assets/Character.tscn
+res://Scripts/InputPriorityManager.gd
+res://Scripts/ControlComponents/DirectControlComponent.gd

@@ -1,12 +1,12 @@
 [gd_scene load_steps=3 format=3 uid="uid://cbx0rhk665pls"]
 
-[ext_resource type="PackedScene" uid="uid://dj17vrtc3b8u2" path="res://Assets/PS_Character_Gurl.glb" id="1_ck7ep"]
-[ext_resource type="AnimationNodeStateMachine" uid="uid://bxb35evoq85bp" path="res://AnimationTreeMove1d.tres" id="2_upni3"]
+[ext_resource type="PackedScene" uid="uid://dj17vrtc3b8u2" path="res://Assets/PS_Character_Gurl.glb" id="1_wvshv"]
+[ext_resource type="AnimationNodeStateMachine" uid="uid://bxb35evoq85bp" path="res://AnimationTreeMove1d.tres" id="2_c1wr7"]
 
-[node name="Character" instance=ExtResource("1_ck7ep")]
+[node name="Character" instance=ExtResource("1_wvshv")]
 
 [node name="AnimationTree" type="AnimationTree" parent="." index="2"]
-tree_root = ExtResource("2_upni3")
+tree_root = ExtResource("2_c1wr7")
 anim_player = NodePath("../AnimationPlayer")
 parameters/Move/blend_position = -0.686459
 metadata/is_grounded = false

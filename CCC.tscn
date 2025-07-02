@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3 uid="uid://diueuwbtv4w82"]
+[gd_scene load_steps=13 format=3 uid="uid://diueuwbtv4w82"]
 
 [ext_resource type="Script" uid="uid://dykru37xmsyne" path="res://Scripts/CHARACTER.gd" id="1_eromc"]
 [ext_resource type="Script" uid="uid://b45fddjajjx8r" path="res://Scripts/CCC_Manager.gd" id="1_in1na"]
@@ -8,6 +8,7 @@
 [ext_resource type="Script" uid="uid://br42dys6ahaqr" path="res://Scripts/CameraComponents/OrbitComponent.gd" id="5_35j32"]
 [ext_resource type="Script" uid="uid://biuvjt8k8ovt5" path="res://Scripts/RawInputProcessor.gd" id="5_85dx6"]
 [ext_resource type="Script" uid="uid://cs68pcxkaivl0" path="res://Scripts/InputPriorityManager.gd" id="6_2j1nk"]
+[ext_resource type="Script" uid="uid://dqb4v5q4c1moa" path="res://Scripts/ControlComponents/DirectControlComponent.gd" id="7_85dx6"]
 [ext_resource type="PackedScene" uid="uid://cbx0rhk665pls" path="res://Assets/Character.tscn" id="18_o63we"]
 [ext_resource type="PackedScene" uid="uid://bsprrm672tx2s" path="res://MARKER.tscn" id="19_qtd55"]
 
@@ -17,13 +18,14 @@ height = 1.70464
 
 [node name="CCC_Manager" type="Node3D"]
 script = ExtResource("1_in1na")
+debug_mode = true
 
 [node name="CONTROL" type="Node3D" parent="."]
 script = ExtResource("4_35j32")
 
 [node name="CURSOR" parent="CONTROL" instance=ExtResource("19_qtd55")]
 
-[node name="InputCore" type="Node" parent="CONTROL"]
+[node name="InputCore" type="Node3D" parent="CONTROL"]
 script = ExtResource("4_6po8h")
 
 [node name="RawInputProcessor" type="Node" parent="CONTROL/InputCore"]
@@ -32,13 +34,14 @@ script = ExtResource("5_85dx6")
 [node name="InputPriorityManager" type="Node" parent="CONTROL/InputCore"]
 script = ExtResource("6_2j1nk")
 
-[node name="ControlComponenets" type="Node" parent="CONTROL"]
+[node name="ControlComponents" type="Node3D" parent="CONTROL"]
 
-[node name="DirectControlComponenet" type="Node" parent="CONTROL/ControlComponenets"]
+[node name="DirectControlComponent" type="Node" parent="CONTROL/ControlComponents"]
+script = ExtResource("7_85dx6")
 
-[node name="TargetControlComponenet" type="Node" parent="CONTROL/ControlComponenets"]
+[node name="TargetControlComponent" type="Node" parent="CONTROL/ControlComponents"]
 
-[node name="GamepadControlComponenet" type="Node" parent="CONTROL/ControlComponenets"]
+[node name="GamepadControlComponent" type="Node" parent="CONTROL/ControlComponents"]
 
 [node name="DebugUI" type="Control" parent="."]
 layout_mode = 3
