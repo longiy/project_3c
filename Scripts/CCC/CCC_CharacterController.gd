@@ -14,13 +14,104 @@ class_name CCC_CharacterController
 @export var jump_system: JumpSystem
 @export var debug_helper: CharacterDebugHelper
 
-@export_group("CCC Configuration")
-@export var preset_manager: CCC_PresetManager
-
 # === PHYSICS ===
 @export_group("Physics")
 @export var gravity_multiplier = 1.0
 
+# === CCC CONFIGURATION (Inspector Dropdowns) ===
+@export_group("CCC Configuration")
+
+@export_subgroup("Quick Presets")
+enum CCC_Preset {
+	CUSTOM,
+	BOTW_STYLE,
+	DIABLO_STYLE, 
+	STRATEGY_GAME,
+	FPS_SHOOTER,
+	PLATFORMER_2D,
+	RACING_GAME
+}
+@export var ccc_preset: CCC_Preset = CCC_Preset.BOTW_STYLE : set = set_ccc_preset
+
+@export_subgroup("Individual Axis Configuration")
+@export var control_type: CCC_ControlManager.ControlType = CCC_ControlManager.ControlType.HYBRID : set = set_control_type
+@export var character_type: CCC_CharacterManager.CharacterType = CCC_CharacterManager.CharacterType.AVATAR : set = set_character_type  
+@export var camera_type: CCC_CameraManager.CameraType = CCC_CameraManager.CameraType.ORBITAL : set = set_camera_type
+
+@export_subgroup("Fine-Tuning Parameters")
+@export_range(0.1, 2.0, 0.1) var movement_responsiveness: float = 1.0 : set = set_movement_responsiveness
+@export_range(0.1, 3.0, 0.1) var camera_sensitivity: float = 1.0 : set = set_camera_sensitivity
+@export_range(0.0, 1.0, 0.1) var embodiment_quality: float = 1.0 : set = set_embodiment_quality
+@export var enable_ai_assistance: bool = false : set = set_ai_assistance
+
+@export_subgroup("Advanced Settings")
+@export var apply_changes_in_editor: bool = true
+@export var auto_save_preset: bool = false
+@export var show_debug_info: bool = false
+
+# === PRESET DEFINITIONS ===
+var preset_configs = {
+	CCC_Preset.BOTW_STYLE: {
+		"name": "Breath of the Wild Style",
+		"control": CCC_ControlManager.ControlType.HYBRID,
+		"character": CCC_CharacterManager.CharacterType.AVATAR,
+		"camera": CCC_CameraManager.CameraType.ORBITAL,
+		"responsiveness": 1.0,
+		"sensitivity": 1.0,
+		"embodiment": 1.0,
+		"ai_assistance": false
+	},
+	CCC_Preset.DIABLO_STYLE: {
+		"name": "Diablo Style",
+		"control": CCC_ControlManager.ControlType.TARGET_BASED,
+		"character": CCC_CharacterManager.CharacterType.AVATAR,
+		"camera": CCC_CameraManager.CameraType.FOLLOWING,
+		"responsiveness": 0.8,
+		"sensitivity": 0.7,
+		"embodiment": 0.9,
+		"ai_assistance": false
+	},
+	CCC_Preset.STRATEGY_GAME: {
+		"name": "Strategy/RTS Style",
+		"control": CCC_ControlManager.ControlType.TARGET_BASED,
+		"character": CCC_CharacterManager.CharacterType.COMMANDER,
+		"camera": CCC_CameraManager.CameraType.FIXED,
+		"responsiveness": 0.6,
+		"sensitivity": 0.5,
+		"embodiment": 0.4,
+		"ai_assistance": true
+	},
+	CCC_Preset.FPS_SHOOTER: {
+		"name": "FPS Shooter Style",
+		"control": CCC_ControlManager.ControlType.DIRECT,
+		"character": CCC_CharacterManager.CharacterType.AVATAR,
+		"camera": CCC_CameraManager.CameraType.FIRST_PERSON,
+		"responsiveness": 1.0,
+		"sensitivity": 1.2,
+		"embodiment": 1.0,
+		"ai_assistance": false
+	},
+	CCC_Preset.PLATFORMER_2D: {
+		"name": "2D Platformer Style",
+		"control": CCC_ControlManager.ControlType.DIRECT,
+		"character": CCC_CharacterManager.CharacterType.AVATAR,
+		"camera": CCC_CameraManager.CameraType.FOLLOWING,
+		"responsiveness": 1.0,
+		"sensitivity": 0.0,
+		"embodiment": 0.8,
+		"ai_assistance": false
+	},
+	CCC_Preset.RACING_GAME: {
+		"name": "Racing Game Style",
+		"control": CCC_ControlManager.ControlType.DIRECT,
+		"character": CCC_CharacterManager.CharacterType.AVATAR,
+		"camera": CCC_CameraManager.CameraType.FOLLOWING,
+		"responsiveness": 1.0,
+		"sensitivity": 0.8,
+		"embodiment": 0.7,
+		"ai_assistance": true
+	}
+}
 
 # === SIGNALS ===
 signal ground_state_changed(is_grounded: bool)
@@ -38,14 +129,217 @@ var base_gravity: float
 func _ready():
 	setup_character()
 	setup_ccc_managers()
-	setup_preset_system()
 	setup_components()
 	connect_ccc_signals()
 	validate_ccc_setup()
-	print("✅ CCC_CharacterController: Pure CCC Architecture initialized")
 	
-	# Remove test function call after cleanup
-	# call_deferred("test_character_types")
+	# Apply initial configuration
+	call_deferred("apply_configuration_to_managers")
+	
+	if show_debug_info:
+		call_deferred("print_configuration_summary")
+	
+	print("✅ CCC_CharacterController: Pure CCC Architecture initialized with inspector configuration")
+
+func print_configuration_summary():
+	"""Print configuration summary for debugging"""
+	print(get_configuration_summary())
+
+# === CONFIGURATION SETTERS (Called when dropdowns change) ===
+
+func set_ccc_preset(preset: CCC_Preset):
+	"""Apply complete preset configuration"""
+	ccc_preset = preset
+	
+	if preset == CCC_Preset.CUSTOM:
+		print("🎛️ CCC: Custom configuration active")
+		return
+	
+	if not preset_configs.has(preset):
+		print("❌ CCC: Unknown preset ", preset)
+		return
+	
+	var config = preset_configs[preset]
+	print("🎮 CCC: Applying preset - ", config.name)
+	
+	# Apply preset without triggering individual setters
+	_apply_preset_silent(config)
+	
+	# Apply to managers if they exist
+	if Engine.is_editor_hint() and apply_changes_in_editor:
+		call_deferred("apply_configuration_to_managers")
+	elif not Engine.is_editor_hint():
+		apply_configuration_to_managers()
+
+# === CONFIGURATION APPLICATION ===
+
+func apply_configuration_to_managers():
+	"""Apply current configuration to all managers"""
+	if not validate_ccc_setup():
+		print("⚠️ CCC: Cannot apply configuration - managers not ready")
+		return
+	
+	print("🔧 CCC: Applying configuration to managers...")
+	
+	# Apply to control manager
+	if control_manager:
+		control_manager.configure_control_type(control_type)
+	
+	# Apply to character manager  
+	if character_manager:
+		character_manager.configure_character_type(character_type)
+		character_manager.set_responsiveness(movement_responsiveness)
+		character_manager.set_embodiment_quality(embodiment_quality)
+		character_manager.enable_ai_assistance(enable_ai_assistance)
+	
+	# Apply to camera manager
+	if camera_manager:
+		camera_manager.configure_camera_type(camera_type)
+		camera_manager.set_information_clarity(camera_sensitivity)
+	
+	print("✅ CCC: Configuration applied successfully")
+
+# === PRESET MANAGEMENT ===
+
+func get_current_configuration_as_preset() -> Dictionary:
+	"""Get current configuration as a preset dictionary"""
+	return {
+		"name": "Custom Configuration",
+		"control": control_type,
+		"character": character_type,
+		"camera": camera_type,
+		"responsiveness": movement_responsiveness,
+		"sensitivity": camera_sensitivity,
+		"embodiment": embodiment_quality,
+		"ai_assistance": enable_ai_assistance
+	}
+
+func save_current_as_preset(preset_name: String):
+	"""Save current configuration as a named preset"""
+	var config = get_current_configuration_as_preset()
+	config.name = preset_name
+	
+	# Could save to a file or user preferences
+	print("💾 CCC: Saved preset '", preset_name, "'")
+	# TODO: Implement preset saving to disk
+
+func load_preset_from_file(file_path: String):
+	"""Load preset from file"""
+	# TODO: Implement preset loading from disk
+	print("📁 CCC: Loading preset from ", file_path)
+
+# === DEBUG AND VALIDATION ===
+
+func get_configuration_summary() -> String:
+	"""Get a human-readable summary of current configuration"""
+	var preset_name = "Custom" if ccc_preset == CCC_Preset.CUSTOM else preset_configs.get(ccc_preset, {}).get("name", "Unknown")
+	
+	return """
+CCC Configuration Summary:
+========================
+Preset: %s
+Control: %s
+Character: %s  
+Camera: %s
+Responsiveness: %.1f
+Sensitivity: %.1f
+Embodiment: %.1f
+AI Assistance: %s
+""" % [
+		preset_name,
+		CCC_ControlManager.ControlType.keys()[control_type],
+		CCC_CharacterManager.CharacterType.keys()[character_type],
+		CCC_CameraManager.CameraType.keys()[camera_type],
+		movement_responsiveness,
+		camera_sensitivity,
+		embodiment_quality,
+		"Yes" if enable_ai_assistance else "No"
+	]
+
+func _apply_preset_silent(config: Dictionary):
+	"""Apply preset configuration without triggering setters"""
+	control_type = config.control
+	character_type = config.character
+	camera_type = config.camera
+	movement_responsiveness = config.responsiveness
+	camera_sensitivity = config.sensitivity
+	embodiment_quality = config.embodiment
+	enable_ai_assistance = config.ai_assistance
+
+func set_control_type(new_type: CCC_ControlManager.ControlType):
+	"""Set control type and mark as custom if different from preset"""
+	control_type = new_type
+	check_if_custom_configuration()
+	
+	if control_manager and not Engine.is_editor_hint():
+		control_manager.configure_control_type(new_type)
+
+func set_character_type(new_type: CCC_CharacterManager.CharacterType):
+	"""Set character type and mark as custom if different from preset"""
+	character_type = new_type
+	check_if_custom_configuration()
+	
+	if character_manager and not Engine.is_editor_hint():
+		character_manager.configure_character_type(new_type)
+
+func set_camera_type(new_type: CCC_CameraManager.CameraType):
+	"""Set camera type and mark as custom if different from preset"""
+	camera_type = new_type
+	check_if_custom_configuration()
+	
+	if camera_manager and not Engine.is_editor_hint():
+		camera_manager.configure_camera_type(new_type)
+
+func set_movement_responsiveness(value: float):
+	"""Set movement responsiveness"""
+	movement_responsiveness = value
+	check_if_custom_configuration()
+	
+	if character_manager and not Engine.is_editor_hint():
+		character_manager.set_responsiveness(value)
+
+func set_camera_sensitivity(value: float):
+	"""Set camera sensitivity"""
+	camera_sensitivity = value
+	check_if_custom_configuration()
+	
+	if camera_manager and not Engine.is_editor_hint():
+		camera_manager.set_information_clarity(value)
+
+func set_embodiment_quality(value: float):
+	"""Set embodiment quality"""
+	embodiment_quality = value
+	check_if_custom_configuration()
+	
+	if character_manager and not Engine.is_editor_hint():
+		character_manager.set_embodiment_quality(value)
+
+func set_ai_assistance(enabled: bool):
+	"""Set AI assistance"""
+	enable_ai_assistance = enabled
+	check_if_custom_configuration()
+	
+	if character_manager and not Engine.is_editor_hint():
+		character_manager.enable_ai_assistance(enabled)
+
+func check_if_custom_configuration():
+	"""Check if current settings match any preset, otherwise mark as custom"""
+	if ccc_preset == CCC_Preset.CUSTOM:
+		return  # Already custom
+	
+	# Check if current settings match the selected preset
+	if preset_configs.has(ccc_preset):
+		var config = preset_configs[ccc_preset]
+		if (control_type != config.control or 
+			character_type != config.character or
+			camera_type != config.camera or
+			abs(movement_responsiveness - config.responsiveness) > 0.1 or
+			abs(camera_sensitivity - config.sensitivity) > 0.1 or
+			abs(embodiment_quality - config.embodiment) > 0.1 or
+			enable_ai_assistance != config.ai_assistance):
+			
+			print("🎛️ CCC: Configuration modified - switching to CUSTOM")
+			ccc_preset = CCC_Preset.CUSTOM
 
 func setup_character():
 	"""Setup basic character properties"""
@@ -80,25 +374,6 @@ func setup_ccc_managers():
 		print("🎯 CCC_CharacterController: All 3 CCC managers found")
 	else:
 		push_error("CCC_CharacterController: Missing CCC managers - found ", managers_found, "/3")
-
-func setup_preset_system():
-	if preset_manager:
-		preset_manager.configuration_changed.connect(_on_configuration_changed)
-		# Apply initial configuration
-		call_deferred("apply_current_configuration")
-
-func _on_configuration_changed(config: Dictionary):
-	apply_configuration_to_managers(config)
-
-func apply_configuration_to_managers(config: Dictionary):
-	if control_manager:
-		control_manager.configure_control_type(config.control)
-	if character_manager:
-		character_manager.configure_character_type(config.character)
-		character_manager.set_responsiveness(config.responsiveness)
-	if camera_manager:
-		camera_manager.configure_camera_type(config.camera)
-		camera_manager.set_information_clarity(config.sensitivity)
 
 func setup_components():
 	"""Setup component references"""

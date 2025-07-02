@@ -1,1 +1,3 @@
-CCC_PresetManager
+GroundedStateResource
+AirborneStateResource
+CameraState

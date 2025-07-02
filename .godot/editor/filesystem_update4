@@ -7,5 +7,3 @@ res://Scripts/CCC/CCC_ControlManager.gd
 res://Scripts/CCC/CCC_CharacterController.gd
 res://SCENE.tscn
 res://Scripts/InputComponents/InputManager.gd
-res://Scripts/CCC/CCC_PresetManager.gd
-res://Scripts/CCC/CCC_Preset.tres
