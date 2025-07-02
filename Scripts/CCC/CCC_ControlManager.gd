@@ -1,4 +1,4 @@
-# CCC_ControlManager.gd - Control axis wrapper for CCC architecture
+# CCC_ControlManager.gd - Control axis wrapper for 3C architecture
 extends Node
 class_name CCC_ControlManager
 
@@ -17,7 +17,7 @@ signal slow_walk_stopped()
 signal reset_pressed()
 signal click_navigation(world_position: Vector3)
 
-# === CCC CONTROL CONFIGURATION (Empty for now) ===
+# === 3C CONTROL CONFIGURATION (Empty for now) ===
 enum ControlType {
 	DIRECT,        # WASD/Gamepad direct control
 	TARGET_BASED,  # Click-to-move
@@ -119,22 +119,22 @@ func cancel_all_input_components():
 	if input_manager:
 		input_manager.cancel_all_input_components()
 
-# === CCC CONTROL INTERFACE (Stubbed for future implementation) ===
+# === 3C CONTROL INTERFACE (Stubbed for future implementation) ===
 
 func configure_control_type(control_type: ControlType):
 	"""Configure the control scheme (future implementation)"""
 	current_control_type = control_type
-	# TODO: Implement when adding CCC configuration system
+	# TODO: Implement when adding 3C configuration system
 	print("🎮 CCC_ControlManager: Control type set to ", ControlType.keys()[control_type])
 
 func set_control_sensitivity(sensitivity: float):
 	"""Set control sensitivity (future implementation)"""
-	# TODO: Implement when adding CCC configuration system
+	# TODO: Implement when adding 3C configuration system
 	pass
 
 func enable_input_buffering(enabled: bool):
 	"""Enable/disable input buffering (future implementation)"""
-	# TODO: Implement when adding CCC configuration system
+	# TODO: Implement when adding 3C configuration system
 	pass
 
 # === DEBUG INFO ===

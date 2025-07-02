@@ -1,4 +1,4 @@
-# CCC_CharacterManager.gd - Character axis wrapper for CCC architecture
+# CCC_CharacterManager.gd - Character axis wrapper for 3C architecture
 extends Node
 class_name CCC_CharacterManager
 
@@ -10,7 +10,7 @@ class_name CCC_CharacterManager
 signal movement_changed(is_moving: bool, direction: Vector2, speed: float)
 signal mode_changed(is_running: bool, is_slow_walking: bool)
 
-# === CCC CHARACTER CONFIGURATION (Empty for now) ===
+# === 3C CHARACTER CONFIGURATION (Empty for now) ===
 enum CharacterType {
 	AVATAR,        # Direct character control (current implementation)
 	OBSERVER,      # Watch-only, no direct control
@@ -152,27 +152,27 @@ func set_position(position: Vector3):
 	if character_body:
 		character_body.global_position = position
 
-# === CCC CHARACTER INTERFACE (Stubbed for future implementation) ===
+# === 3C CHARACTER INTERFACE (Stubbed for future implementation) ===
 
 func configure_character_type(character_type: CharacterType):
 	"""Configure the character type (future implementation)"""
 	current_character_type = character_type
-	# TODO: Implement when adding CCC configuration system
+	# TODO: Implement when adding 3C configuration system
 	print("👤 CCC_CharacterManager: Character type set to ", CharacterType.keys()[character_type])
 
 func set_embodiment_quality(quality: float):
 	"""Set how much the player feels 'present' in the character (future implementation)"""
-	# TODO: Implement when adding CCC configuration system
+	# TODO: Implement when adding 3C configuration system
 	pass
 
 func set_responsiveness(responsiveness: float):
 	"""Set character responsiveness to input (future implementation)"""
-	# TODO: Implement when adding CCC configuration system
+	# TODO: Implement when adding 3C configuration system
 	pass
 
 func enable_ai_assistance(enabled: bool):
 	"""Enable AI assistance for movement (future implementation)"""
-	# TODO: Implement when adding CCC configuration system
+	# TODO: Implement when adding 3C configuration system
 	pass
 
 # === CAMERA REFERENCE SETUP ===
