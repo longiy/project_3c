@@ -1,6 +1,5 @@
 res://SCENE.tscn
 res://AnimationTreeMove1d.tres
-res://Scripts/CharacterComponents/MovementComponent.gd
 res://CCC.tscn
 res://Assets/Character.tscn
-res://Scripts/CameraComponents/OrbitComponent.gd
+res://Scripts/ControlComponents/InputVisualFeedback.gd
