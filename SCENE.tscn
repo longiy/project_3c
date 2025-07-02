@@ -89,14 +89,7 @@ skeleton = NodePath("../../root/@EditorNode@21272/@Panel@14/@VBoxContainer@15/Do
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Environment/Platforms/MeshInstance3D/StaticBody3D"]
 shape = SubResource("ConcavePolygonShape3D_caybs")
 
-[node name="CCC" parent="." node_paths=PackedStringArray("character_system", "camera_system", "control_system", "character_core", "spring_arm", "camera_core", "debug_label") instance=ExtResource("1_5si1x")]
-character_system = NodePath("CHARACTER")
-camera_system = NodePath("CAMERA")
-control_system = NodePath("CONTROL")
-character_core = NodePath("CHARACTER/CharacterCore")
-spring_arm = NodePath("CAMERA/SpringArm3D")
-camera_core = NodePath("CAMERA/SpringArm3D/Camera3D")
-debug_label = NodePath("DebugUI/DebugLabel")
+[node name="CCC" parent="." instance=ExtResource("1_5si1x")]
 
 [node name="DirectControlComponent" parent="CCC/CONTROL/ControlComponents" index="0" node_paths=PackedStringArray("camera_system")]
 camera_system = NodePath("../../../CAMERA")

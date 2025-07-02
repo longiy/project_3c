@@ -15,6 +15,7 @@ var camera_system: CameraSystem
 var cursor_marker: Node3D
 
 # Navigation state
+var is_dragging: bool = false
 var is_navigating: bool = false
 var navigation_target: Vector3
 var navigation_timeout: float = 2.0

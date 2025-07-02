@@ -10,6 +10,9 @@ class_name MovementComponent
 @export var run_speed: float = 6.0
 @export var sprint_speed: float = 8.0
 
+@export_group("Rotation")
+@export var rotation_speed: float = 8.0
+
 @export_group("Physics")
 @export var acceleration: float = 8.0
 @export var deceleration: float = 10.0
@@ -140,6 +143,25 @@ func calculate_movement(delta: float):
 	var movement_3d = convert_to_world_space(current_direction)
 	character_core.velocity.x = movement_3d.x * current_speed
 	character_core.velocity.z = movement_3d.z * current_speed
+	
+	# Rotate character toward camera forward direction when moving
+	if target_direction.length() > 0:
+		# Get camera forward direction (flattened to XZ plane)
+		var camera_forward = -camera_system.get_camera_forward()
+		camera_forward.y = 0
+		camera_forward = camera_forward.normalized()
+		
+		# Calculate target rotation based on camera forward
+		var target_rotation = atan2(camera_forward.x, camera_forward.z)
+		
+		# Smoothly rotate character toward camera forward
+		character_core.rotation.y = lerp_angle(
+			character_core.rotation.y,
+			target_rotation,
+			rotation_speed * delta
+		)
+	
+
 
 func calculate_direct_navigation_movement(delta: float):
 	if not is_navigating:
