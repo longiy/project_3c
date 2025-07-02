@@ -51,8 +51,8 @@ func handle_mouse_motion(event: InputEventMouseMotion):
 		# Mouse look mode - route to direct control
 		route_input("DIRECT", event)
 	else:
-		# Free mouse mode - could be for UI or click navigation
-		pass
+		# Free mouse mode - route to target control for drag detection
+		route_input("TARGET", event)
 
 func handle_mouse_button(event: InputEventMouseButton):
 	# Determine input type based on mouse mode and button

@@ -72,13 +72,10 @@ func process_mouse_button(event: InputEventMouseButton):
 				if target != Vector3.ZERO:
 					start_navigation(target)
 					is_dragging = true
-					print("TargetControlComponent: Started drag mode at ", target)
 		else:
 			# End drag operation
 			if is_dragging:
 				is_dragging = false
-				# Final navigation target is already set during drag
-				print("TargetControlComponent: Drag operation completed")
 			else:
 				print("TargetControlComponent: Mouse released but was not dragging")
 			
@@ -89,13 +86,12 @@ func process_mouse_motion(event: InputEventMouseMotion):
 		if target != Vector3.ZERO:
 			# Update navigation target while dragging
 			update_navigation_target(target)
-			print("TargetControlComponent: Drag update to ", target)
-			
 			# Keep input priority active during drag AND update activity timestamp
 			if input_priority_manager:
 				input_priority_manager.set_active_input(InputPriorityManager.InputType.TARGET)
 				# Force update activity to prevent timeout during drag
-				input_priority_manager.update_input_activity(InputPriorityManager.InputType.TARGET)
+				if input_priority_manager.has_method("update_input_activity"):
+					input_priority_manager.update_input_activity(InputPriorityManager.InputType.TARGET)
 
 func raycast_to_ground(screen_pos: Vector2) -> Vector3:
 	# Cast ray from camera to ground
@@ -132,7 +128,8 @@ func start_navigation(target_position: Vector3):
 	if input_priority_manager:
 		input_priority_manager.set_active_input(InputPriorityManager.InputType.TARGET)
 		# Update activity timestamp to prevent immediate timeout
-		input_priority_manager.update_input_activity(InputPriorityManager.InputType.TARGET)
+		if input_priority_manager.has_method("update_input_activity"):
+			input_priority_manager.update_input_activity(InputPriorityManager.InputType.TARGET)
 	
 	# Show cursor marker at target
 	show_destination_marker(target_position)
@@ -163,7 +160,7 @@ func update_navigation_target(target_position: Vector3):
 func stop_navigation():
 	# Stop current navigation
 	is_navigating = false
-	is_dragging = false
+	is_dragging = false  # ADD THIS LINE
 	
 	# Hide cursor marker
 	hide_destination_marker()
@@ -206,7 +203,7 @@ func cancel_navigation():
 func get_debug_info() -> Dictionary:
 	return {
 		"is_navigating": is_navigating,
-		"is_dragging": is_dragging,
+		"is_dragging": is_dragging,  # ADD THIS LINE
 		"navigation_target": navigation_target,
 		"time_since_last_nav": Time.get_ticks_msec() / 1000.0 - last_navigation_time if is_navigating else 0.0,
 		"cursor_marker_visible": cursor_marker.visible if cursor_marker else false
