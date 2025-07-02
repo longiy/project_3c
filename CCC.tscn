@@ -24,17 +24,27 @@ height = 1.70464
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_dohcx"]
 
-[node name="CCC_Manager" type="Node3D"]
+[node name="CCC_Manager" type="Node3D" node_paths=PackedStringArray("character_system", "camera_system", "control_system", "character_core", "spring_arm", "camera_core", "debug_label")]
 script = ExtResource("1_in1na")
+character_system = NodePath("CHARACTER")
+camera_system = NodePath("CAMERA")
+control_system = NodePath("CONTROL")
+character_core = NodePath("CHARACTER/CharacterCore")
+spring_arm = NodePath("CAMERA/SpringArm3D")
+camera_core = NodePath("CAMERA/SpringArm3D/Camera3D")
 debug_mode = true
+debug_label = NodePath("DebugUI/DebugLabel")
 
-[node name="UI" type="Control" parent="." node_paths=PackedStringArray("input_priority_manager")]
+[node name="UI" type="Control" parent="." node_paths=PackedStringArray("input_priority_manager", "input_method_label", "transition_progress")]
 layout_mode = 3
 anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
 script = ExtResource("2_ps1uw")
 input_priority_manager = NodePath("../CONTROL/InputCore/InputPriorityManager")
+input_method_label = NodePath("VBoxContainer/InputMethodLabel")
+transition_progress = NodePath("VBoxContainer/TransitionProgress")
+auto_hide = false
 
 [node name="VBoxContainer" type="VBoxContainer" parent="UI"]
 layout_mode = 0
