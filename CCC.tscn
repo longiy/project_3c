@@ -103,8 +103,9 @@ script = ExtResource("6_2j1nk")
 script = ExtResource("7_85dx6")
 input_priority_manager = NodePath("../../InputCore/InputPriorityManager")
 
-[node name="TargetControlComponent" type="Node" parent="CONTROL/ControlComponents"]
+[node name="TargetControlComponent" type="Node" parent="CONTROL/ControlComponents" node_paths=PackedStringArray("character_core")]
 script = ExtResource("8_121sy")
+character_core = NodePath("../../../CHARACTER/CharacterCore")
 
 [node name="GamepadControlComponent" type="Node" parent="CONTROL/ControlComponents" node_paths=PackedStringArray("input_priority_manager")]
 script = ExtResource("10_oa0io")
@@ -131,7 +132,6 @@ shape = SubResource("CapsuleShape3D_jiddn")
 [node name="MovementComponent" type="Node" parent="CHARACTER/CharacterComponents"]
 script = ExtResource("10_2j1nk")
 destination_threshold = 0.1
-debug_navigation = false
 
 [node name="CAMERA" type="Node3D" parent="." node_paths=PackedStringArray("spring_arm", "camera_core", "orbit_component", "distance_component", "follow_component", "target_node")]
 script = ExtResource("3_in1na")

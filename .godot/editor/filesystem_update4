@@ -3,3 +3,4 @@ res://AnimationTreeMove1d.tres
 res://Scripts/RawInputProcessor.gd
 res://SCENE.tscn
 res://Scripts/ControlComponents/TargetControlComponenet.gd
+res://Scripts/CharacterComponents/MovementComponent.gd

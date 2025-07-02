@@ -8,6 +8,7 @@ class_name TargetControlComponent
 # Command signals
 signal navigate_command(target_position: Vector3)
 signal destination_command(show: bool, position: Vector3)
+signal character_look_command(target_direction: Vector3)
 
 # References
 var input_priority_manager: InputPriorityManager
@@ -21,10 +22,13 @@ var navigation_target: Vector3
 var navigation_timeout: float = 2.0
 var last_navigation_time: float = 0.0
 
+@export var character_core: CharacterBody3D
 # Raycast properties
 @export_group("Raycast Settings")
 @export var raycast_distance: float = 1000.0
 @export var ground_layer_mask: int = 1  # Environment layer
+
+
 
 func _ready():
 	# Get references
@@ -43,13 +47,27 @@ func _ready():
 		cursor_marker.visible = false
 	
 	print("TargetControlComponent: Initialized successfully")
-
+	
+	# Connect character rotation signal
+	connect_to_character_rotation()
+	
 func _process(delta):
 	# Check navigation timeout
 	if is_navigating:
 		var time_since_nav = Time.get_ticks_msec() / 1000.0 - last_navigation_time
 		if time_since_nav > navigation_timeout:
 			stop_navigation()
+
+func connect_to_character_rotation():
+	# Connect to MovementComponent or CharacterComponent for rotation
+	var movement_component = get_node("../../../CHARACTER/CharacterComponents/MovementComponent")
+	if movement_component and movement_component.has_method("_on_character_look_command"):
+		character_look_command.connect(movement_component._on_character_look_command)
+	else:
+		# Try connecting to CharacterCore directly if it has rotation handling
+		var character_core = get_node("../../../CHARACTER/CharacterCore")
+		if character_core and character_core.has_method("_on_character_look_command"):
+			character_look_command.connect(character_core._on_character_look_command)
 
 func process_input(event: InputEvent):
 	# Main input processing - called by InputPriorityManager
@@ -118,6 +136,7 @@ func raycast_to_ground(screen_pos: Vector2) -> Vector3:
 	
 	return Vector3.ZERO
 
+# Modify start_navigation to include rotation
 func start_navigation(target_position: Vector3):
 	# Start navigation to target position
 	navigation_target = target_position
@@ -133,6 +152,9 @@ func start_navigation(target_position: Vector3):
 	
 	# Show cursor marker at target
 	show_destination_marker(target_position)
+	
+	# Calculate and emit character rotation towards target
+	emit_character_rotation_towards_target()
 	
 	# Emit navigation command
 	navigate_command.emit(target_position)
@@ -154,8 +176,29 @@ func update_navigation_target(target_position: Vector3):
 	if input_priority_manager:
 		input_priority_manager.update_input_activity(InputPriorityManager.InputType.TARGET)
 	
+	# Continuously rotate character towards new target during drag
+	emit_character_rotation_towards_target()
+	
 	# Emit new navigation command
 	navigate_command.emit(target_position)
+
+# Add this new helper function
+func emit_character_rotation_towards_target():
+	if not character_core:
+		var character_core_node = get_node("../../../CHARACTER/CharacterCore")
+		if character_core_node:
+			character_core = character_core_node
+	
+	if character_core and navigation_target != Vector3.ZERO:
+		var character_pos = character_core.global_position
+		var direction_to_target = (navigation_target - character_pos)
+		
+		# Only rotate on Y axis (horizontal plane)
+		direction_to_target.y = 0
+		direction_to_target = direction_to_target.normalized()
+		
+		# Emit the direction for character rotation
+		character_look_command.emit(direction_to_target)
 
 func stop_navigation():
 	# Stop current navigation
