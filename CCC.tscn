@@ -83,7 +83,6 @@ shape = SubResource("CapsuleShape3D_odeog")
 
 [node name="MovementComponent" type="Node" parent="CHARACTER/CharacterComponents"]
 script = ExtResource("10_2j1nk")
-use_navigation_mesh = false
 
 [node name="CAMERA" type="Node3D" parent="." node_paths=PackedStringArray("target_node")]
 script = ExtResource("3_in1na")

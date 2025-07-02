@@ -97,7 +97,8 @@ shape = SubResource("ConcavePolygonShape3D_caybs")
 [node name="CCC" parent="." instance=ExtResource("1_5si1x")]
 
 [node name="MovementComponent" parent="CCC/CHARACTER/CharacterComponents" index="0"]
-use_navigation_mesh = true
+destination_threshold = 0.1
+debug_navigation = false
 
 [editable path="CCC"]
 [editable path="CCC/CHARACTER/CharacterCore/Character"]
