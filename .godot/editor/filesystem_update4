@@ -12,3 +12,4 @@ res://Assets/Character.tscn
 res://Scripts/InputPriorityManager.gd
 res://Scripts/ControlComponents/DirectControlComponent.gd
 res://Scripts/CharacterComponents/MovementComponent.gd
+res://Scripts/ControlComponents/TargetControlComponenet.gd

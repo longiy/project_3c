@@ -10,7 +10,7 @@ var camera_system: CameraSystem
 
 # Orbit settings
 @export_group("Mouse Look Settings")
-@export var mouse_sensitivity: Vector2 = Vector2(0.003, 0.003)
+@export var mouse_sensitivity: Vector2 = Vector2(1.00, 1.00)
 @export var pitch_limits: Vector2 = Vector2(-80, 50)
 @export var invert_y: bool = false
 
@@ -48,8 +48,9 @@ func _process(delta):
 		apply_smooth_rotation(delta)
 
 func _on_look_command(delta: Vector2):
-	# Receive look input from DirectControlComponent
+	print("OrbitComponent: Received look command: ", delta)
 	apply_mouse_look(delta)
+
 
 
 
@@ -71,6 +72,8 @@ func apply_mouse_look(mouse_delta: Vector2):
 		deg_to_rad(pitch_limits.x),
 		deg_to_rad(pitch_limits.y)
 	)
+	
+	print("OrbitComponent: Target rotation - Yaw: ", rad_to_deg(target_yaw), "° Pitch: ", rad_to_deg(target_pitch), "°")
 	
 	# Apply immediately if no smoothing
 	if not use_smoothing:
@@ -95,10 +98,14 @@ func apply_smooth_rotation(delta: float):
 	if abs(current_pitch - old_pitch) > 0.001 or abs(current_yaw - old_yaw) > 0.001:
 		apply_rotation_to_camera()
 
+# In OrbitComponent.gd - update apply_rotation_to_camera
 func apply_rotation_to_camera():
 	# Apply rotation through camera system
 	if camera_system:
+		print("OrbitComponent: Calling camera_system.apply_rotation(", rad_to_deg(current_yaw), ", ", rad_to_deg(current_pitch), ")")
 		camera_system.apply_rotation(current_yaw, current_pitch)
+	else:
+		print("OrbitComponent: Camera system not found!")
 
 # Public API for camera control
 func set_sensitivity(sensitivity: Vector2):

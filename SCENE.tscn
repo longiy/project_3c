@@ -1,6 +1,7 @@
-[gd_scene load_steps=10 format=3 uid="uid://dngafe0y2nx5b"]
+[gd_scene load_steps=11 format=3 uid="uid://dngafe0y2nx5b"]
 
 [ext_resource type="PackedScene" uid="uid://diueuwbtv4w82" path="res://CCC.tscn" id="1_5si1x"]
+[ext_resource type="NavigationMesh" uid="uid://cpk3u1qapk5hj" path="res://Assets/NavMeshPlane.tres" id="1_u4csh"]
 
 [sub_resource type="Environment" id="Environment_w862e"]
 background_mode = 1
@@ -36,15 +37,19 @@ shadow_enabled = true
 
 [node name="Environment" type="Node" parent="."]
 
-[node name="GROUND" type="MeshInstance3D" parent="Environment"]
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="Environment"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0769079, 0, -0.0420146)
+navigation_mesh = ExtResource("1_u4csh")
+
+[node name="GROUND_staticCollision" type="MeshInstance3D" parent="Environment/NavigationRegion3D"]
 transform = Transform3D(10, 0, 0, 0, 10, 0, 0, 0, 10, 0, 0, 0)
 mesh = SubResource("PlaneMesh_3a8dd")
 skeleton = NodePath("")
 surface_material_override/0 = SubResource("StandardMaterial3D_u4csh")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="Environment/GROUND"]
+[node name="StaticBody3D" type="StaticBody3D" parent="Environment/NavigationRegion3D/GROUND_staticCollision"]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Environment/GROUND/StaticBody3D"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Environment/NavigationRegion3D/GROUND_staticCollision/StaticBody3D"]
 shape = SubResource("ConcavePolygonShape3D_5si1x")
 
 [node name="Platforms" type="Node" parent="Environment"]
@@ -90,3 +95,9 @@ skeleton = NodePath("../../root/@EditorNode@21272/@Panel@14/@VBoxContainer@15/Do
 shape = SubResource("ConcavePolygonShape3D_caybs")
 
 [node name="CCC" parent="." instance=ExtResource("1_5si1x")]
+
+[node name="MovementComponent" parent="CCC/CHARACTER/CharacterComponents" index="0"]
+use_navigation_mesh = true
+
+[editable path="CCC"]
+[editable path="CCC/CHARACTER/CharacterCore/Character"]

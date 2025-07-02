@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3 uid="uid://diueuwbtv4w82"]
+[gd_scene load_steps=16 format=3 uid="uid://diueuwbtv4w82"]
 
 [ext_resource type="Script" uid="uid://dykru37xmsyne" path="res://Scripts/CHARACTER.gd" id="1_eromc"]
 [ext_resource type="Script" uid="uid://b45fddjajjx8r" path="res://Scripts/CCC_Manager.gd" id="1_in1na"]
@@ -9,6 +9,7 @@
 [ext_resource type="Script" uid="uid://biuvjt8k8ovt5" path="res://Scripts/RawInputProcessor.gd" id="5_85dx6"]
 [ext_resource type="Script" uid="uid://cs68pcxkaivl0" path="res://Scripts/InputPriorityManager.gd" id="6_2j1nk"]
 [ext_resource type="Script" uid="uid://dqb4v5q4c1moa" path="res://Scripts/ControlComponents/DirectControlComponent.gd" id="7_85dx6"]
+[ext_resource type="Script" uid="uid://chl2y2xkcppm7" path="res://Scripts/ControlComponents/TargetControlComponenet.gd" id="8_121sy"]
 [ext_resource type="Script" uid="uid://colhxkqbvk53v" path="res://Scripts/CharacterComponents/MovementComponent.gd" id="10_2j1nk"]
 [ext_resource type="PackedScene" uid="uid://cbx0rhk665pls" path="res://Assets/Character.tscn" id="18_o63we"]
 [ext_resource type="PackedScene" uid="uid://bsprrm672tx2s" path="res://MARKER.tscn" id="19_qtd55"]
@@ -58,6 +59,7 @@ script = ExtResource("6_2j1nk")
 script = ExtResource("7_85dx6")
 
 [node name="TargetControlComponent" type="Node" parent="CONTROL/ControlComponents"]
+script = ExtResource("8_121sy")
 
 [node name="GamepadControlComponent" type="Node" parent="CONTROL/ControlComponents"]
 
@@ -81,6 +83,7 @@ shape = SubResource("CapsuleShape3D_odeog")
 
 [node name="MovementComponent" type="Node" parent="CHARACTER/CharacterComponents"]
 script = ExtResource("10_2j1nk")
+use_navigation_mesh = false
 
 [node name="CAMERA" type="Node3D" parent="." node_paths=PackedStringArray("target_node")]
 script = ExtResource("3_in1na")
@@ -97,6 +100,7 @@ transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 
 
 [node name="OrbitComponent" type="Node" parent="CAMERA/CameraComponents"]
 script = ExtResource("5_35j32")
+use_smoothing = false
 
 [node name="DistanceComponent" type="Node" parent="CAMERA/CameraComponents"]
 
