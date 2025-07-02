@@ -1,22 +1,5 @@
-[gd_scene load_steps=22 format=3 uid="uid://diueuwbtv4w82"]
+[gd_scene load_steps=5 format=3 uid="uid://diueuwbtv4w82"]
 
-[ext_resource type="Script" uid="uid://cws7m480lxvaf" path="res://Scripts/_Debug/DebugUI.gd" id="1_i47c0"]
-[ext_resource type="Script" uid="uid://c3qf8gpvlk6is" path="res://Scripts/CCC/Camera/CameraController.gd" id="2_i47c0"]
-[ext_resource type="Script" uid="uid://dt54n1ktg7wqr" path="res://Scripts/Controllers/ControllerCharacter.gd" id="3_jiddn"]
-[ext_resource type="Script" uid="uid://deibi5xmtfs1h" path="res://Scripts/Character/CharacterStateMachine.gd" id="4_dohcx"]
-[ext_resource type="Script" uid="uid://mwfti1hv45ue" path="res://Scripts/Character/States/StateIdle.gd" id="5_jkhd2"]
-[ext_resource type="Script" uid="uid://1uqst38ejbn3" path="res://Scripts/Character/States/StateAirborne.gd" id="6_v1ubw"]
-[ext_resource type="Script" uid="uid://c7v6qfkst2sfh" path="res://Scripts/Character/States/StateJumping.gd" id="7_qo6m7"]
-[ext_resource type="Script" uid="uid://dvxh1oyh11gby" path="res://Scripts/Character/States/StateLanding.gd" id="8_5otox"]
-[ext_resource type="Script" uid="uid://dg7vpc6xymvpp" path="res://Scripts/Character/States/StateRunning.gd" id="9_bxgjt"]
-[ext_resource type="Script" uid="uid://chw8f4cb3xd47" path="res://Scripts/Character/States/StateWalking.gd" id="10_tsdtt"]
-[ext_resource type="Script" uid="uid://ceg85p1hqrfpk" path="res://Scripts/Controllers/AnimationManager.gd" id="11_3qd0h"]
-[ext_resource type="Script" uid="uid://d2tq3l0s4tbth" path="res://Scripts/InputComponents/InputManager.gd" id="12_5dedv"]
-[ext_resource type="Script" uid="uid://bb8kly3o18vto" path="res://Scripts/Components/JumpSystem.gd" id="13_ecfeb"]
-[ext_resource type="Script" uid="uid://cmwqi3p5fw7bd" path="res://Scripts/Character/MovementManager.gd" id="14_34nj4"]
-[ext_resource type="Script" uid="uid://csay0tqtwpcea" path="res://Scripts/InputComponents/GamepadComponent.gd" id="15_wuswd"]
-[ext_resource type="Script" uid="uid://c63imyupotuj1" path="res://Scripts/InputComponents/ClickNavigationComponent.gd" id="16_5wr16"]
-[ext_resource type="Script" uid="uid://bqw3xo0kgqhjk" path="res://Scripts/_Debug/CharacterDebugHelper.gd" id="17_ok2nx"]
 [ext_resource type="PackedScene" uid="uid://cbx0rhk665pls" path="res://Assets/ps_character_gurl.tscn" id="18_o63we"]
 [ext_resource type="PackedScene" uid="uid://bsprrm672tx2s" path="res://MARKER.tscn" id="19_qtd55"]
 
@@ -29,15 +12,11 @@ height = 1.70464
 
 [node name="CCC" type="Node3D"]
 
-[node name="DebugUI" type="Control" parent="." node_paths=PackedStringArray("debug_label", "character")]
+[node name="DebugUI" type="Control" parent="."]
 layout_mode = 3
 anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
-script = ExtResource("1_i47c0")
-debug_label = NodePath("DebugLabel")
-character = NodePath("../CHARACTER")
-show_performance_info = true
 metadata/_edit_use_anchors_ = true
 
 [node name="DebugLabel" type="Label" parent="DebugUI"]
@@ -48,9 +27,7 @@ offset_right = 50.0
 offset_bottom = 33.0
 metadata/_edit_use_anchors_ = true
 
-[node name="CAMERARIG" type="Node3D" parent="." node_paths=PackedStringArray("target_node")]
-script = ExtResource("2_i47c0")
-target_node = NodePath("../CHARACTER")
+[node name="CAMERARIG" type="Node3D" parent="."]
 
 [node name="SpringArm3D" type="SpringArm3D" parent="CAMERARIG"]
 spring_length = 2.0
@@ -58,137 +35,15 @@ spring_length = 2.0
 [node name="Camera3D" type="Camera3D" parent="CAMERARIG/SpringArm3D"]
 transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 0, 0, 0)
 
-[node name="CHARACTER" type="CharacterBody3D" parent="." node_paths=PackedStringArray("animation_controller", "camera", "input_manager", "jump_system", "debug_helper")]
+[node name="CHARACTER" type="CharacterBody3D" parent="."]
 collision_layer = 2
 slide_on_ceiling = false
-script = ExtResource("3_jiddn")
-animation_controller = NodePath("AnimationManager")
-camera = NodePath("../CAMERARIG/SpringArm3D/Camera3D")
-input_manager = NodePath("InputManager")
-jump_system = NodePath("JumpSystem")
-debug_helper = NodePath("CharacterDebugHelper")
-
-[node name="CharacterStateMachine" type="Node" parent="CHARACTER" node_paths=PackedStringArray("state_nodes")]
-script = ExtResource("4_dohcx")
-state_nodes = [NodePath("Idle"), NodePath("Airborne"), NodePath("Jumping"), NodePath("Running"), NodePath("Walking"), NodePath("Landing")]
-
-[node name="Idle" type="Node" parent="CHARACTER/CharacterStateMachine"]
-script = ExtResource("5_jkhd2")
-
-[node name="Airborne" type="Node" parent="CHARACTER/CharacterStateMachine"]
-script = ExtResource("6_v1ubw")
-
-[node name="Jumping" type="Node" parent="CHARACTER/CharacterStateMachine"]
-script = ExtResource("7_qo6m7")
-
-[node name="Landing" type="Node" parent="CHARACTER/CharacterStateMachine"]
-script = ExtResource("8_5otox")
-
-[node name="Running" type="Node" parent="CHARACTER/CharacterStateMachine"]
-script = ExtResource("9_bxgjt")
-
-[node name="Walking" type="Node" parent="CHARACTER/CharacterStateMachine"]
-script = ExtResource("10_tsdtt")
-
-[node name="AnimationManager" type="Node" parent="CHARACTER" node_paths=PackedStringArray("animation_tree")]
-script = ExtResource("11_3qd0h")
-animation_tree = NodePath("../PS_Character_Gurl/AnimationTree")
-
-[node name="InputManager" type="Node" parent="CHARACTER"]
-script = ExtResource("12_5dedv")
-
-[node name="JumpSystem" type="Node" parent="CHARACTER"]
-script = ExtResource("13_ecfeb")
-max_air_jumps = 3
-coyote_time = 0.5
-
-[node name="MovementManager" type="Node" parent="CHARACTER"]
-script = ExtResource("14_34nj4")
-
-[node name="GamepadComponent" type="Node" parent="CHARACTER"]
-script = ExtResource("15_wuswd")
-
-[node name="ClickNavigationComponent" type="Node" parent="CHARACTER" node_paths=PackedStringArray("character", "camera", "destination_marker")]
-script = ExtResource("16_5wr16")
-character = NodePath("..")
-camera = NodePath("../../CAMERARIG/SpringArm3D/Camera3D")
-destination_marker = NodePath("../../CURSOR")
-
-[node name="CharacterDebugHelper" type="Node" parent="CHARACTER"]
-script = ExtResource("17_ok2nx")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="CHARACTER"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 mesh = SubResource("CapsuleMesh_uyn8p")
 
 [node name="PS_Character_Gurl" parent="CHARACTER" instance=ExtResource("18_o63we")]
-
-[node name="Skeleton3D" parent="CHARACTER/PS_Character_Gurl/rig" index="0"]
-bones/0/position = Vector3(-0.05, 0.996233, -0.0996851)
-bones/0/rotation = Quaternion(-0.606445, 0.0691453, -0.0530571, 0.790334)
-bones/0/scale = Vector3(1, 1, 1)
-bones/1/position = Vector3(0.05, 0.996233, -0.0996851)
-bones/1/rotation = Quaternion(-0.606445, -0.0691453, 0.0530571, 0.790334)
-bones/1/scale = Vector3(1, 1, 1)
-bones/2/position = Vector3(7.10543e-15, 0.989111, -0.135376)
-bones/2/rotation = Quaternion(0.111619, 0.754407, 0.133022, 0.633022)
-bones/2/scale = Vector3(1, 1, 1)
-bones/3/position = Vector3(-2.02098e-15, 0.815885, -0.0500533)
-bones/3/rotation = Quaternion(0.266729, 2.29781e-07, 6.35931e-08, 0.963772)
-bones/4/rotation = Quaternion(-0.243905, -3.76217e-14, -1.16303e-07, 0.969799)
-bones/4/scale = Vector3(1, 1, 1)
-bones/5/rotation = Quaternion(-0.0425462, -1.19101e-07, -1.52157e-08, 0.999094)
-bones/5/scale = Vector3(1, 1, 1)
-bones/6/rotation = Quaternion(-0.0520898, -6.76623e-16, -1.24192e-08, 0.998642)
-bones/7/rotation = Quaternion(0.139212, 3.46999e-14, 3.31908e-08, 0.990263)
-bones/8/rotation = Quaternion(-0.0309852, -1.19152e-07, -3.69372e-09, 0.99952)
-bones/9/rotation = Quaternion(-0.00263135, 1.19209e-07, -3.13672e-10, 0.999997)
-bones/14/position = Vector3(8.54825e-09, 0.815885, -0.0500533)
-bones/14/rotation = Quaternion(-0.181037, -0.709154, -0.416857, 0.539033)
-bones/15/position = Vector3(-1.84128e-08, 0.815885, -0.0500533)
-bones/15/rotation = Quaternion(-0.181037, 0.709154, 0.416857, 0.539033)
-bones/16/position = Vector3(0.0842699, 0.859279, -0.00993945)
-bones/16/rotation = Quaternion(0.994384, 0.0468583, -0.094841, 0.00307039)
-bones/16/scale = Vector3(1, 1, 1)
-bones/17/rotation = Quaternion(-5.00586e-09, 3.76021e-08, 9.00764e-09, 1)
-bones/18/rotation = Quaternion(0.0747385, -3.45264e-07, 6.27076e-08, 0.997203)
-bones/18/scale = Vector3(1, 1, 1)
-bones/19/rotation = Quaternion(3.11993e-08, 8.2422e-08, 3.7253e-09, 1)
-bones/20/rotation = Quaternion(-0.535894, -0.00543666, 0.0485136, 0.842873)
-bones/20/scale = Vector3(1, 1, 1)
-bones/21/rotation = Quaternion(-0.0352282, 0.958432, -0.282947, -0.0103989)
-bones/21/scale = Vector3(1.00001, 1, 1)
-bones/23/position = Vector3(-0.0842699, 0.859279, -0.00993944)
-bones/23/rotation = Quaternion(0.994384, -0.0468584, 0.094841, 0.00307149)
-bones/24/rotation = Quaternion(-1.63563e-08, -2.85218e-09, -2.67319e-08, 1)
-bones/24/scale = Vector3(1, 1, 1)
-bones/25/rotation = Quaternion(0.0747405, 3.0678e-07, -5.76568e-08, 0.997203)
-bones/25/scale = Vector3(1, 1, 1)
-bones/26/rotation = Quaternion(-2.53785e-08, -7.77654e-08, -8.38191e-09, 1)
-bones/27/rotation = Quaternion(-0.535895, 0.00543666, -0.0485135, 0.842872)
-bones/27/scale = Vector3(1, 0.999999, 1)
-bones/28/rotation = Quaternion(0.0352283, 0.958432, -0.282947, 0.0103988)
-bones/28/scale = Vector3(1.00001, 1, 1)
-bones/30/position = Vector3(0.0146687, 1.29803, 0.0548271)
-bones/30/rotation = Quaternion(-0.579533, -0.36468, -0.320697, 0.654449)
-bones/31/position = Vector3(0.142994, 1.30156, -0.018869)
-bones/31/rotation = Quaternion(-0.101848, -0.078259, 0.98769, -0.089278)
-bones/32/rotation = Quaternion(-8.56817e-08, 9.31325e-09, 1.25729e-07, 1)
-bones/33/rotation = Quaternion(0.160706, -4.94352e-07, -2.31949e-07, 0.987002)
-bones/33/scale = Vector3(1, 1, 1)
-bones/34/rotation = Quaternion(1.81608e-08, 2.00233e-08, 4.56347e-08, 1)
-bones/35/rotation = Quaternion(-0.0564025, 0.00203209, 0.0359327, 0.997759)
-bones/35/scale = Vector3(1, 1, 1)
-bones/36/position = Vector3(-0.0146687, 1.29803, 0.0548271)
-bones/36/rotation = Quaternion(-0.579533, 0.36468, 0.320697, 0.654449)
-bones/37/position = Vector3(-0.142994, 1.30156, -0.018869)
-bones/37/rotation = Quaternion(0.101848, -0.0782593, 0.98769, 0.089278)
-bones/38/rotation = Quaternion(-1.39698e-08, 7.45057e-09, 2.37487e-08, 1)
-bones/39/rotation = Quaternion(0.160707, 4.60703e-07, 2.48164e-07, 0.987002)
-bones/39/scale = Vector3(1, 1, 1)
-bones/40/rotation = Quaternion(-7.45063e-09, -3.16649e-08, 2.79402e-09, 1)
-bones/41/rotation = Quaternion(-0.0564029, -0.00203213, -0.0359329, 0.997759)
-bones/41/scale = Vector3(1, 1, 1)
 
 [node name="AnimationTree" parent="CHARACTER/PS_Character_Gurl" index="2"]
 parameters/Move/blend_position = -0.844419
