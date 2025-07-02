@@ -129,8 +129,11 @@ shape = SubResource("CapsuleShape3D_jiddn")
 
 [node name="CharacterComponents" type="Node3D" parent="CHARACTER"]
 
-[node name="MovementComponent" type="Node" parent="CHARACTER/CharacterComponents"]
+[node name="MovementComponent" type="Node" parent="CHARACTER/CharacterComponents" node_paths=PackedStringArray("direct_control_component", "target_control_component", "gamepad_control_component")]
 script = ExtResource("10_2j1nk")
+direct_control_component = NodePath("../../../CONTROL/ControlComponents/DirectControlComponent")
+target_control_component = NodePath("../../../CONTROL/ControlComponents/TargetControlComponent")
+gamepad_control_component = NodePath("../../../CONTROL/ControlComponents/GamepadControlComponent")
 enable_direction_snap = true
 destination_threshold = 0.1
 
