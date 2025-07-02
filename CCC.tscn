@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3 uid="uid://diueuwbtv4w82"]
+[gd_scene load_steps=15 format=3 uid="uid://diueuwbtv4w82"]
 
 [ext_resource type="Script" uid="uid://dykru37xmsyne" path="res://Scripts/CHARACTER.gd" id="1_eromc"]
 [ext_resource type="Script" uid="uid://b45fddjajjx8r" path="res://Scripts/CCC_Manager.gd" id="1_in1na"]
@@ -9,6 +9,7 @@
 [ext_resource type="Script" uid="uid://biuvjt8k8ovt5" path="res://Scripts/RawInputProcessor.gd" id="5_85dx6"]
 [ext_resource type="Script" uid="uid://cs68pcxkaivl0" path="res://Scripts/InputPriorityManager.gd" id="6_2j1nk"]
 [ext_resource type="Script" uid="uid://dqb4v5q4c1moa" path="res://Scripts/ControlComponents/DirectControlComponent.gd" id="7_85dx6"]
+[ext_resource type="Script" uid="uid://colhxkqbvk53v" path="res://Scripts/CharacterComponents/MovementComponent.gd" id="10_2j1nk"]
 [ext_resource type="PackedScene" uid="uid://cbx0rhk665pls" path="res://Assets/Character.tscn" id="18_o63we"]
 [ext_resource type="PackedScene" uid="uid://bsprrm672tx2s" path="res://MARKER.tscn" id="19_qtd55"]
 
@@ -16,9 +17,26 @@
 radius = 0.287885
 height = 1.70464
 
+[sub_resource type="SphereShape3D" id="SphereShape3D_2j1nk"]
+
 [node name="CCC_Manager" type="Node3D"]
 script = ExtResource("1_in1na")
 debug_mode = true
+
+[node name="DebugUI" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+metadata/_edit_use_anchors_ = true
+
+[node name="DebugLabel" type="Label" parent="DebugUI"]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 50.0
+offset_bottom = 33.0
+metadata/_edit_use_anchors_ = true
 
 [node name="CONTROL" type="Node3D" parent="."]
 script = ExtResource("4_35j32")
@@ -43,21 +61,6 @@ script = ExtResource("7_85dx6")
 
 [node name="GamepadControlComponent" type="Node" parent="CONTROL/ControlComponents"]
 
-[node name="DebugUI" type="Control" parent="."]
-layout_mode = 3
-anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
-metadata/_edit_use_anchors_ = true
-
-[node name="DebugLabel" type="Label" parent="DebugUI"]
-layout_mode = 0
-offset_left = 10.0
-offset_top = 10.0
-offset_right = 50.0
-offset_bottom = 33.0
-metadata/_edit_use_anchors_ = true
-
 [node name="CHARACTER" type="Node3D" parent="."]
 script = ExtResource("1_eromc")
 
@@ -74,12 +77,18 @@ parameters/Move/blend_position = -0.844419
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.853688, 0)
 shape = SubResource("CapsuleShape3D_odeog")
 
+[node name="CharacterComponents" type="Node3D" parent="CHARACTER"]
+
+[node name="MovementComponent" type="Node" parent="CHARACTER/CharacterComponents"]
+script = ExtResource("10_2j1nk")
+
 [node name="CAMERA" type="Node3D" parent="." node_paths=PackedStringArray("target_node")]
 script = ExtResource("3_in1na")
 target_node = NodePath("../CHARACTER/CharacterCore")
 
 [node name="SpringArm3D" type="SpringArm3D" parent="CAMERA"]
-spring_length = 2.0
+shape = SubResource("SphereShape3D_2j1nk")
+spring_length = 0.1
 
 [node name="Camera3D" type="Camera3D" parent="CAMERA/SpringArm3D"]
 transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 0, 0, 0)
@@ -88,5 +97,11 @@ transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 
 
 [node name="OrbitComponent" type="Node" parent="CAMERA/CameraComponents"]
 script = ExtResource("5_35j32")
+
+[node name="DistanceComponent" type="Node" parent="CAMERA/CameraComponents"]
+
+[node name="FollowComponent" type="Node" parent="CAMERA/CameraComponents"]
+
+[node name="EffectsComponent" type="Node" parent="CAMERA/CameraComponents"]
 
 [editable path="CHARACTER/CharacterCore/Character"]

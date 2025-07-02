@@ -43,10 +43,17 @@ var current_fov: float
 var target_fov: float
 
 func _ready():
-	verify_camera_structure()
+	print("CAMERA: Initializing...")
+	print("CAMERA: SpringArm3D path: ", $SpringArm3D)
+	print("CAMERA: SpringArm3D exists: ", $SpringArm3D != null)
+	
+	if not verify_camera_structure():
+		return
+	
 	initialize_camera_properties()
 	setup_target_following()
-
+	setup_spring_arm_collision()
+	
 func _process(delta):
 	update_camera_following(delta)
 	update_camera_properties(delta)
@@ -54,16 +61,19 @@ func _process(delta):
 func verify_camera_structure():
 	# Verify SpringArm3D structure
 	if not spring_arm:
-		push_error("CAMERA: SpringArm3D not found")
-		return
+		push_error("CAMERA: SpringArm3D not found at $SpringArm3D")
+		return false
 		
 	if not camera_core:
-		push_error("CAMERA: Camera3D not found in SpringArm3D")
-		return
+		push_error("CAMERA: Camera3D not found at $SpringArm3D/Camera3D")
+		return false
 		
 	if not camera_components:
 		push_error("CAMERA: CameraComponents not found")
-		return
+		return false
+	
+	print("CAMERA: Scene structure verified")
+	return true
 
 func initialize_camera_properties():
 	# Initialize camera rotation
@@ -84,6 +94,22 @@ func setup_target_following():
 	if target_node:
 		target_position = target_node.global_position + Vector3(0, follow_height_offset, 0)
 		global_position = target_position
+
+func setup_spring_arm_collision():
+	if not spring_arm:
+		push_error("CAMERA: SpringArm3D not found for collision setup")
+		return
+		
+	if target_node:
+		# Exclude the character from camera collision
+		spring_arm.add_excluded_object(target_node)
+		
+		# Set collision mask (avoid character layer)
+		spring_arm.collision_mask = 1  # Only collide with environment (layer 1)
+		
+		print("CAMERA: SpringArm3D collision configured")
+	else:
+		print("CAMERA: No target_node set for collision exclusion")
 
 func update_camera_following(delta: float):
 	# Follow target if assigned
@@ -114,6 +140,11 @@ func set_manager(ccc_manager: CCC_Manager):
 
 func apply_rotation(yaw: float, pitch: float):
 	"""Apply rotation to SpringArm3D - called by OrbitComponent"""
+	if not spring_arm:
+		# If called before SpringArm3D is ready, defer the call
+		call_deferred("apply_rotation", yaw, pitch)
+		return
+	
 	camera_rotation_y = yaw
 	camera_rotation_x = pitch
 	

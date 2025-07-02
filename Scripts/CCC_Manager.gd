@@ -81,19 +81,25 @@ func update_debug_display():
 		
 		# Input system status
 		if control_system and control_system.input_core:
-			debug_text += "InputCore: ✓\n"
 			var priority_mgr = control_system.input_core.input_priority_manager
 			if priority_mgr:
 				debug_text += "Active Input: " + priority_mgr.get_input_type_name(priority_mgr.get_active_input_type()) + "\n"
-			
-			# DirectControl status
-			var direct_control = get_node("CONTROL/ControlComponents/DirectControlComponent")
-			if direct_control:
-				var info = direct_control.get_debug_info()
-				debug_text += "WASD Active: " + ("✓" if info.is_active else "✗") + "\n"
-				debug_text += "Movement: " + str(info.current_movement) + "\n"
 		
-		debug_text += "Mouse Mode: " + ("Captured" if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED else "Free") + "\n"
+		# Movement status
+		var movement_component = get_node("CHARACTER/CharacterComponents/MovementComponent")
+		if movement_component:
+			var move_info = movement_component.get_debug_info()
+			debug_text += "Speed: " + str("%.1f" % move_info.current_speed) + "\n"
+			debug_text += "Moving: " + ("✓" if move_info.is_moving else "✗") + "\n"
+		
+		# Camera status
+		var orbit_component = get_node("CAMERA/CameraComponents/OrbitComponent")
+		if orbit_component:
+			var cam_info = orbit_component.get_debug_info()
+			debug_text += "Camera Pitch: " + str("%.0f" % cam_info.current_rotation_deg.x) + "°\n"
+			debug_text += "Camera Yaw: " + str("%.0f" % cam_info.current_rotation_deg.y) + "°\n"
+		
+		debug_text += "Mouse: " + ("Captured" if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED else "Free") + "\n"
 		debug_label.text = debug_text
 
 func _process(delta):
