@@ -3,7 +3,7 @@
 [ext_resource type="PackedScene" uid="uid://dj17vrtc3b8u2" path="res://Assets/PS_Character_Gurl.glb" id="1_ck7ep"]
 [ext_resource type="AnimationNodeStateMachine" uid="uid://bxb35evoq85bp" path="res://AnimationTreeMove1d.tres" id="2_upni3"]
 
-[node name="PS_Character_Gurl" instance=ExtResource("1_ck7ep")]
+[node name="Character" instance=ExtResource("1_ck7ep")]
 
 [node name="AnimationTree" type="AnimationTree" parent="." index="2"]
 tree_root = ExtResource("2_upni3")

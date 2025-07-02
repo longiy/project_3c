@@ -1,4 +1,10 @@
-res://Assets/ps_character_gurl.tscn
+res://SCENE.tscn
 res://AnimationTreeMove1d.tres
 res://CCC.tscn
-res://SCENE.tscn
+res://Scripts/CAMERA.gd
+res://Scripts/CCC_Manager.gd
+res://Scripts/CHARACTER.gd
+res://Scripts/CONTROL.gd
+res://Scripts/CameraComponents/OrbitComponent.gd
+res://Assets/ps_character_gurl.tscn
+res://Assets/ps_character_gurl.tres

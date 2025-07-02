@@ -34,51 +34,59 @@ environment = SubResource("Environment_w862e")
 transform = Transform3D(0.707107, 0.5, -0.5, 0, 0.707107, 0.707107, 0.707107, -0.5, 0.5, 0, 0, 0)
 shadow_enabled = true
 
-[node name="GROUND" type="MeshInstance3D" parent="."]
+[node name="Environment" type="Node" parent="."]
+
+[node name="GROUND" type="MeshInstance3D" parent="Environment"]
 transform = Transform3D(10, 0, 0, 0, 10, 0, 0, 0, 10, 0, 0, 0)
 mesh = SubResource("PlaneMesh_3a8dd")
 skeleton = NodePath("")
 surface_material_override/0 = SubResource("StandardMaterial3D_u4csh")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="GROUND"]
+[node name="StaticBody3D" type="StaticBody3D" parent="Environment/GROUND"]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="GROUND/StaticBody3D"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Environment/GROUND/StaticBody3D"]
 shape = SubResource("ConcavePolygonShape3D_5si1x")
 
-[node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
+[node name="Platforms" type="Node" parent="Environment"]
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="Environment/Platforms"]
 transform = Transform3D(2.42447, 0, 0, 0, 0.664683, 0, 0, 0, 2.04492, -3.99634, -0.290132, 2.53559)
 mesh = SubResource("CylinderMesh_7q8v5")
+skeleton = NodePath("../../root/@EditorNode@21272/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11482/@VSplitContainer@11134/@HSplitContainer@11136/@HSplitContainer@11138/@Control@11139/@SubViewportContainer@11140/@SubViewport@11141/Scene")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D2"]
+[node name="StaticBody3D" type="StaticBody3D" parent="Environment/Platforms/MeshInstance3D2"]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D2/StaticBody3D"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Environment/Platforms/MeshInstance3D2/StaticBody3D"]
 shape = SubResource("ConcavePolygonShape3D_8x7ek")
 
-[node name="MeshInstance3D3" type="MeshInstance3D" parent="."]
+[node name="MeshInstance3D3" type="MeshInstance3D" parent="Environment/Platforms"]
 transform = Transform3D(3.35446, 0, 0, 0, 1.36947, 0, 0, 0, 2.87361, -2.72742, -0.0740764, -0.920851)
 mesh = SubResource("CylinderMesh_7q8v5")
+skeleton = NodePath("../../root/@EditorNode@21272/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11482/@VSplitContainer@11134/@HSplitContainer@11136/@HSplitContainer@11138/@Control@11139/@SubViewportContainer@11140/@SubViewport@11141/Scene")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D3"]
+[node name="StaticBody3D" type="StaticBody3D" parent="Environment/Platforms/MeshInstance3D3"]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D3/StaticBody3D"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Environment/Platforms/MeshInstance3D3/StaticBody3D"]
 shape = SubResource("ConcavePolygonShape3D_8x7ek")
 
-[node name="MeshInstance3D4" type="MeshInstance3D" parent="."]
+[node name="MeshInstance3D4" type="MeshInstance3D" parent="Environment/Platforms"]
 transform = Transform3D(3.35446, 0, 0, 0, 2.35815, 0, 0, 0, 2.87361, 1.87786, -0.932117, -5.06543)
 mesh = SubResource("CylinderMesh_7q8v5")
+skeleton = NodePath("../../root/@EditorNode@21272/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11482/@VSplitContainer@11134/@HSplitContainer@11136/@HSplitContainer@11138/@Control@11139/@SubViewportContainer@11140/@SubViewport@11141/Scene")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D4"]
+[node name="StaticBody3D" type="StaticBody3D" parent="Environment/Platforms/MeshInstance3D4"]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D4/StaticBody3D"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Environment/Platforms/MeshInstance3D4/StaticBody3D"]
 shape = SubResource("ConcavePolygonShape3D_8x7ek")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Environment/Platforms"]
 transform = Transform3D(-4.37114e-07, -10, 0, 10, -4.37114e-07, 0, 0, 0, 10, 10, 0, 0)
 mesh = SubResource("PlaneMesh_caybs")
+skeleton = NodePath("../../root/@EditorNode@21272/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11482/@VSplitContainer@11134/@HSplitContainer@11136/@HSplitContainer@11138/@Control@11139/@SubViewportContainer@11140/@SubViewport@11141/Scene")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D"]
+[node name="StaticBody3D" type="StaticBody3D" parent="Environment/Platforms/MeshInstance3D"]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Environment/Platforms/MeshInstance3D/StaticBody3D"]
 shape = SubResource("ConcavePolygonShape3D_caybs")
 
 [node name="CCC" parent="." instance=ExtResource("1_5si1x")]

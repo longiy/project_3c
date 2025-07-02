@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://bsprrm672tx2s"]
 
-[ext_resource type="Texture2D" uid="uid://cc7t3a5ncyf1y" path="res://Assets/grid-cursor.png" id="1_006f4"]
+[ext_resource type="Texture2D" uid="uid://cc7t3a5ncyf1y" path="res://Assets/Cursor.png" id="1_006f4"]
 
 [node name="MARKER" type="Node3D"]
 

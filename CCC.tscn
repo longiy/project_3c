@@ -1,16 +1,19 @@
-[gd_scene load_steps=5 format=3 uid="uid://diueuwbtv4w82"]
+[gd_scene load_steps=9 format=3 uid="uid://diueuwbtv4w82"]
 
-[ext_resource type="PackedScene" uid="uid://cbx0rhk665pls" path="res://Assets/ps_character_gurl.tscn" id="18_o63we"]
+[ext_resource type="Script" uid="uid://dykru37xmsyne" path="res://Scripts/CHARACTER.gd" id="1_eromc"]
+[ext_resource type="Script" uid="uid://b45fddjajjx8r" path="res://Scripts/CCC_Manager.gd" id="1_in1na"]
+[ext_resource type="Script" uid="uid://bae17qmm6fsja" path="res://Scripts/CAMERA.gd" id="3_in1na"]
+[ext_resource type="Script" uid="uid://cgx42y8g35q8v" path="res://Scripts/CONTROL.gd" id="4_35j32"]
+[ext_resource type="Script" uid="uid://br42dys6ahaqr" path="res://Scripts/CameraComponents/OrbitComponent.gd" id="5_35j32"]
+[ext_resource type="PackedScene" uid="uid://cbx0rhk665pls" path="res://Assets/Character.tscn" id="18_o63we"]
 [ext_resource type="PackedScene" uid="uid://bsprrm672tx2s" path="res://MARKER.tscn" id="19_qtd55"]
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_uyn8p"]
-radius = 0.01
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_odeog"]
 radius = 0.287885
 height = 1.70464
 
-[node name="CCC" type="Node3D"]
+[node name="CCC_Manager" type="Node3D"]
+script = ExtResource("1_in1na")
 
 [node name="DebugUI" type="Control" parent="."]
 layout_mode = 3
@@ -27,31 +30,40 @@ offset_right = 50.0
 offset_bottom = 33.0
 metadata/_edit_use_anchors_ = true
 
-[node name="CAMERARIG" type="Node3D" parent="."]
+[node name="CHARACTER" type="Node3D" parent="."]
+script = ExtResource("1_eromc")
 
-[node name="SpringArm3D" type="SpringArm3D" parent="CAMERARIG"]
-spring_length = 2.0
-
-[node name="Camera3D" type="Camera3D" parent="CAMERARIG/SpringArm3D"]
-transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 0, 0, 0)
-
-[node name="CHARACTER" type="CharacterBody3D" parent="."]
+[node name="CharacterCore" type="CharacterBody3D" parent="CHARACTER"]
 collision_layer = 2
 slide_on_ceiling = false
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="CHARACTER"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
-mesh = SubResource("CapsuleMesh_uyn8p")
+[node name="Character" parent="CHARACTER/CharacterCore" instance=ExtResource("18_o63we")]
 
-[node name="PS_Character_Gurl" parent="CHARACTER" instance=ExtResource("18_o63we")]
-
-[node name="AnimationTree" parent="CHARACTER/PS_Character_Gurl" index="2"]
+[node name="AnimationTree" parent="CHARACTER/CharacterCore/Character" index="2"]
 parameters/Move/blend_position = -0.844419
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="CHARACTER"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CHARACTER/CharacterCore"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.853688, 0)
 shape = SubResource("CapsuleShape3D_odeog")
 
-[node name="CURSOR" parent="." instance=ExtResource("19_qtd55")]
+[node name="CAMERA" type="Node3D" parent="." node_paths=PackedStringArray("target_node")]
+script = ExtResource("3_in1na")
+target_node = NodePath("../CHARACTER/CharacterCore")
 
-[editable path="CHARACTER/PS_Character_Gurl"]
+[node name="SpringArm3D" type="SpringArm3D" parent="CAMERA"]
+spring_length = 2.0
+
+[node name="Camera3D" type="Camera3D" parent="CAMERA/SpringArm3D"]
+transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 0, 0, 0)
+
+[node name="CameraComponents" type="Node3D" parent="CAMERA"]
+
+[node name="OrbitComponent" type="Node" parent="CAMERA/CameraComponents"]
+script = ExtResource("5_35j32")
+
+[node name="CONTROL" type="Node3D" parent="."]
+script = ExtResource("4_35j32")
+
+[node name="CURSOR" parent="CONTROL" instance=ExtResource("19_qtd55")]
+
+[editable path="CHARACTER/CharacterCore/Character"]

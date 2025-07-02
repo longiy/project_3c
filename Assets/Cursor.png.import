@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cc7t3a5ncyf1y"
-path.s3tc="res://.godot/imported/grid-cursor.png-673318dfdf0a00e41c780c9a4bd556bf.s3tc.ctex"
+path.s3tc="res://.godot/imported/Cursor.png-cae8fd761fc8e5a370200d6d7518f8e9.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://Assets/grid-cursor.png"
-dest_files=["res://.godot/imported/grid-cursor.png-673318dfdf0a00e41c780c9a4bd556bf.s3tc.ctex"]
+source_file="res://Assets/Cursor.png"
+dest_files=["res://.godot/imported/Cursor.png-cae8fd761fc8e5a370200d6d7518f8e9.s3tc.ctex"]
 
 [params]
 
