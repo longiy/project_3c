@@ -131,6 +131,7 @@ shape = SubResource("CapsuleShape3D_jiddn")
 
 [node name="MovementComponent" type="Node" parent="CHARACTER/CharacterComponents"]
 script = ExtResource("10_2j1nk")
+enable_direction_snap = true
 destination_threshold = 0.1
 
 [node name="CAMERA" type="Node3D" parent="." node_paths=PackedStringArray("spring_arm", "camera_core", "orbit_component", "distance_component", "follow_component", "target_node")]

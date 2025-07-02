@@ -11,11 +11,13 @@ class_name MovementComponent
 @export var sprint_speed: float = 8.0
 
 @export_group("Character Rotation")
-@export var movement_rotation_speed: float = 9.0
-@export var navigation_rotation_speed: float = 9.0
-@export var camera_align_rotation_speed: float = 9.0
+@export var movement_rotation_speed: float = 8.0
+@export var navigation_rotation_speed: float = 5.0
+@export var camera_align_rotation_speed: float = 3.0
 @export var snap_rotation_threshold: float = 0.1
 @export var enable_navigation_rotation: bool = true
+@export var enable_direction_snap: bool = false
+@export var snap_angle_degrees: float = 45.0
 
 @export_group("Physics")
 @export var acceleration: float = 8.0
@@ -169,11 +171,17 @@ func rotate_toward_movement_direction(delta: float):
 	var movement_3d = convert_to_world_space(current_direction)
 	if movement_3d.length() > 0.1:  # Only rotate if there's meaningful movement
 		var target_rotation = atan2(movement_3d.x, movement_3d.z)
-		character_core.rotation.y = lerp_angle(
-			character_core.rotation.y,
-			target_rotation,
-			movement_rotation_speed * delta
-		)
+		
+		# Apply direction snapping if enabled
+		if enable_direction_snap:
+			target_rotation = snap_to_angle_increments(target_rotation)
+			character_core.rotation.y = target_rotation  # Instant snap
+		else:
+			character_core.rotation.y = lerp_angle(
+				character_core.rotation.y,
+				target_rotation,
+				movement_rotation_speed * delta
+			)
 
 func rotate_toward_camera_forward(delta: float):
 	# Align character to face camera forward direction
@@ -182,22 +190,50 @@ func rotate_toward_camera_forward(delta: float):
 	camera_forward = camera_forward.normalized()
 	
 	var target_rotation = atan2(camera_forward.x, camera_forward.z)
-	character_core.rotation.y = lerp_angle(
-		character_core.rotation.y,
-		target_rotation,
-		camera_align_rotation_speed * delta
-	)
+	
+	# Apply direction snapping if enabled
+	if enable_direction_snap:
+		target_rotation = snap_to_angle_increments(target_rotation)
+		character_core.rotation.y = target_rotation  # Instant snap
+	else:
+		character_core.rotation.y = lerp_angle(
+			character_core.rotation.y,
+			target_rotation,
+			camera_align_rotation_speed * delta
+		)
 
 func apply_character_rotation(delta: float):
 	var current_rotation = character_core.rotation.y
 	var rotation_diff = angle_difference(current_rotation, target_character_rotation)
 	
-	if abs(rotation_diff) > snap_rotation_threshold:
-		var new_rotation = lerp_angle(current_rotation, target_character_rotation, navigation_rotation_speed * delta)
-		character_core.rotation.y = new_rotation
-	else:
-		character_core.rotation.y = target_character_rotation
+	# Apply direction snapping if enabled
+	var final_target = target_character_rotation
+	if enable_direction_snap:
+		final_target = snap_to_angle_increments(target_character_rotation)
+		character_core.rotation.y = final_target  # Instant snap
 		has_rotation_target = false
+	else:
+		if abs(rotation_diff) > snap_rotation_threshold:
+			var new_rotation = lerp_angle(current_rotation, final_target, navigation_rotation_speed * delta)
+			character_core.rotation.y = new_rotation
+		else:
+			character_core.rotation.y = final_target
+			has_rotation_target = false
+
+func snap_to_angle_increments(rotation: float) -> float:
+	# Convert angle to radians
+	var snap_angle_radians = deg_to_rad(snap_angle_degrees)
+	
+	# Round to nearest increment
+	var snapped = round(rotation / snap_angle_radians) * snap_angle_radians
+	
+	# Normalize to [-PI, PI] range
+	while snapped > PI:
+		snapped -= TAU
+	while snapped < -PI:
+		snapped += TAU
+	
+	return snapped
 
 func angle_difference(from: float, to: float) -> float:
 	var diff = to - from
