@@ -1,4 +1,4 @@
-[gd_resource type="AnimationNodeStateMachine" load_steps=15 format=3 uid="uid://bxb35evoq85bp"]
+[gd_resource type="AnimationNodeStateMachine" load_steps=14 format=3 uid="uid://bxb35evoq85bp"]
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_upni3"]
 animation = &"Airborne"
@@ -21,9 +21,6 @@ blend_point_0/pos = -1.0
 blend_point_1/node = SubResource("AnimationNodeAnimation_ly3n2")
 blend_point_1/pos = 1.0
 sync = true
-
-[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_o8mde"]
-advance_mode = 2
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_xyta0"]
 xfade_time = 0.1
@@ -71,5 +68,5 @@ states/Land/position = Vector2(950.419, 470.27)
 states/Move/node = SubResource("AnimationNodeBlendSpace1D_8iigs")
 states/Move/position = Vector2(950.582, 200.318)
 states/Start/position = Vector2(614.4, 322.4)
-transitions = ["Start", "Idle", SubResource("AnimationNodeStateMachineTransition_o8mde"), "Airborne", "Land", SubResource("AnimationNodeStateMachineTransition_xyta0"), "Land", "Idle", SubResource("AnimationNodeStateMachineTransition_ly3n2"), "Idle", "Airborne", SubResource("AnimationNodeStateMachineTransition_f3nvh"), "Idle", "Move", SubResource("AnimationNodeStateMachineTransition_ivj5s"), "Move", "Idle", SubResource("AnimationNodeStateMachineTransition_uvmue"), "Move", "Airborne", SubResource("AnimationNodeStateMachineTransition_3ii0w"), "Land", "Move", SubResource("AnimationNodeStateMachineTransition_bfelf")]
+transitions = ["Airborne", "Land", SubResource("AnimationNodeStateMachineTransition_xyta0"), "Land", "Idle", SubResource("AnimationNodeStateMachineTransition_ly3n2"), "Idle", "Airborne", SubResource("AnimationNodeStateMachineTransition_f3nvh"), "Idle", "Move", SubResource("AnimationNodeStateMachineTransition_ivj5s"), "Move", "Idle", SubResource("AnimationNodeStateMachineTransition_uvmue"), "Move", "Airborne", SubResource("AnimationNodeStateMachineTransition_3ii0w"), "Land", "Move", SubResource("AnimationNodeStateMachineTransition_bfelf")]
 graph_offset = Vector2(-106.795, 79.9281)
