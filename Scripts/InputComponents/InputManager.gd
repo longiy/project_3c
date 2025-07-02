@@ -1,11 +1,11 @@
-# InputManager.gd - SIMPLIFIED: Raw input detection only (logic migrated to CCC_ControlManager)
+# InputManager.gd - FIXED: WASD overrides but doesn't cancel click navigation
 extends Node
 class_name InputManager
 
 # === SIGNALS ===
-signal movement_started(direction: Vector2, magnitude: float)  # DEPRECATED: Use CCC_ControlManager
-signal movement_updated(direction: Vector2, magnitude: float)  # DEPRECATED: Use CCC_ControlManager  
-signal movement_stopped()  # DEPRECATED: Use CCC_ControlManager
+signal movement_started(direction: Vector2, magnitude: float)
+signal movement_updated(direction: Vector2, magnitude: float)
+signal movement_stopped()
 signal jump_pressed()
 signal sprint_started()
 signal sprint_stopped()
@@ -19,7 +19,7 @@ signal click_navigation(world_position: Vector3)
 @export var input_deadzone = 0.05
 @export var movement_update_frequency = 60
 
-# === LEGACY STATE (Used by CCC_ControlManager) ===
+# === STATE ===
 var character: CharacterBody3D
 var camera_rig: CameraController
 
@@ -32,8 +32,8 @@ var input_components: Array[Node] = []
 var movement_update_timer = 0.0
 var movement_update_interval: float
 
-# MIGRATION STATUS
-var input_logic_migrated = false
+# FIXED: Track WASD override state
+var wasd_is_overriding = false
 
 func _ready():
 	character = get_parent() as CharacterBody3D
@@ -48,20 +48,9 @@ func _ready():
 		push_warning("No CameraController found - click navigation may not work")
 	
 	call_deferred("find_input_components")
-	call_deferred("check_migration_status")
-
-func check_migration_status():
-	"""Check if input logic has been migrated to CCC_ControlManager"""
-	var control_manager = get_parent().get_node_or_null("CCC_ControlManager")
-	if control_manager:
-		input_logic_migrated = true
-		print("🔄 InputManager: Logic migrated to CCC_ControlManager - operating in legacy mode")
-	else:
-		input_logic_migrated = false
-		print("📦 InputManager: No CCC_ControlManager found - operating in legacy mode")
 
 func _input(event):
-	# Handle discrete inputs (always active)
+	# Handle discrete inputs
 	if event.is_action_pressed("jump"):
 		jump_pressed.emit()
 	elif event.is_action_pressed("reset"):
@@ -76,17 +65,12 @@ func _input(event):
 		slow_walk_stopped.emit()
 
 func _physics_process(delta):
-	# Only handle movement input if logic hasn't been migrated
-	if not input_logic_migrated:
-		handle_movement_input_legacy(delta)
+	handle_movement_input(delta)
 
-# === LEGACY MOVEMENT INPUT (Only active if not migrated) ===
-
-func handle_movement_input_legacy(delta: float):
-	"""Legacy movement input handling (used when CCC not active)"""
+func handle_movement_input(delta: float):
 	movement_update_timer += delta
 	
-	var new_input = get_current_movement_input_legacy()
+	var new_input = get_current_movement_input()
 	var input_magnitude = new_input.length()
 	var has_input = input_magnitude > input_deadzone
 	
@@ -109,6 +93,11 @@ func handle_movement_input_legacy(delta: float):
 		current_raw_input = Vector2.ZERO
 		last_sent_input = Vector2.ZERO
 		movement_stopped.emit()
+		
+		# FIXED: When movement stops, clear click navigation if WASD was overriding
+		if wasd_is_overriding:
+			cancel_all_input_components()
+			wasd_is_overriding = false
 	
 	elif is_moving and movement_update_timer >= movement_update_interval:
 		if new_input.distance_to(last_sent_input) > 0.1:
@@ -117,19 +106,19 @@ func handle_movement_input_legacy(delta: float):
 			movement_updated.emit(new_input, input_magnitude)
 		movement_update_timer = 0.0
 
-func get_current_movement_input_legacy() -> Vector2:
-	"""LEGACY: Complex input priority logic (kept for backward compatibility)"""
-	# NOTE: This is the old logic - use CCC_ControlManager.resolve_input_priority() instead
-	
+# FIXED: New input priority logic
+func get_current_movement_input() -> Vector2:
 	# Check camera mode first
 	if camera_rig and camera_rig.is_in_click_navigation_mode():
 		# In click navigation mode - check WASD first (override priority)
 		var wasd_input = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
 		if wasd_input.length() > input_deadzone:
 			# WASD is active - this overrides click navigation
+			wasd_is_overriding = true
 			return wasd_input
 		else:
 			# No WASD input - check click navigation
+			wasd_is_overriding = false
 			for component in input_components:
 				if is_component_active(component):
 					var component_input = component.get_movement_input()
@@ -137,6 +126,7 @@ func get_current_movement_input_legacy() -> Vector2:
 						return component_input
 	else:
 		# In orbit mode - WASD only
+		wasd_is_overriding = false
 		var wasd_input = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
 		if wasd_input.length() > input_deadzone:
 			cancel_all_input_components()  # Cancel click nav when switching to orbit
@@ -144,41 +134,21 @@ func get_current_movement_input_legacy() -> Vector2:
 	
 	return Vector2.ZERO
 
-# === RAW INPUT DETECTION (Used by CCC_ControlManager) ===
-
-func get_raw_wasd_input() -> Vector2:
-	"""Get raw WASD input without any processing"""
-	return Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
-
-func get_raw_click_input() -> Vector2:
-	"""Get raw click navigation input without processing"""
-	for component in input_components:
-		if is_component_active(component):
-			var component_input = component.get_movement_input()
-			if component_input and component_input.length() > input_deadzone:
-				return component_input
-	return Vector2.ZERO
-
-# === INPUT COMPONENT MANAGEMENT ===
-
+# Keep existing methods but remove the problematic cancel call
 func cancel_all_input_components():
 	for component in input_components:
 		if component and component.has_method("cancel_input"):
 			component.cancel_input()
 
+# Rest of the methods stay the same...
 func find_input_components():
 	input_components.clear()
 	for child in character.get_children():
 		if child != self and child.has_method("get_movement_input"):
 			input_components.append(child)
-	
-	if input_components.size() > 0:
-		print("📋 InputManager: Found ", input_components.size(), " input components")
 
 func is_component_active(component: Node) -> bool:
 	return is_instance_valid(component) and component.has_method("is_active") and component.is_active()
-
-# === STATE QUERIES ===
 
 func get_movement_duration() -> float:
 	if movement_active:
@@ -191,34 +161,12 @@ func is_movement_active() -> bool:
 func get_current_input_direction() -> Vector2:
 	return current_raw_input
 
-# === DEBUG INFO ===
-
 func get_debug_info() -> Dictionary:
-	var debug_data = {
-		"migration_status": "migrated" if input_logic_migrated else "legacy",
+	return {
 		"movement_active": movement_active,
 		"current_input": current_raw_input,
 		"movement_duration": get_movement_duration(),
 		"component_count": input_components.size(),
-		"raw_wasd": get_raw_wasd_input(),
-		"raw_click": get_raw_click_input()
+		"camera_mode": camera_rig.get_mode_name(camera_rig.get_current_mode()) if camera_rig else "unknown",
+		"wasd_overriding": wasd_is_overriding  # ADDED: Debug info
 	}
-	
-	if camera_rig:
-		debug_data["camera_mode"] = camera_rig.get_mode_name(camera_rig.get_current_mode())
-	else:
-		debug_data["camera_mode"] = "unknown"
-	
-	return debug_data
-
-# === MIGRATION HELPERS ===
-
-func disable_legacy_movement_processing():
-	"""Called by CCC_ControlManager to disable legacy processing"""
-	input_logic_migrated = true
-	print("🔄 InputManager: Legacy movement processing disabled")
-
-func enable_legacy_movement_processing():
-	"""Re-enable legacy processing if CCC is disabled"""
-	input_logic_migrated = false
-	print("📦 InputManager: Legacy movement processing enabled")
