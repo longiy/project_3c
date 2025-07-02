@@ -1,7 +1,8 @@
-[gd_scene load_steps=16 format=3 uid="uid://diueuwbtv4w82"]
+[gd_scene load_steps=20 format=3 uid="uid://diueuwbtv4w82"]
 
 [ext_resource type="Script" uid="uid://dykru37xmsyne" path="res://Scripts/CHARACTER.gd" id="1_eromc"]
 [ext_resource type="Script" uid="uid://b45fddjajjx8r" path="res://Scripts/CCC_Manager.gd" id="1_in1na"]
+[ext_resource type="Script" uid="uid://dn53vssdavg31" path="res://Scripts/ControlComponents/InputVisualFeedback.gd" id="2_ps1uw"]
 [ext_resource type="Script" uid="uid://bae17qmm6fsja" path="res://Scripts/CAMERA.gd" id="3_in1na"]
 [ext_resource type="Script" uid="uid://5h6dkq132qk4" path="res://Scripts/InputCore.gd" id="4_6po8h"]
 [ext_resource type="Script" uid="uid://cgx42y8g35q8v" path="res://Scripts/CONTROL.gd" id="4_35j32"]
@@ -11,18 +12,48 @@
 [ext_resource type="Script" uid="uid://dqb4v5q4c1moa" path="res://Scripts/ControlComponents/DirectControlComponent.gd" id="7_85dx6"]
 [ext_resource type="Script" uid="uid://chl2y2xkcppm7" path="res://Scripts/ControlComponents/TargetControlComponenet.gd" id="8_121sy"]
 [ext_resource type="Script" uid="uid://colhxkqbvk53v" path="res://Scripts/CharacterComponents/MovementComponent.gd" id="10_2j1nk"]
+[ext_resource type="Script" uid="uid://do403hdc6yrpp" path="res://Scripts/ControlComponents/GamepadControlComponent.gd" id="10_oa0io"]
+[ext_resource type="Script" uid="uid://moixbko0kb3g" path="res://Scripts/CameraComponents/DistanceComponent.gd" id="16_i47c0"]
+[ext_resource type="Script" uid="uid://cyl6j2l00ddyi" path="res://Scripts/CameraComponents/FollowComponent.gd" id="17_2ojfn"]
 [ext_resource type="PackedScene" uid="uid://cbx0rhk665pls" path="res://Assets/Character.tscn" id="18_o63we"]
 [ext_resource type="PackedScene" uid="uid://bsprrm672tx2s" path="res://MARKER.tscn" id="19_qtd55"]
 
-[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_odeog"]
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_jiddn"]
 radius = 0.287885
 height = 1.70464
 
-[sub_resource type="SphereShape3D" id="SphereShape3D_2j1nk"]
+[sub_resource type="SphereShape3D" id="SphereShape3D_dohcx"]
 
 [node name="CCC_Manager" type="Node3D"]
 script = ExtResource("1_in1na")
 debug_mode = true
+
+[node name="UI" type="Control" parent="." node_paths=PackedStringArray("input_priority_manager")]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("2_ps1uw")
+input_priority_manager = NodePath("../CONTROL/InputCore/InputPriorityManager")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="InputMethodLabel" type="Label" parent="UI/VBoxContainer"]
+layout_mode = 2
+
+[node name="ActivityBars" type="VBoxContainer" parent="UI/VBoxContainer"]
+layout_mode = 2
+
+[node name="TransitionProgress" type="ProgressBar" parent="UI/VBoxContainer"]
+layout_mode = 2
+
+[node name="StatusPanel" type="Panel" parent="UI"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
 
 [node name="DebugUI" type="Control" parent="."]
 layout_mode = 3
@@ -44,8 +75,11 @@ script = ExtResource("4_35j32")
 
 [node name="CURSOR" parent="CONTROL" instance=ExtResource("19_qtd55")]
 
-[node name="InputCore" type="Node3D" parent="CONTROL"]
+[node name="InputCore" type="Node3D" parent="CONTROL" node_paths=PackedStringArray("raw_input_processor", "input_priority_manager", "control_system")]
 script = ExtResource("4_6po8h")
+raw_input_processor = NodePath("RawInputProcessor")
+input_priority_manager = NodePath("InputPriorityManager")
+control_system = NodePath("..")
 
 [node name="RawInputProcessor" type="Node" parent="CONTROL/InputCore"]
 script = ExtResource("5_85dx6")
@@ -55,13 +89,16 @@ script = ExtResource("6_2j1nk")
 
 [node name="ControlComponents" type="Node3D" parent="CONTROL"]
 
-[node name="DirectControlComponent" type="Node" parent="CONTROL/ControlComponents"]
+[node name="DirectControlComponent" type="Node" parent="CONTROL/ControlComponents" node_paths=PackedStringArray("input_priority_manager")]
 script = ExtResource("7_85dx6")
+input_priority_manager = NodePath("../../InputCore/InputPriorityManager")
 
 [node name="TargetControlComponent" type="Node" parent="CONTROL/ControlComponents"]
 script = ExtResource("8_121sy")
 
-[node name="GamepadControlComponent" type="Node" parent="CONTROL/ControlComponents"]
+[node name="GamepadControlComponent" type="Node" parent="CONTROL/ControlComponents" node_paths=PackedStringArray("input_priority_manager")]
+script = ExtResource("10_oa0io")
+input_priority_manager = NodePath("../../InputCore/InputPriorityManager")
 
 [node name="CHARACTER" type="Node3D" parent="."]
 script = ExtResource("1_eromc")
@@ -77,19 +114,26 @@ parameters/Move/blend_position = -0.844419
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="CHARACTER/CharacterCore"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.853688, 0)
-shape = SubResource("CapsuleShape3D_odeog")
+shape = SubResource("CapsuleShape3D_jiddn")
 
 [node name="CharacterComponents" type="Node3D" parent="CHARACTER"]
 
 [node name="MovementComponent" type="Node" parent="CHARACTER/CharacterComponents"]
 script = ExtResource("10_2j1nk")
+destination_threshold = 0.1
+debug_navigation = false
 
-[node name="CAMERA" type="Node3D" parent="." node_paths=PackedStringArray("target_node")]
+[node name="CAMERA" type="Node3D" parent="." node_paths=PackedStringArray("spring_arm", "camera_core", "orbit_component", "distance_component", "follow_component", "target_node")]
 script = ExtResource("3_in1na")
+spring_arm = NodePath("SpringArm3D")
+camera_core = NodePath("SpringArm3D/Camera3D")
+orbit_component = NodePath("CameraComponents/OrbitComponent")
+distance_component = NodePath("CameraComponents/DistanceComponent")
+follow_component = NodePath("CameraComponents/FollowComponent")
 target_node = NodePath("../CHARACTER/CharacterCore")
 
 [node name="SpringArm3D" type="SpringArm3D" parent="CAMERA"]
-shape = SubResource("SphereShape3D_2j1nk")
+shape = SubResource("SphereShape3D_dohcx")
 spring_length = 0.1
 
 [node name="Camera3D" type="Camera3D" parent="CAMERA/SpringArm3D"]
@@ -102,8 +146,12 @@ script = ExtResource("5_35j32")
 use_smoothing = false
 
 [node name="DistanceComponent" type="Node" parent="CAMERA/CameraComponents"]
+script = ExtResource("16_i47c0")
 
 [node name="FollowComponent" type="Node" parent="CAMERA/CameraComponents"]
+script = ExtResource("17_2ojfn")
+motion_prediction = false
+vertical_lag = false
 
 [node name="EffectsComponent" type="Node" parent="CAMERA/CameraComponents"]
 

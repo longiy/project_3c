@@ -1,148 +1,97 @@
 # CCC_Manager.gd
 # Central coordinator for CHARACTER, CAMERA, CONTROL systems
-# Root node that manages the CCC framework architecture
+# Refactored: Export variables instead of absolute paths
 
 extends Node3D
 class_name CCC_Manager
 
-# System references
-@onready var character_system = $CHARACTER
-@onready var camera_system = $CAMERA
-@onready var control_system = $CONTROL
+# Export references - assign in inspector for modularity
+@export_group("System References")
+@export var character_system: CharacterSystem
+@export var camera_system: CameraSystem
+@export var control_system: ControlSystem
 
-# Scene references for quick access
-@onready var character_core: CharacterBody3D = $CHARACTER/CharacterCore
-@onready var spring_arm: SpringArm3D = $CAMERA/SpringArm3D
-@onready var camera_core: Camera3D = $CAMERA/SpringArm3D/Camera3D
+@export_group("Core Node References")
+@export var character_core: CharacterBody3D
+@export var spring_arm: SpringArm3D
+@export var camera_core: Camera3D
 
-# Basic properties
+@export_group("Debug")
 @export var debug_mode: bool = false
+@export var debug_label: Label
 
 func _ready():
-	# Verify scene structure
-	if not verify_scene_structure():
-		push_error("ControlManager: Scene structure invalid - check CCC hierarchy")
+	if not verify_references():
 		return
 	
-	# Initialize systems
 	initialize_systems()
 	
 	if debug_mode:
-		print("ControlManager: CCC Framework initialized successfully")
+		set_process(true)
+
+func _process(_delta):
+	if debug_mode and debug_label:
+		update_debug_display()
 
 func _input(event):
-	# Route all input to CONTROL system for processing
-	if control_system and control_system.has_method("process_input"):
+	if control_system:
 		control_system.process_input(event)
 
 func _unhandled_input(event):
-	# Fallback input handling
-	if control_system and control_system.has_method("process_unhandled_input"):
+	if control_system:
 		control_system.process_unhandled_input(event)
 
-func verify_scene_structure() -> bool:
-	# Check required nodes exist
-	var required_nodes = [
-		$CHARACTER,
-		$CAMERA, 
-		$CONTROL,
-		$CHARACTER/CharacterCore,
-		$CAMERA/SpringArm3D,
-		$CAMERA/SpringArm3D/Camera3D
-	]
+func verify_references() -> bool:
+	var missing_refs = []
 	
-	for node in required_nodes:
-		if not node:
-			push_error("CCC_Manager: Missing required node - " + str(node))
-			return false
+	if not character_system: missing_refs.append("character_system")
+	if not camera_system: missing_refs.append("camera_system")
+	if not control_system: missing_refs.append("control_system")
+	if not character_core: missing_refs.append("character_core")
+	if not spring_arm: missing_refs.append("spring_arm")
+	if not camera_core: missing_refs.append("camera_core")
 	
-	# Verify core node types
+	if missing_refs.size() > 0:
+		push_error("CCC_Manager: Missing references: " + str(missing_refs))
+		return false
+	
+	# Verify node types
 	if not character_core is CharacterBody3D:
-		push_error("CCC_Manager: CharacterCore must be CharacterBody3D")
+		push_error("CCC_Manager: character_core must be CharacterBody3D")
 		return false
-		
+	
 	if not camera_core is Camera3D:
-		push_error("CCC_Manager: Camera3D must be in SpringArm3D/Camera3D")
+		push_error("CCC_Manager: camera_core must be Camera3D")
 		return false
-		
+	
 	if not spring_arm is SpringArm3D:
-		push_error("CCC_Manager: SpringArm3D required for camera system")
+		push_error("CCC_Manager: spring_arm must be SpringArm3D")
 		return false
 	
 	return true
 
-func update_debug_display():
-	var debug_label = $DebugUI/DebugLabel
-	if debug_label:
-		var debug_text = ""
-		debug_text += "CHARACTER: " + ("✓" if character_system else "✗") + "\n"
-		debug_text += "CAMERA: " + ("✓" if camera_system else "✗") + "\n" 
-		debug_text += "CONTROL: " + ("✓" if control_system else "✗") + "\n"
-		
-		# Input system status
-		if control_system and control_system.input_core:
-			var priority_mgr = control_system.input_core.input_priority_manager
-			if priority_mgr:
-				debug_text += "Active Input: " + priority_mgr.get_input_type_name(priority_mgr.get_active_input_type()) + "\n"
-		
-		# Movement status
-		var movement_component = get_node("CHARACTER/CharacterComponents/MovementComponent")
-		if movement_component:
-			var move_info = movement_component.get_debug_info()
-			debug_text += "Speed: " + str("%.1f" % move_info.current_speed) + "\n"
-			debug_text += "Moving: " + ("✓" if move_info.is_moving else "✗") + "\n"
-		
-		# Camera status
-		var orbit_component = get_node("CAMERA/CameraComponents/OrbitComponent")
-		if orbit_component:
-			var cam_info = orbit_component.get_debug_info()
-			debug_text += "Camera Pitch: " + str("%.0f" % cam_info.current_rotation_deg.x) + "°\n"
-			debug_text += "Camera Yaw: " + str("%.0f" % cam_info.current_rotation_deg.y) + "°\n"
-		
-		debug_text += "Mouse: " + ("Captured" if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED else "Free") + "\n"
-		debug_label.text = debug_text
-
-func _process(delta):
-	# Update debug display each frame
-	update_debug_display()
-
 func initialize_systems():
-	# Set up system cross-references if needed
-	if character_system.has_method("set_manager"):
+	# Set manager references
+	if character_system and character_system.has_method("set_manager"):
 		character_system.set_manager(self)
-		
-	if camera_system.has_method("set_manager"):
+	
+	if camera_system and camera_system.has_method("set_manager"):
 		camera_system.set_manager(self)
-		
-	if control_system.has_method("set_manager"):
+	
+	if control_system and control_system.has_method("set_manager"):
 		control_system.set_manager(self)
 
-# Public API for system access
-func get_character_core() -> CharacterBody3D:
-	return character_core
-
-func get_spring_arm() -> SpringArm3D:
-	return spring_arm
-
-func get_camera_core() -> Camera3D:
-	return camera_core
-
-func get_camera_system() -> CameraSystem:
-	return camera_system
-
-func get_character_system() -> CharacterSystem:
-	return character_system
-
-func get_control_system() -> ControlSystem:
-	return control_system
-
-# Camera control API for components
-func set_camera_target(target: Node3D):
-	# Position camera system to follow target
-	if target:
-		global_position = target.global_position
-
-func apply_camera_rotation(yaw: float, pitch: float):
-	# Delegate to camera system
-	if camera_system:
-		camera_system.apply_rotation(yaw, pitch)
+func update_debug_display():
+	var debug_text = ""
+	debug_text += "CHARACTER: " + ("✓" if character_system else "✗") + "\n"
+	debug_text += "CAMERA: " + ("✓" if camera_system else "✗") + "\n"
+	debug_text += "CONTROL: " + ("✓" if control_system else "✗") + "\n"
+	
+	# Input system status
+	if control_system and control_system.input_core:
+		var priority_mgr = control_system.input_core.input_priority_manager
+		if priority_mgr:
+			var input_type = priority_mgr.get_active_input_type()
+			debug_text += "Input: " + priority_mgr.get_input_type_name(input_type) + "\n"
+	
+	debug_label.text = debug_text

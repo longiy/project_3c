@@ -5,3 +5,9 @@ res://Assets/Character.tscn
 res://Scripts/ControlComponents/InputVisualFeedback.gd
 res://Scripts/CameraComponents/DistanceComponent.gd
 res://Scripts/CameraComponents/FollowComponent.gd
+res://Scripts/CCC_Manager.gd
+res://Scripts/ControlComponents/DirectControlComponent.gd
+res://Scripts/InputCore.gd
+res://Scripts/ControlComponents/GamepadControlComponent.gd
+res://Scripts/CAMERA.gd
+res://Scripts/InputPriorityManager.gd

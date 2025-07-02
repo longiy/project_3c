@@ -1,37 +1,36 @@
 # InputCore.gd
 # Central input processing hub for CONTROL system
-# Routes input events to appropriate processors
+# Refactored: Export references, removed redundant code
 
 extends Node
 class_name InputCore
 
-# References
-@onready var raw_input_processor = $RawInputProcessor
-@onready var input_priority_manager = $InputPriorityManager
-
-var control_system: ControlSystem
+# Export references instead of onready absolute paths
+@export_group("References")
+@export var raw_input_processor: RawInputProcessor
+@export var input_priority_manager: InputPriorityManager
+@export var control_system: ControlSystem
 
 func _ready():
-	# Get parent CONTROL system
-	control_system = get_parent() as ControlSystem
-	if not control_system:
-		push_error("InputCore: Must be child of CONTROL system")
+	if not verify_references():
 		return
 	
-	# Verify child processors exist
-	if not raw_input_processor:
-		push_error("InputCore: RawInputProcessor not found")
-		return
-		
-	if not input_priority_manager:
-		push_error("InputCore: InputPriorityManager not found")
-		return
-	
-	# Initialize processors
 	setup_input_processors()
 
+func verify_references() -> bool:
+	var missing = []
+	
+	if not raw_input_processor: missing.append("raw_input_processor")
+	if not input_priority_manager: missing.append("input_priority_manager")
+	if not control_system: missing.append("control_system")
+	
+	if missing.size() > 0:
+		push_error("InputCore: Missing references: " + str(missing))
+		return false
+	
+	return true
+
 func setup_input_processors():
-	# Connect processors to InputCore
 	if raw_input_processor and raw_input_processor.has_method("set_input_core"):
 		raw_input_processor.set_input_core(self)
 	
@@ -39,30 +38,16 @@ func setup_input_processors():
 		input_priority_manager.set_input_core(self)
 
 func process_input(event: InputEvent):
-	# Route input to RawInputProcessor first
-	if raw_input_processor and raw_input_processor.has_method("process_raw_input"):
+	if raw_input_processor:
 		raw_input_processor.process_raw_input(event)
 
 func process_unhandled_input(event: InputEvent):
-	# Handle any unprocessed input
-	if raw_input_processor and raw_input_processor.has_method("process_unhandled_input"):
+	if raw_input_processor:
 		raw_input_processor.process_unhandled_input(event)
 
-# API for processors to route input through priority system
 func route_to_priority_manager(event: InputEvent, input_type: String):
-	if input_priority_manager and input_priority_manager.has_method("route_input"):
+	if input_priority_manager:
 		input_priority_manager.route_input(event, input_type)
 
-# API for getting control components
 func get_control_components():
-	if control_system:
-		return control_system.get_components()
-	return null
-
-# Debug info
-func get_input_debug_info() -> Dictionary:
-	return {
-		"raw_processor_active": raw_input_processor != null,
-		"priority_manager_active": input_priority_manager != null,
-		"control_system_connected": control_system != null
-	}
+	return control_system.get_components() if control_system else null

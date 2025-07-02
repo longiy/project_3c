@@ -1,10 +1,6 @@
-[gd_scene load_steps=14 format=3 uid="uid://dngafe0y2nx5b"]
+[gd_scene load_steps=10 format=3 uid="uid://dngafe0y2nx5b"]
 
 [ext_resource type="PackedScene" uid="uid://diueuwbtv4w82" path="res://CCC.tscn" id="1_5si1x"]
-[ext_resource type="Script" uid="uid://dn53vssdavg31" path="res://Scripts/ControlComponents/InputVisualFeedback.gd" id="2_caybs"]
-[ext_resource type="Script" uid="uid://do403hdc6yrpp" path="res://Scripts/ControlComponents/GamepadControlComponent.gd" id="2_u4csh"]
-[ext_resource type="Script" uid="uid://moixbko0kb3g" path="res://Scripts/CameraComponents/DistanceComponent.gd" id="3_aeafk"]
-[ext_resource type="Script" uid="uid://cyl6j2l00ddyi" path="res://Scripts/CameraComponents/FollowComponent.gd" id="4_udffu"]
 
 [sub_resource type="Environment" id="Environment_w862e"]
 background_mode = 1
@@ -93,47 +89,20 @@ skeleton = NodePath("../../root/@EditorNode@21272/@Panel@14/@VBoxContainer@15/Do
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Environment/Platforms/MeshInstance3D/StaticBody3D"]
 shape = SubResource("ConcavePolygonShape3D_caybs")
 
-[node name="CCC" parent="." instance=ExtResource("1_5si1x")]
+[node name="CCC" parent="." node_paths=PackedStringArray("character_system", "camera_system", "control_system", "character_core", "spring_arm", "camera_core", "debug_label") instance=ExtResource("1_5si1x")]
+character_system = NodePath("CHARACTER")
+camera_system = NodePath("CAMERA")
+control_system = NodePath("CONTROL")
+character_core = NodePath("CHARACTER/CharacterCore")
+spring_arm = NodePath("CAMERA/SpringArm3D")
+camera_core = NodePath("CAMERA/SpringArm3D/Camera3D")
+debug_label = NodePath("DebugUI/DebugLabel")
 
-[node name="GamepadControlComponent" parent="CCC/CONTROL/ControlComponents" index="2"]
-script = ExtResource("2_u4csh")
+[node name="DirectControlComponent" parent="CCC/CONTROL/ControlComponents" index="0" node_paths=PackedStringArray("camera_system")]
+camera_system = NodePath("../../../CAMERA")
 
-[node name="MovementComponent" parent="CCC/CHARACTER/CharacterComponents" index="0"]
-destination_threshold = 0.1
-debug_navigation = false
-
-[node name="DistanceComponent" parent="CCC/CAMERA/CameraComponents" index="1"]
-script = ExtResource("3_aeafk")
-
-[node name="FollowComponent" parent="CCC/CAMERA/CameraComponents" index="2"]
-script = ExtResource("4_udffu")
-
-[node name="UI" type="Control" parent="CCC" node_paths=PackedStringArray("input_priority_manager")]
-layout_mode = 3
-anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
-script = ExtResource("2_caybs")
-input_priority_manager = NodePath("../CONTROL/InputCore/InputPriorityManager")
-
-[node name="VBoxContainer" type="VBoxContainer" parent="CCC/UI"]
-layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
-
-[node name="InputMethodLabel" type="Label" parent="CCC/UI/VBoxContainer"]
-layout_mode = 2
-
-[node name="ActivityBars" type="VBoxContainer" parent="CCC/UI/VBoxContainer"]
-layout_mode = 2
-
-[node name="TransitionProgress" type="ProgressBar" parent="CCC/UI/VBoxContainer"]
-layout_mode = 2
-
-[node name="StatusPanel" type="Panel" parent="CCC/UI"]
-layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
+[node name="GamepadControlComponent" parent="CCC/CONTROL/ControlComponents" index="2" node_paths=PackedStringArray("camera_system")]
+camera_system = NodePath("../../../CAMERA")
 
 [editable path="CCC"]
 [editable path="CCC/CHARACTER/CharacterCore/Character"]
