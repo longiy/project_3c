@@ -1,33 +1,23 @@
-# CCC_CharacterManager.gd - Phase 1B: CHARACTER DOMAIN ORCHESTRATOR
+# CCC_CharacterManager.gd - Enhanced with centralized movement coordination
 extends Node
 class_name CCC_CharacterManager
 
-# === OWNED SYSTEMS ===
-var movement_system: MovementSystem
-var jump_system: JumpSystem
-var state_machine: CharacterStateMachine
+# === WRAPPED COMPONENTS ===
+@export var movement_manager: MovementManager
+@export var character_body: CharacterBody3D
+
+# === ADDITIONAL COMPONENT REFERENCES ===
 var animation_manager: AnimationManager
+var state_machine: CharacterStateMachine
+var jump_system: JumpSystem
 
-# === CHARACTER PROPERTIES (Absorbed from MovementManager) ===
-@export_group("Movement Settings")
-@export var walk_speed = 3.0
-@export var run_speed = 6.0
-@export var slow_walk_speed = 1.5
-@export var air_speed_multiplier = 0.6
+# === SIGNALS (Enhanced from MovementManager) ===
+signal movement_changed(is_moving: bool, direction: Vector2, speed: float)
+signal mode_changed(is_running: bool, is_slow_walking: bool)
+signal character_state_changed(old_state: String, new_state: String)
+signal physics_state_changed(is_grounded: bool, velocity: Vector3)
 
-@export_group("Physics")
-@export var ground_acceleration = 15.0
-@export var air_acceleration = 8.0
-@export var deceleration = 18.0
-@export var rotation_speed = 12.0
-
-# === CHARACTER DOMAIN SIGNALS ===
-signal character_moved(direction: Vector2, speed: float)
-signal character_jumped(force: float, is_air_jump: bool)
-signal character_state_changed(new_state: String)
-signal animation_changed(animation: String, blend_value: float)
-
-# === CHARACTER TYPE CONFIGURATION ===
+# === CCC CHARACTER CONFIGURATION ===
 enum CharacterType {
 	AVATAR,        # Direct character control (current implementation)
 	OBSERVER,      # Watch-only, no direct control
@@ -35,6 +25,7 @@ enum CharacterType {
 	COLLABORATOR   # Shared control with AI/other players
 }
 
+# Character behavior settings for each type
 var character_configs = {
 	CharacterType.AVATAR: {
 		"allows_direct_control": true,
@@ -58,109 +49,220 @@ var character_configs = {
 
 var current_character_type: CharacterType = CharacterType.AVATAR
 
-# === REFERENCES ===
-var character: CharacterBody3D
-var camera: Camera3D
+# === MIGRATED MOVEMENT COORDINATION ===
+var movement_logic_migrated = false
+var last_physics_state = {"grounded": true, "velocity": Vector3.ZERO}
+var movement_state_history = []
+var max_history_size = 10
 
-# === MIGRATION STATE ===
-var old_movement_manager: MovementManager
+# === ENHANCED MOVEMENT STATE ===
+var movement_context = {
+	"surface_type": "ground",
+	"movement_intent": "idle",
+	"environmental_factors": [],
+	"performance_mode": "normal"
+}
+
+
+
 
 func _ready():
-	setup_character_domain()
-	orchestrate_character_systems()
-	print("✅ CCC_CharacterManager: Character domain orchestration established")
+	setup_components()
+	setup_additional_references()
+	connect_movement_signals()
+	check_migration_status()
+	print("✅ CCC_CharacterManager: Initialized with centralized movement coordination")
 
-func setup_character_domain():
-	"""Setup character domain components"""
-	# Get character reference
-	character = get_parent() as CharacterBody3D
-	if not character:
-		push_error("CCC_CharacterManager: No CharacterBody3D parent found!")
+
+func setup_components():
+	"""Find and reference wrapped components"""
+	if not movement_manager:
+		movement_manager = get_node_or_null("MovementManager")
+	
+	if not movement_manager:
+		# Try finding it as a sibling
+		movement_manager = get_parent().get_node_or_null("MovementManager")
+	
+	if not character_body:
+		character_body = get_parent() as CharacterBody3D
+	
+	if not movement_manager:
+		push_error("CCC_CharacterManager: No MovementManager found!")
 		return
 	
-	# Create MovementSystem as child
-	movement_system = MovementSystem.new()
-	movement_system.name = "MovementSystem"
-	add_child(movement_system)
-	
-	# Setup movement system properties
-	movement_system.setup_character(character)
-	movement_system.copy_settings_from_manager(self)
-	
-	# Find existing systems
-	jump_system = get_parent().get_node_or_null("JumpSystem")
-	state_machine = get_parent().get_node_or_null("CharacterStateMachine")
+	if not character_body:
+		push_error("CCC_CharacterManager: No CharacterBody3D found!")
+		return
+
+func setup_additional_references():
+	"""Setup references to other character components for coordination"""
 	animation_manager = get_parent().get_node_or_null("AnimationManager")
+	state_machine = get_parent().get_node_or_null("CharacterStateMachine")
+	jump_system = get_parent().get_node_or_null("JumpSystem")
 	
-	# Absorb existing MovementManager
-	absorb_movement_manager()
+	print("🔗 CCC_CharacterManager: Connected to ", 
+		  "Animation:", animation_manager != null, 
+		  " StateMachine:", state_machine != null,
+		  " JumpSystem:", jump_system != null)
 
-func absorb_movement_manager():
-	"""Absorb existing MovementManager and disable it"""
-	old_movement_manager = get_parent().get_node_or_null("MovementManager")
-	if old_movement_manager:
-		# Copy properties from old movement manager
-		movement_system.copy_properties_from(old_movement_manager)
-		
-		# Disconnect old signals
-		disconnect_old_movement_manager()
-		
-		# Disable old movement manager (don't delete yet for safety)
-		old_movement_manager.set_physics_process(false)
-		old_movement_manager.set_process(false)
-		old_movement_manager.name = "MovementManager_OLD"
-		
-		print("🔄 CCC_CharacterManager: Absorbed MovementManager")
+func check_migration_status():
+	"""Check if we should take over movement coordination"""
+	movement_logic_migrated = true
+	print("🔄 CCC_CharacterManager: Taking control of movement coordination")
 
-func disconnect_old_movement_manager():
-	"""Safely disconnect old movement manager signals"""
-	if not old_movement_manager:
+func connect_movement_signals():
+	"""Connect MovementManager signals and add coordination logic"""
+	if not movement_manager:
 		return
 	
-	# Get all connections and disconnect them
-	var connections = old_movement_manager.movement_changed.get_connections()
-	for connection in connections:
-		old_movement_manager.movement_changed.disconnect(connection.callable)
-	
-	connections = old_movement_manager.mode_changed.get_connections()
-	for connection in connections:
-		old_movement_manager.mode_changed.disconnect(connection.callable)
+	# Connect enhanced movement signals
+	movement_manager.movement_changed.connect(_on_movement_changed_enhanced)
+	movement_manager.mode_changed.connect(_on_mode_changed_enhanced)
 
-func orchestrate_character_systems():
-	"""Orchestrate character domain systems"""
-	# Connect internal systems
-	if movement_system:
-		movement_system.movement_changed.connect(_on_movement_changed)
-		movement_system.mode_changed.connect(_on_mode_changed)
+func _physics_process(delta):
+	"""MIGRATED: Enhanced physics processing with coordination"""
+	if movement_logic_migrated:
+		process_physics_coordination(delta)
+
+func process_physics_coordination(delta: float):
+	"""MIGRATED: Coordinate physics, animation, and state systems"""
+	# Track physics state changes
+	var current_grounded = character_body.is_on_floor()
+	var current_velocity = character_body.velocity
 	
+	if current_grounded != last_physics_state.grounded or current_velocity.distance_to(last_physics_state.velocity) > 0.5:
+		last_physics_state.grounded = current_grounded
+		last_physics_state.velocity = current_velocity
+		physics_state_changed.emit(current_grounded, current_velocity)
+		
+		# Coordinate state transitions based on physics
+		coordinate_state_transitions(current_grounded, current_velocity)
+	
+	# Update movement context
+	update_movement_context(delta)
+
+func coordinate_state_transitions(is_grounded: bool, velocity: Vector3):
+	"""MIGRATED: Coordinate state transitions across systems"""
+	# Update jump system ground state
 	if jump_system:
-		jump_system.jump_performed.connect(_on_jump_performed)
+		jump_system.update_ground_state()
 	
-	if state_machine:
-		state_machine.state_changed.connect(_on_state_changed)
-	
-	# Character manager coordinates all character systems
-	coordinate_movement_and_animation()
-	coordinate_physics_and_states()
+	# Coordinate with state machine if character type allows
+	var config = character_configs.get(current_character_type, {})
+	if config.get("allows_direct_control", true) and state_machine:
+		coordinate_with_state_machine(is_grounded, velocity)
 
-func coordinate_movement_and_animation():
-	"""Coordinate movement with animation systems"""
-	if not animation_manager or not movement_system:
-		return
+func coordinate_with_state_machine(is_grounded: bool, velocity: Vector3):
+	"""Coordinate movement with state machine"""
+	var current_state = state_machine.get_current_state_name() if state_machine else ""
+	var suggested_state = ""
 	
-	# Connect movement to animation
-	movement_system.movement_changed.connect(animation_manager._on_movement_changed)
-	movement_system.mode_changed.connect(animation_manager._on_mode_changed)
+	# Suggest state transitions based on physics and movement
+	if not is_grounded and velocity.y < -1.0:
+		if current_state != "airborne" and current_state != "falling":
+			suggested_state = "airborne"
+	elif is_grounded and velocity.y <= 0.1:
+		if current_state == "airborne" or current_state == "falling":
+			suggested_state = "landing"
+		elif is_movement_active() and current_state == "idle":
+			suggested_state = "walking"
+		elif not is_movement_active() and (current_state == "walking" or current_state == "running"):
+			suggested_state = "idle"
+	
+	# Apply state transition if suggested
+	if suggested_state != "" and suggested_state != current_state:
+		print("🎭 CCC_CharacterManager: Coordinating state transition: ", current_state, " → ", suggested_state)
+		if state_machine and state_machine.has_method("request_state_change"):
+			state_machine.request_state_change(suggested_state)
 
-func coordinate_physics_and_states():
-	"""Coordinate physics with state systems"""
-	# This will be expanded as we add more sophisticated coordination
+func update_movement_context(delta: float):
+	"""Update movement context for enhanced coordination"""
+	# Determine movement intent
+	if is_movement_active():
+		if is_running():
+			movement_context.movement_intent = "running"
+		elif is_slow_walking():
+			movement_context.movement_intent = "slow_walking"
+		else:
+			movement_context.movement_intent = "walking"
+	else:
+		movement_context.movement_intent = "idle"
+	
+	# Determine surface type (can be expanded)
+	movement_context.surface_type = "ground" if character_body.is_on_floor() else "air"
+	
+	# Store movement history for analysis
+	add_movement_state_to_history()
+
+func add_movement_state_to_history():
+	"""Add current movement state to history for pattern analysis"""
+	var state_snapshot = {
+		"timestamp": Time.get_ticks_msec() / 1000.0,
+		"position": character_body.global_position,
+		"velocity": character_body.velocity,
+		"is_grounded": character_body.is_on_floor(),
+		"movement_intent": movement_context.movement_intent,
+		"input_direction": get_current_input_direction()
+	}
+	
+	movement_state_history.append(state_snapshot)
+	
+	# Keep history size manageable
+	if movement_state_history.size() > max_history_size:
+		movement_state_history.pop_front()
+
+# === ENHANCED SIGNAL HANDLERS ===
+
+func _on_movement_changed_enhanced(is_moving: bool, direction: Vector2, speed: float):
+	"""Enhanced movement change handler with coordination"""
+	# Emit standard signal
+	movement_changed.emit(is_moving, direction, speed)
+	
+	# Enhanced coordination logic
+	if movement_logic_migrated:
+		coordinate_movement_change(is_moving, direction, speed)
+
+func _on_mode_changed_enhanced(is_running: bool, is_slow_walking: bool):
+	"""Enhanced mode change handler with coordination"""
+	# Emit standard signal
+	mode_changed.emit(is_running, is_slow_walking)
+	
+	# Enhanced coordination logic
+	if movement_logic_migrated:
+		coordinate_mode_change(is_running, is_slow_walking)
+
+func coordinate_movement_change(is_moving: bool, direction: Vector2, speed: float):
+	"""Coordinate movement changes across character systems"""
+	# Apply character type-specific behavior
+	var config = character_configs.get(current_character_type, {})
+	var responsiveness = config.get("movement_responsiveness", 1.0)
+	
+	if responsiveness < 1.0:
+		# Reduce responsiveness for commander/observer types
+		# Could modify movement speed or add delays here
+		pass
+	
+	# Enhanced animation coordination
+	if animation_manager:
+		coordinate_with_animation(is_moving, direction, speed)
+
+func coordinate_mode_change(is_running: bool, is_slow_walking: bool):
+	"""Coordinate mode changes across character systems"""
+	print("🏃 CCC_CharacterManager: Movement mode coordinated - Running:", is_running, " SlowWalk:", is_slow_walking)
+
+func coordinate_with_animation(is_moving: bool, direction: Vector2, speed: float):
+	"""Enhanced animation coordination"""
+	# This could be expanded to provide more sophisticated animation control
+	# For now, let the existing animation manager handle it
 	pass
 
-# === MOVEMENT COMMAND HANDLING ===
+# === MOVEMENT PASSTHROUGH METHODS (Enhanced) ===
 
-func handle_movement_command(direction: Vector2, magnitude: float):
-	"""Receive movement commands from ControlManager"""
+func handle_movement_action(action: String, context: Dictionary = {}):
+	"""Enhanced movement action handling"""
+	if not movement_manager:
+		return
+	
 	# Apply character type filtering
 	var config = character_configs.get(current_character_type, {})
 	if not config.get("allows_direct_control", true):
@@ -169,148 +271,221 @@ func handle_movement_command(direction: Vector2, magnitude: float):
 	
 	# Apply responsiveness modification
 	var responsiveness = config.get("movement_responsiveness", 1.0)
-	if responsiveness < 1.0:
-		magnitude = magnitude * responsiveness
+	if responsiveness < 1.0 and context.has("magnitude"):
+		context["magnitude"] = context["magnitude"] * responsiveness
 	
-	# Send to movement system
-	if movement_system:
-		movement_system.process_movement_input(direction, magnitude)
-		coordinate_movement_response(direction, magnitude)
+	movement_manager.handle_movement_action(action, context)
 
-func handle_jump_command():
-	"""Receive jump commands from ControlManager"""
+func handle_mode_action(action: String):
+	"""Enhanced mode action handling"""
+	if not movement_manager:
+		return
+	
+	# Apply character type filtering
 	var config = character_configs.get(current_character_type, {})
 	if not config.get("allows_direct_control", true):
 		return
 	
-	if jump_system:
-		jump_system.attempt_jump()
+	movement_manager.handle_mode_action(action)
 
-func handle_sprint_command(enabled: bool):
-	"""Receive sprint commands from ControlManager"""
-	if movement_system:
-		movement_system.set_running(enabled)
+func apply_ground_movement(delta: float):
+	"""Enhanced ground movement application"""
+	if movement_manager:
+		movement_manager.apply_ground_movement(delta)
 
-func coordinate_movement_response(direction: Vector2, magnitude: float):
-	"""Orchestrate character response to movement"""
-	# Update animation
-	if animation_manager:
-		animation_manager.update_movement_blend(direction, magnitude)
-	
-	# Trigger state transitions
-	if state_machine:
-		state_machine.evaluate_movement_transitions(direction, magnitude)
-	
-	# Emit to other managers
-	character_moved.emit(direction, movement_system.current_speed if movement_system else 0.0)
+func apply_air_movement(delta: float):
+	"""Enhanced air movement application"""
+	if movement_manager:
+		movement_manager.apply_air_movement(delta)
 
-# === SIGNAL HANDLERS ===
-
-func _on_movement_changed(is_moving: bool, direction: Vector2, speed: float):
-	"""Handle movement changes from MovementSystem"""
-	# Coordinate with other character systems
-	coordinate_character_response(is_moving, direction, speed)
-
-func _on_mode_changed(is_running: bool, is_slow_walking: bool):
-	"""Handle mode changes from MovementSystem"""
-	# Coordinate mode changes across character systems
-	print("🏃 CCC_CharacterManager: Movement mode coordinated - Running:", is_running, " SlowWalk:", is_slow_walking)
-
-func _on_jump_performed(force: float, is_air_jump: bool):
-	"""Handle jump events from JumpSystem"""
-	character_jumped.emit(force, is_air_jump)
-
-func _on_state_changed(old_state: String, new_state: String):
-	"""Handle state changes from StateMachine"""
-	character_state_changed.emit(new_state)
-
-func coordinate_character_response(is_moving: bool, direction: Vector2, speed: float):
-	"""Coordinate character response to movement changes"""
-	# Apply character type-specific behavior
-	var config = character_configs.get(current_character_type, {})
-	var responsiveness = config.get("movement_responsiveness", 1.0)
-	
-	if responsiveness < 1.0:
-		# Reduce responsiveness for commander/observer types
-		speed = speed * responsiveness
-	
-	# Enhanced animation coordination
-	if animation_manager:
-		coordinate_with_animation(is_moving, direction, speed)
-
-func coordinate_with_animation(is_moving: bool, direction: Vector2, speed: float):
-	"""Enhanced animation coordination"""
-	# This could be expanded to provide more sophisticated animation control
-	# For now, let the existing animation manager handle it
-	pass
-
-# === MOVEMENT SYSTEM PASSTHROUGH ===
+# === CHARACTER STATE PROPERTIES (Enhanced) ===
 
 func is_movement_active() -> bool:
-	"""Check if movement is currently active"""
-	if movement_system:
-		return movement_system.is_movement_active
+	"""Check if character is actively moving"""
+	if movement_manager:
+		return movement_manager.is_movement_active
 	return false
 
 func is_running() -> bool:
 	"""Check if character is running"""
-	if movement_system:
-		return movement_system.is_running
+	if movement_manager:
+		return movement_manager.is_running
 	return false
 
 func is_slow_walking() -> bool:
 	"""Check if character is slow walking"""
-	if movement_system:
-		return movement_system.is_slow_walking
+	if movement_manager:
+		return movement_manager.is_slow_walking
 	return false
 
 func get_current_input_direction() -> Vector2:
 	"""Get current input direction"""
-	if movement_system:
-		return movement_system.current_input_direction
+	if movement_manager:
+		return movement_manager.current_input_direction
 	return Vector2.ZERO
 
 func get_movement_speed() -> float:
 	"""Get current movement speed"""
-	if movement_system:
-		return movement_system.current_speed
+	if movement_manager:
+		return movement_manager.get_movement_speed()
 	return 0.0
 
-# === CHARACTER TYPE MANAGEMENT ===
+func get_target_speed() -> float:
+	"""Get target movement speed"""
+	if movement_manager:
+		return movement_manager.get_target_speed()
+	return 0.0
 
-func set_character_type(character_type: CharacterType):
-	"""Set character type and apply configuration"""
+# === PHYSICS PASSTHROUGH (Enhanced) ===
+
+func get_velocity() -> Vector3:
+	"""Get character velocity"""
+	if character_body:
+		return character_body.velocity
+	return Vector3.ZERO
+
+func set_velocity(velocity: Vector3):
+	"""Set character velocity with character type consideration"""
+	if character_body:
+		var config = character_configs.get(current_character_type, {})
+		var responsiveness = config.get("movement_responsiveness", 1.0)
+		character_body.velocity = velocity * responsiveness
+
+func is_on_floor() -> bool:
+	"""Check if character is on floor"""
+	if character_body:
+		return character_body.is_on_floor()
+	return false
+
+func get_position() -> Vector3:
+	"""Get character position"""
+	if character_body:
+		return character_body.global_position
+	return Vector3.ZERO
+
+func set_position(position: Vector3):
+	"""Set character position"""
+	if character_body:
+		character_body.global_position = position
+
+# === CCC CHARACTER INTERFACE (Enhanced Implementation) ===
+
+func configure_character_type(character_type: CharacterType):
+	"""Configure the character type with full implementation"""
 	var old_type = current_character_type
 	current_character_type = character_type
 	
+	print("👤 CCC_CharacterManager: Character type changed from ", CharacterType.keys()[old_type], " to ", CharacterType.keys()[character_type])
+	
+	# Apply character type configuration
 	var config = character_configs.get(character_type, {})
 	
-	print("👤 CCC_CharacterManager: Character type changed from ", CharacterType.keys()[old_type], " to ", CharacterType.keys()[character_type])
-	print("   → Direct control: ", config.get("allows_direct_control", true))
-	print("   → Responsiveness: ", config.get("movement_responsiveness", 1.0))
-	print("   → Embodiment: ", config.get("embodiment_quality", 1.0))
+	# Apply immediate changes based on character type
+	match character_type:
+		CharacterType.AVATAR:
+			print("   → Avatar: Full direct control with maximum responsiveness")
+		CharacterType.OBSERVER:
+			print("   → Observer: Watch-only mode, movement disabled")
+			# Stop any current movement
+			if movement_manager:
+				movement_manager.set_movement_active(false)
+		CharacterType.COMMANDER:
+			print("   → Commander: Reduced direct control, AI assistance enabled")
+		CharacterType.COLLABORATOR:
+			print("   → Collaborator: Shared control mode")
 
-# === DEBUG INFO ===
+func set_embodiment_quality(quality: float):
+	"""Set how much the player feels 'present' in the character"""
+	var config = character_configs.get(current_character_type, {})
+	config["embodiment_quality"] = clamp(quality, 0.0, 1.0)
+	
+	# Could affect camera closeness, animation responsiveness, etc.
+	print("👤 CCC_CharacterManager: Embodiment quality set to ", quality)
+
+func set_responsiveness(responsiveness: float):
+	"""Set character responsiveness to input"""
+	var config = character_configs.get(current_character_type, {})
+	config["movement_responsiveness"] = clamp(responsiveness, 0.0, 1.0)
+	
+	print("👤 CCC_CharacterManager: Movement responsiveness set to ", responsiveness)
+
+func enable_ai_assistance(enabled: bool):
+	"""Enable AI assistance for movement"""
+	var config = character_configs.get(current_character_type, {})
+	config["ai_assistance"] = enabled
+	
+	print("👤 CCC_CharacterManager: AI assistance ", "enabled" if enabled else "disabled")
+
+# === CAMERA REFERENCE SETUP ===
+
+func setup_camera_reference(camera: Camera3D):
+	"""Setup camera reference for movement calculations"""
+	if movement_manager:
+		movement_manager.setup_camera_reference(camera)
+
+# === ENHANCED DEBUG INFO ===
 
 func get_debug_info() -> Dictionary:
 	"""Get comprehensive debug information"""
 	var debug_data = {
 		"character_type": CharacterType.keys()[current_character_type],
-		"movement_system_active": movement_system != null,
-		"old_movement_manager": old_movement_manager != null,
-		"systems_connected": {
-			"jump": jump_system != null,
-			"state_machine": state_machine != null,
-			"animation": animation_manager != null
-		}
+		"migration_status": "movement_coordination_migrated" if movement_logic_migrated else "legacy",
+		"character_config": character_configs.get(current_character_type, {}),
+		"movement_context": movement_context,
+		"physics_state": last_physics_state
 	}
 	
-	if movement_system:
+	if character_body:
 		debug_data.merge({
-			"movement_active": movement_system.is_movement_active,
-			"current_speed": movement_system.current_speed,
-			"is_running": movement_system.is_running,
-			"input_direction": movement_system.current_input_direction
+			"position": get_position(),
+			"velocity": get_velocity(),
+			"is_on_floor": is_on_floor()
 		})
 	
+	if movement_manager:
+		debug_data["movement"] = {
+			"is_active": is_movement_active(),
+			"is_running": is_running(),
+			"is_slow_walking": is_slow_walking(),
+			"speed": get_movement_speed(),
+			"target_speed": get_target_speed(),
+			"input_direction": get_current_input_direction()
+		}
+	
+	# Add coordination status
+	debug_data["coordination"] = {
+		"animation_manager": animation_manager != null,
+		"state_machine": state_machine != null,
+		"jump_system": jump_system != null,
+		"history_size": movement_state_history.size()
+	}
+	
 	return debug_data
+
+# === MOVEMENT ANALYSIS (New) ===
+
+func get_movement_analysis() -> Dictionary:
+	"""Analyze movement patterns from history"""
+	if movement_state_history.size() < 2:
+		return {"status": "insufficient_data"}
+	
+	var recent_states = movement_state_history.slice(-5)  # Last 5 states
+	var movement_patterns = {
+		"average_speed": 0.0,
+		"direction_changes": 0,
+		"time_moving": 0.0,
+		"time_idle": 0.0
+	}
+	
+	for i in range(recent_states.size()):
+		var state = recent_states[i]
+		movement_patterns.average_speed += state.velocity.length()
+		
+		if state.movement_intent != "idle":
+			movement_patterns.time_moving += 1.0
+		else:
+			movement_patterns.time_idle += 1.0
+	
+	movement_patterns.average_speed /= recent_states.size()
+	
+	return movement_patterns

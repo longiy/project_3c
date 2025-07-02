@@ -1,4 +1,4 @@
-# JumpSystem.gd - FIXED: Signal-driven with jump_performed signal
+# JumpSystem.gd - FIXED: Signal-driven, proper air jump handling
 extends Node
 class_name JumpSystem
 
@@ -11,9 +11,6 @@ class_name JumpSystem
 
 @export_group("Debug")
 @export var enable_debug_logging = false
-
-# === SIGNALS ===
-signal jump_performed(jump_force: float, is_air_jump: bool)
 
 # Jump state
 var has_ground_jump: bool = true
@@ -34,7 +31,7 @@ func _ready():
 	has_ground_jump = true
 	air_jumps_remaining = max_air_jumps
 	
-	# Connect to character's ground state signal instead of polling
+	# FIXED: Connect to character's ground state signal instead of polling
 	if character.has_signal("ground_state_changed"):
 		character.ground_state_changed.connect(_on_ground_state_changed)
 	else:
@@ -51,7 +48,7 @@ func update_timers(delta):
 	coyote_timer = max(0.0, coyote_timer - delta)
 	jump_buffer_timer = max(0.0, jump_buffer_timer - delta)
 	
-	# Ground jump expires when coyote time runs out
+	# FIXED: Ground jump expires when coyote time runs out
 	if coyote_timer <= 0 and has_ground_jump and character and is_instance_valid(character) and not character.is_on_floor():
 		has_ground_jump = false
 		if enable_debug_logging:
@@ -98,26 +95,18 @@ func can_jump_at_all() -> bool:
 	"""Check if any type of jump is available"""
 	return can_jump() or can_air_jump()
 
-func attempt_jump():
-	"""Attempt to perform a jump - called by controllers"""
-	if can_jump_at_all():
-		perform_jump()
-	else:
-		# Buffer the jump attempt
-		jump_buffer_timer = jump_buffer_time
-		if enable_debug_logging:
-			print("🎮 Jump buffered - no jumps available right now")
-
 func handle_jump_input():
 	"""Handle jump input with buffering"""
 	if Input.is_action_just_pressed("jump"):
-		attempt_jump()
+		jump_buffer_timer = jump_buffer_time
+		
+		if enable_debug_logging:
+			print("🎮 Jump input buffered - Timer: ", jump_buffer_timer)
 
 func try_consume_jump_buffer() -> bool:
 	"""Try to consume jump buffer if conditions are met"""
 	if jump_buffer_timer > 0 and can_jump_at_all():
 		jump_buffer_timer = 0.0
-		perform_jump()
 		return true
 	return false
 
@@ -146,18 +135,14 @@ func perform_jump(jump_force: float = 0.0):
 			print("❌ No jump available!")
 		return
 	
-	# Determine jump type before consuming
-	var is_air_jump = false
-	
 	# Apply jump force
 	character.velocity.y = jump_force
 	
-	# Consume the correct jump type
+	# FIXED: Consume the correct jump type
 	if can_jump():
 		# Ground or coyote jump
 		has_ground_jump = false
 		coyote_timer = 0.0  # Clear coyote time since we used the ground jump
-		is_air_jump = false
 		
 		if enable_debug_logging:
 			var jump_type = "ground" if character.is_on_floor() else "coyote"
@@ -167,14 +152,10 @@ func perform_jump(jump_force: float = 0.0):
 	elif can_air_jump():
 		# Air jump
 		air_jumps_remaining -= 1
-		is_air_jump = true
 		
 		if enable_debug_logging:
 			print("🦘 Air jump! Force: ", jump_force, 
 				  " | Ground: ", has_ground_jump, " Air: ", air_jumps_remaining)
-	
-	# Emit jump_performed signal
-	jump_performed.emit(jump_force, is_air_jump)
 
 # === MANUAL GROUND STATE UPDATE (Fallback) ===
 
