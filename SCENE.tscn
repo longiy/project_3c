@@ -1,8 +1,10 @@
-[gd_scene load_steps=12 format=3 uid="uid://dngafe0y2nx5b"]
+[gd_scene load_steps=14 format=3 uid="uid://dngafe0y2nx5b"]
 
 [ext_resource type="PackedScene" uid="uid://diueuwbtv4w82" path="res://CCC.tscn" id="1_5si1x"]
 [ext_resource type="Script" uid="uid://dn53vssdavg31" path="res://Scripts/ControlComponents/InputVisualFeedback.gd" id="2_caybs"]
 [ext_resource type="Script" uid="uid://do403hdc6yrpp" path="res://Scripts/ControlComponents/GamepadControlComponent.gd" id="2_u4csh"]
+[ext_resource type="Script" uid="uid://moixbko0kb3g" path="res://Scripts/CameraComponents/DistanceComponent.gd" id="3_aeafk"]
+[ext_resource type="Script" uid="uid://cyl6j2l00ddyi" path="res://Scripts/CameraComponents/FollowComponent.gd" id="4_udffu"]
 
 [sub_resource type="Environment" id="Environment_w862e"]
 background_mode = 1
@@ -99,6 +101,12 @@ script = ExtResource("2_u4csh")
 [node name="MovementComponent" parent="CCC/CHARACTER/CharacterComponents" index="0"]
 destination_threshold = 0.1
 debug_navigation = false
+
+[node name="DistanceComponent" parent="CCC/CAMERA/CameraComponents" index="1"]
+script = ExtResource("3_aeafk")
+
+[node name="FollowComponent" parent="CCC/CAMERA/CameraComponents" index="2"]
+script = ExtResource("4_udffu")
 
 [node name="UI" type="Control" parent="CCC" node_paths=PackedStringArray("input_priority_manager")]
 layout_mode = 3

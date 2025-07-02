@@ -3,3 +3,5 @@ res://AnimationTreeMove1d.tres
 res://CCC.tscn
 res://Assets/Character.tscn
 res://Scripts/ControlComponents/InputVisualFeedback.gd
+res://Scripts/CameraComponents/DistanceComponent.gd
+res://Scripts/CameraComponents/FollowComponent.gd
