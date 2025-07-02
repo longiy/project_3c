@@ -34,16 +34,6 @@ var base_gravity: float
 # === CCC STATUS ===
 var ccc_architecture_active: bool = false
 
-# Add this test (temporarily):
-#func test_camera_types():
-	#await get_tree().create_timer(3.0).timeout
-	#print("Switching to following camera...")
-	#camera_manager.configure_camera_type(CCC_CameraManager.CameraType.FOLLOWING)
-#
-	#await get_tree().create_timer(3.0).timeout
-	#print("Switching back to orbital camera...")
-	#camera_manager.configure_camera_type(CCC_CameraManager.CameraType.ORBITAL)
-
 func _ready():
 	setup_character()
 	setup_CCC_managers()
@@ -51,8 +41,8 @@ func _ready():
 	connect_signals()
 	print("✅ CCC_CharacterController: CCC Architecture initialized")
 
-	# Add this line:
-	call_deferred("test_camera_types")
+ # Add validation
+	call_deferred("validate_and_debug")
 
 func validate_and_debug():
 	print("\n=== CCC VALIDATION ===")
