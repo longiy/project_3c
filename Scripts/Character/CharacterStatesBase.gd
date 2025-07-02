@@ -1,101 +1,206 @@
-# CharacterStatesBase.gd - Updated for MovementManager
+# CharacterStateBase.gd - Updated for CCC compatibility
 class_name CharacterStateBase
 extends State
 
+# === CHARACTER REFERENCES ===
 var character: CharacterBody3D
-var movement_manager: MovementManager
 
-# Transition thresholds
-var movement_stop_threshold: float = 0.1
-var movement_start_threshold: float = 0.05
+# === COMPONENT REFERENCES ===
+var movement_manager: MovementManager
+var input_manager: InputManager
+var jump_system: JumpSystem
+var animation_manager: AnimationManager
+
+# === CCC REFERENCES ===
+var ccc_character_manager: CCC_CharacterManager
+var ccc_control_manager: CCC_ControlManager
+var movement_system: MovementSystem
+
+# === ARCHITECTURE DETECTION ===
+var using_ccc: bool = false
 
 func enter():
+	"""Setup character and component references"""
 	super.enter()
+	setup_references()
+	check_architecture()
+
+func setup_references():
+	"""Setup character and component references"""
 	character = owner_node as CharacterBody3D
 	if not character:
-		push_error("CharacterState requires CharacterBody3D owner")
+		push_error("CharacterStateBase: owner_node is not CharacterBody3D!")
 		return
 	
-	movement_manager = character.get_node_or_null("MovementManager")
-	if not movement_manager:
-		push_error("CharacterState requires MovementManager component")
-
-func update(delta: float):
-	super.update(delta)
-	handle_common_transitions()
-
-# === TRANSITION LOGIC ===
-
-func handle_common_transitions():
-	"""Handle transitions with proper air/ground state respect"""
-	if not movement_manager:
-		return
+	# Get standard components
+	jump_system = character.get_node_or_null("JumpSystem")
+	animation_manager = character.get_node_or_null("AnimationManager")
+	input_manager = character.get_node_or_null("InputManager")
 	
-	# PRIORITY 1: Air/Ground physics transitions (highest priority)
-	if should_transition_to_air():
-		change_to("airborne")
-		return
+	# Get CCC components
+	ccc_character_manager = character.get_node_or_null("CCC_CharacterManager")
+	ccc_control_manager = character.get_node_or_null("CCC_ControlManager")
 	
-	if should_transition_to_ground():
-		change_to("landing")
-		return
-	
-	# PRIORITY 2: Movement-based transitions (only for ground states)
-	if can_do_movement_transitions() and is_grounded_state():
-		handle_movement_transitions()
+	# Get movement system (try CCC first, then legacy)
+	if ccc_character_manager and ccc_character_manager.movement_system:
+		movement_system = ccc_character_manager.movement_system
+		using_ccc = true
+	else:
+		movement_manager = character.get_node_or_null("MovementManager")
+		using_ccc = false
 
-func should_transition_to_air() -> bool:
-	"""Check if should transition to airborne state"""
-	var ground_states = ["idle", "walking", "running", "landing"]
-	return state_name in ground_states and not character.is_on_floor()
+func check_architecture():
+	"""Check which architecture is being used"""
+	if using_ccc:
+		print("🏗️ State ", state_name, ": Using CCC architecture")
+	else:
+		print("🏗️ State ", state_name, ": Using legacy architecture")
 
-func should_transition_to_ground() -> bool:
-	"""Check if should transition from air to ground"""
-	var air_states = ["jumping", "airborne"]
-	return state_name in air_states and character.is_on_floor()
-
-func is_grounded_state() -> bool:
-	"""Check if current state is a ground state"""
-	var ground_states = ["idle", "walking", "running", "landing"]
-	return state_name in ground_states
-
-func is_air_state() -> bool:
-	"""Check if current state is an air state"""
-	var air_states = ["jumping", "airborne"]
-	return state_name in air_states
-
-func can_do_movement_transitions() -> bool:
-	"""Check if this state should handle movement-based transitions"""
-	var no_movement_transition_states = ["jumping", "landing"]
-	return not (state_name in no_movement_transition_states)
-
-func handle_movement_transitions():
-	"""Handle movement transitions only for ground states"""
-	if not movement_manager:
-		return
-	
-	# SAFETY CHECK: Only do movement transitions if actually grounded
-	if not character.is_on_floor():
-		return
-	
-	# Check if we should transition to a different ground state
-	var target_state = movement_manager.should_transition_to_state(state_name)
-	if target_state != "" and is_valid_ground_transition(target_state):
-		change_to(target_state)
-
-func is_valid_ground_transition(target_state: String) -> bool:
-	"""Check if transition to target state is valid"""
-	var valid_ground_states = ["idle", "walking", "running"]
-	return target_state in valid_ground_states and character.is_on_floor()
-
-# === MOVEMENT EXECUTION ===
+# === MOVEMENT HELPERS (Architecture-aware) ===
 
 func apply_ground_movement(delta: float):
-	"""Apply movement while on ground"""
-	if movement_manager:
+	"""Apply ground movement - works with both CCC and legacy"""
+	if using_ccc and movement_system:
+		# CCC: MovementSystem handles physics automatically
+		pass
+	elif movement_manager:
 		movement_manager.apply_ground_movement(delta)
 
 func apply_air_movement(delta: float):
-	"""Apply movement while in air"""
-	if movement_manager:
+	"""Apply air movement - works with both CCC and legacy"""
+	if using_ccc and movement_system:
+		# CCC: MovementSystem handles physics automatically
+		pass
+	elif movement_manager:
 		movement_manager.apply_air_movement(delta)
+
+func get_movement_speed() -> float:
+	"""Get movement speed - works with both CCC and legacy"""
+	if using_ccc and ccc_character_manager:
+		return ccc_character_manager.get_movement_speed()
+	elif movement_manager:
+		return movement_manager.get_movement_speed()
+	else:
+		var horizontal_velocity = Vector2(character.velocity.x, character.velocity.z)
+		return horizontal_velocity.length()
+
+func is_movement_active() -> bool:
+	"""Check if movement is active - works with both CCC and legacy"""
+	if using_ccc and ccc_character_manager:
+		return ccc_character_manager.is_movement_active()
+	elif movement_manager:
+		return movement_manager.is_movement_active
+	else:
+		return get_movement_speed() > 0.1
+
+func is_running() -> bool:
+	"""Check if running - works with both CCC and legacy"""
+	if using_ccc and ccc_character_manager:
+		return ccc_character_manager.is_running()
+	elif movement_manager:
+		return movement_manager.is_running
+	return false
+
+func is_slow_walking() -> bool:
+	"""Check if slow walking - works with both CCC and legacy"""
+	if using_ccc and ccc_character_manager:
+		return ccc_character_manager.is_slow_walking()
+	elif movement_manager:
+		return movement_manager.is_slow_walking
+	return false
+
+func get_input_direction() -> Vector2:
+	"""Get input direction - works with both CCC and legacy"""
+	if using_ccc and ccc_character_manager:
+		return ccc_character_manager.get_current_input_direction()
+	elif movement_manager:
+		return movement_manager.current_input_direction
+	elif input_manager:
+		return input_manager.get_current_input_direction()
+	return Vector2.ZERO
+
+# === JUMP HELPERS ===
+
+func can_jump() -> bool:
+	"""Check if can jump"""
+	if jump_system:
+		return jump_system.can_jump()
+	return character.is_on_floor()
+
+func can_air_jump() -> bool:
+	"""Check if can air jump"""
+	if jump_system:
+		return jump_system.can_air_jump()
+	return false
+
+func attempt_jump():
+	"""Attempt to jump"""
+	if jump_system:
+		jump_system.attempt_jump()
+
+# === COMMON STATE TRANSITIONS ===
+
+func check_movement_transitions():
+	"""Check for movement-based state transitions"""
+	var speed = get_movement_speed()
+	var is_grounded = character.is_on_floor()
+	var has_input = get_input_direction().length() > 0.1
+	
+	# Ground state transitions
+	if is_grounded:
+		if state_name == "airborne" or state_name == "jumping":
+			change_to("landing")
+		elif state_name == "idle" and has_input:
+			if is_running():
+				change_to("running")
+			else:
+				change_to("walking")
+		elif state_name == "walking" and is_running():
+			change_to("running")
+		elif state_name == "running" and not is_running():
+			change_to("walking")
+		elif (state_name == "walking" or state_name == "running") and not has_input:
+			change_to("idle")
+	
+	# Air state transitions
+	else:
+		if state_name != "jumping" and state_name != "airborne":
+			change_to("airborne")
+
+func check_jump_transitions():
+	"""Check for jump-based state transitions"""
+	if character.is_on_floor():
+		return
+	
+	# If in air but not in jumping/airborne state
+	if state_name not in ["jumping", "airborne"]:
+		change_to("airborne")
+
+# === PHYSICS HELPERS ===
+
+func apply_gravity(delta: float):
+	"""Apply gravity to character"""
+	if not character.is_on_floor():
+		var gravity = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
+		character.velocity.y -= gravity * delta
+
+func update_ground_state():
+	"""Update ground state for jump system"""
+	if jump_system:
+		jump_system.update_ground_state()
+
+# === DEBUG HELPERS ===
+
+func get_state_debug_info() -> Dictionary:
+	"""Get debug information for this state"""
+	return {
+		"state_name": state_name,
+		"using_ccc": using_ccc,
+		"movement_speed": get_movement_speed(),
+		"is_grounded": character.is_on_floor(),
+		"is_movement_active": is_movement_active(),
+		"is_running": is_running(),
+		"input_direction": get_input_direction(),
+		"can_jump": can_jump(),
+		"time_in_state": time_in_state
+	}

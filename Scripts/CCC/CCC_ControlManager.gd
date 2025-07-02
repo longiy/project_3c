@@ -1,26 +1,14 @@
-# CCC_ControlManager.gd - CLEANED UP: Pure CCC with migrated input logic
+# CCC_ControlManager.gd - Phase 1A: INPUT GATEWAY
 extends Node
 class_name CCC_ControlManager
 
-# === WRAPPED COMPONENT ===
-@export var input_manager: InputManager
+# === INPUT CAPTURE (All input comes here) ===
+@export_group("Input Settings")
+@export var mouse_sensitivity = 1.0
+@export var input_deadzone = 0.05
+@export var movement_update_frequency = 60
 
-# === CAMERA REFERENCE ===
-var camera_manager: CCC_CameraManager
-
-# === SIGNALS ===
-signal movement_started(direction: Vector2, magnitude: float)
-signal movement_updated(direction: Vector2, magnitude: float)
-signal movement_stopped()
-signal jump_pressed()
-signal sprint_started()
-signal sprint_stopped()
-signal slow_walk_started()
-signal slow_walk_stopped()
-signal reset_pressed()
-signal click_navigation(world_position: Vector3)
-
-# === CCC CONTROL CONFIGURATION ===
+# === CONTROL CONFIGURATION ===
 enum ControlType {
 	DIRECT,        # WASD/Gamepad direct control only
 	TARGET_BASED,  # Click-to-move only
@@ -30,262 +18,221 @@ enum ControlType {
 
 var current_control_type: ControlType = ControlType.HYBRID
 
+# === COMMAND SIGNALS ===
+signal movement_command(direction: Vector2, magnitude: float)
+signal jump_command()
+signal sprint_command(enabled: bool)
+signal camera_command(type: String, data: Dictionary)
+
 # === INPUT STATE ===
-var wasd_is_overriding = false
-var current_input_priority: String = "none"
+var wasd_input: Vector2
+var click_input: Vector2
+var is_sprint_held: bool = false
+var movement_update_timer: float = 0.0
+var movement_update_interval: float
+
+# === INPUT COMPONENTS ===
+var input_components: Array[Node] = []
+
+# === REFERENCES ===
+var camera_rig: Node
+var character: CharacterBody3D
 
 func _ready():
-	setup_input_manager()
-	setup_camera_reference()
-	connect_input_signals()
-	print("✅ CCC_ControlManager: Initialized with pure CCC architecture")
+	setup_references()
+	setup_input_components()
+	movement_update_interval = 1.0 / movement_update_frequency
+	print("✅ CCC_ControlManager: Input Gateway established")
 
-func setup_input_manager():
-	"""Find and reference InputManager"""
-	if not input_manager:
-		input_manager = get_node_or_null("InputManager")
+func setup_references():
+	"""Setup character and camera references"""
+	character = get_parent() as CharacterBody3D
+	camera_rig = get_node_or_null("../../CAMERARIG")
 	
-	if not input_manager:
-		input_manager = get_parent().get_node_or_null("InputManager")
-	
-	if not input_manager:
-		push_error("CCC_ControlManager: No InputManager found!")
-		return
+	if not character:
+		push_error("CCC_ControlManager: No CharacterBody3D parent found!")
+	if not camera_rig:
+		push_warning("CCC_ControlManager: No camera rig found")
 
-func setup_camera_reference():
-	"""Setup reference to camera manager for input priority decisions"""
-	camera_manager = get_parent().get_node_or_null("CCC_CameraManager")
-	if not camera_manager:
-		push_warning("CCC_ControlManager: No CCC_CameraManager found - using legacy camera detection")
+func setup_input_components():
+	"""Find and setup input components"""
+	call_deferred("find_input_components")
 
-func connect_input_signals():
-	"""Connect InputManager signals"""
-	if not input_manager:
-		return
+func find_input_components():
+	"""Find click navigation and other input components"""
+	input_components.clear()
 	
-	# Connect discrete input signals directly
-	input_manager.jump_pressed.connect(_on_jump_pressed)
-	input_manager.sprint_started.connect(_on_sprint_started)
-	input_manager.sprint_stopped.connect(_on_sprint_stopped)
-	input_manager.slow_walk_started.connect(_on_slow_walk_started)
-	input_manager.slow_walk_stopped.connect(_on_slow_walk_stopped)
-	input_manager.reset_pressed.connect(_on_reset_pressed)
-	input_manager.click_navigation.connect(_on_click_navigation)
+	# Look for input components in character
+	if character:
+		for child in character.get_children():
+			if child.has_method("get_movement_input"):
+				input_components.append(child)
 	
-	# Take over movement signal generation
-	input_manager.disable_legacy_movement_processing()
-	print("🔄 CCC_ControlManager: Taking over movement processing from InputManager")
+	print("📋 CCC_ControlManager: Found ", input_components.size(), " input components")
+
+# === CENTRAL INPUT PROCESSING ===
+
+func _input(event):
+	"""Central input processing - ALL input types"""
+	process_all_input(event)
 
 func _physics_process(delta):
-	"""Handle movement input processing"""
-	process_movement_input(delta)
+	"""Process continuous input"""
+	process_continuous_input(delta)
 
-# === INPUT PRIORITY LOGIC ===
+func process_all_input(event):
+	"""Process keyboard, mouse, and gamepad events"""
+	# Keyboard input
+	if event is InputEventKey:
+		handle_keyboard_input(event)
+	
+	# Mouse input  
+	elif event is InputEventMouse:
+		handle_mouse_input(event)
+	
+	# Gamepad input
+	elif event is InputEventJoypadButton or event is InputEventJoypadMotion:
+		handle_gamepad_input(event)
 
-func process_movement_input(delta: float):
-	"""Main movement input processing"""
-	if not input_manager:
-		return
+func handle_keyboard_input(event):
+	"""Process keyboard events"""
+	if event.is_action_pressed("jump"):
+		emit_jump_command()
+	elif event.is_action_pressed("sprint"):
+		is_sprint_held = true
+		emit_sprint_command(true)
+	elif event.is_action_released("sprint"):
+		is_sprint_held = false
+		emit_sprint_command(false)
+
+func handle_mouse_input(event):
+	"""Process mouse events"""
+	if event is InputEventMouseButton:
+		handle_mouse_clicks(event)
+	elif event is InputEventMouseMotion:
+		handle_mouse_movement(event)
+
+func handle_mouse_clicks(event):
+	"""Handle mouse click events"""
+	if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		# Process click navigation
+		var world_position = get_click_world_position(event.position)
+		if world_position != Vector3.ZERO:
+			emit_camera_command("click_navigation", {"target": world_position})
+
+func handle_mouse_movement(event):
+	"""Handle mouse movement for camera"""
+	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		var mouse_delta = event.relative * mouse_sensitivity
+		emit_camera_command("mouse_look", {"delta": mouse_delta})
+
+func handle_gamepad_input(event):
+	"""Process gamepad events"""
+	# Gamepad input handling
+	pass
+
+func process_continuous_input(delta):
+	"""Process continuous input (WASD, analog sticks)"""
+	movement_update_timer += delta
 	
-	# Get current input using priority system
-	var new_input = resolve_input_priority()
-	var input_magnitude = new_input.length()
-	var has_input = input_magnitude > get_input_deadzone()
-	
-	if not has_input:
-		new_input = Vector2.ZERO
-	
-	var was_moving = input_manager.movement_active
-	var is_moving = has_input
-	
-	# Movement state changes
-	if is_moving and not was_moving:
-		input_manager.movement_active = true
-		input_manager.movement_start_time = Time.get_ticks_msec() / 1000.0
-		input_manager.current_raw_input = new_input
-		input_manager.last_sent_input = new_input
-		movement_started.emit(new_input, input_magnitude)
-		print("🎮 CCC_ControlManager: Movement started via ", current_input_priority)
-	
-	elif not is_moving and was_moving:
-		input_manager.movement_active = false
-		input_manager.current_raw_input = Vector2.ZERO
-		input_manager.last_sent_input = Vector2.ZERO
-		movement_stopped.emit()
+	if movement_update_timer >= movement_update_interval:
+		movement_update_timer = 0.0
 		
-		# Handle WASD override cleanup
-		if wasd_is_overriding:
-			cancel_all_input_components()
-			wasd_is_overriding = false
+		# Get input from all sources
+		wasd_input = get_wasd_input()
+		click_input = get_click_navigation_input()
 		
-		print("🎮 CCC_ControlManager: Movement stopped")
-	
-	elif is_moving and should_update_movement(new_input):
-		input_manager.current_raw_input = new_input
-		input_manager.last_sent_input = new_input
-		movement_updated.emit(new_input, input_magnitude)
+		# INPUT PRIORITY RESOLUTION
+		var final_input = resolve_input_priority(wasd_input, click_input)
+		
+		if final_input.length() > input_deadzone:
+			emit_movement_command(final_input, final_input.length())
 
-func resolve_input_priority() -> Vector2:
-	"""Smart input priority resolution based on control type"""
-	match current_control_type:
-		ControlType.DIRECT:
-			return get_direct_input()
-		ControlType.TARGET_BASED:
-			return get_target_based_input()
-		ControlType.HYBRID:
-			return get_hybrid_input()
-		_:
-			return Vector2.ZERO
+# === INPUT COLLECTION ===
 
-func get_direct_input() -> Vector2:
-	"""Direct control only - WASD/gamepad"""
-	current_input_priority = "direct"
-	wasd_is_overriding = false
-	cancel_all_input_components()
-	return get_raw_wasd_input()
-
-func get_target_based_input() -> Vector2:
-	"""Target-based control only - click navigation"""
-	current_input_priority = "target_based"
-	wasd_is_overriding = false
-	return get_click_navigation_input()
-
-func get_hybrid_input() -> Vector2:
-	"""Hybrid control with WASD override"""
-	# Check if we're in click navigation camera mode
-	if is_in_click_navigation_camera_mode():
-		# In click navigation mode - check WASD first (override priority)
-		var wasd_input = get_raw_wasd_input()
-		if wasd_input.length() > get_input_deadzone():
-			# WASD is active - this overrides click navigation
-			wasd_is_overriding = true
-			current_input_priority = "wasd_override"
-			return wasd_input
-		else:
-			# No WASD input - check click navigation
-			wasd_is_overriding = false
-			current_input_priority = "click_navigation"
-			return get_click_navigation_input()
-	else:
-		# In orbit mode - WASD only
-		wasd_is_overriding = false
-		current_input_priority = "wasd_orbit"
-		var wasd_input = get_raw_wasd_input()
-		if wasd_input.length() > get_input_deadzone():
-			cancel_all_input_components()
-			return wasd_input
-	
-	current_input_priority = "none"
-	return Vector2.ZERO
-
-# === RAW INPUT DETECTION ===
-
-func get_raw_wasd_input() -> Vector2:
-	"""Get raw WASD input without any processing"""
+func get_wasd_input() -> Vector2:
+	"""Get raw WASD input"""
 	return Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
 
 func get_click_navigation_input() -> Vector2:
 	"""Get input from click navigation components"""
-	if not input_manager:
-		return Vector2.ZERO
-	
-	for component in input_manager.input_components:
+	for component in input_components:
 		if is_component_active(component):
 			var component_input = component.get_movement_input()
-			if component_input and component_input.length() > get_input_deadzone():
+			if component_input and component_input.length() > input_deadzone:
 				return component_input
 	
 	return Vector2.ZERO
 
-# === CAMERA MODE DETECTION ===
+func get_click_world_position(screen_pos: Vector2) -> Vector3:
+	"""Convert screen position to world position"""
+	if not camera_rig:
+		return Vector3.ZERO
+	
+	var camera = camera_rig.get_node_or_null("SpringArm3D/Camera3D") as Camera3D
+	if not camera:
+		return Vector3.ZERO
+	
+	var from = camera.project_ray_origin(screen_pos)
+	var to = from + camera.project_ray_normal(screen_pos) * 1000
+	
+	var space_state = character.get_world_3d().direct_space_state
+	var query = PhysicsRayQueryParameters3D.create(from, to)
+	var result = space_state.intersect_ray(query)
+	
+	if result:
+		return result.position
+	
+	return Vector3.ZERO
 
-func is_in_click_navigation_camera_mode() -> bool:
-	"""Detect if camera is in click navigation mode"""
-	# Try CCC camera manager first
-	if camera_manager:
-		return camera_manager.is_in_click_navigation_mode()
-	
-	# Fallback to legacy detection
-	if input_manager and input_manager.camera_rig:
-		return input_manager.camera_rig.is_in_click_navigation_mode()
-	
-	return false
+# === INPUT PRIORITY RESOLUTION ===
+
+func resolve_input_priority(wasd: Vector2, click: Vector2) -> Vector2:
+	"""Resolve input priority between WASD and click navigation"""
+	match current_control_type:
+		ControlType.DIRECT:
+			return wasd
+		ControlType.TARGET_BASED:
+			return click
+		ControlType.HYBRID:
+			# WASD overrides click navigation
+			if wasd.length() > input_deadzone:
+				cancel_click_navigation()
+				return wasd
+			else:
+				return click
+		_:
+			return wasd
+
+func cancel_click_navigation():
+	"""Cancel all click navigation"""
+	for component in input_components:
+		if component and component.has_method("cancel_input"):
+			component.cancel_input()
+
+# === COMMAND EMISSION ===
+
+func emit_movement_command(direction: Vector2, magnitude: float):
+	"""Emit movement command"""
+	movement_command.emit(direction, magnitude)
+
+func emit_jump_command():
+	"""Emit jump command"""
+	jump_command.emit()
+
+func emit_sprint_command(enabled: bool):
+	"""Emit sprint command"""
+	sprint_command.emit(enabled)
+
+func emit_camera_command(type: String, data: Dictionary):
+	"""Emit camera command"""
+	camera_command.emit(type, data)
 
 # === UTILITY METHODS ===
-
-func get_input_deadzone() -> float:
-	"""Get input deadzone from InputManager"""
-	if input_manager:
-		return input_manager.input_deadzone
-	return 0.05
-
-func should_update_movement(new_input: Vector2) -> bool:
-	"""Check if movement should be updated"""
-	if not input_manager:
-		return false
-	
-	input_manager.movement_update_timer += get_physics_process_delta_time()
-	
-	if input_manager.movement_update_timer >= input_manager.movement_update_interval:
-		if new_input.distance_to(input_manager.last_sent_input) > 0.1:
-			input_manager.movement_update_timer = 0.0
-			return true
-	
-	return false
 
 func is_component_active(component: Node) -> bool:
 	"""Check if input component is active"""
 	return is_instance_valid(component) and component.has_method("is_active") and component.is_active()
-
-func cancel_all_input_components():
-	"""Cancel all input components"""
-	if input_manager:
-		input_manager.cancel_all_input_components()
-
-# === SIGNAL HANDLERS ===
-
-func _on_jump_pressed():
-	jump_pressed.emit()
-
-func _on_sprint_started():
-	sprint_started.emit()
-
-func _on_sprint_stopped():
-	sprint_stopped.emit()
-
-func _on_slow_walk_started():
-	slow_walk_started.emit()
-
-func _on_slow_walk_stopped():
-	slow_walk_stopped.emit()
-
-func _on_reset_pressed():
-	reset_pressed.emit()
-
-func _on_click_navigation(world_position: Vector3):
-	click_navigation.emit(world_position)
-
-# === PASSTHROUGH METHODS ===
-
-func get_current_input_direction() -> Vector2:
-	"""Get current input direction"""
-	if input_manager:
-		return input_manager.get_current_input_direction()
-	return Vector2.ZERO
-
-func is_movement_active() -> bool:
-	"""Check if movement is currently active"""
-	if input_manager:
-		return input_manager.is_movement_active()
-	return false
-
-func get_movement_duration() -> float:
-	"""Get how long movement has been active"""
-	if input_manager:
-		return input_manager.get_movement_duration()
-	return 0.0
-
-# === CCC CONTROL INTERFACE ===
 
 func configure_control_type(control_type: ControlType):
 	"""Configure the control scheme"""
@@ -297,43 +244,23 @@ func configure_control_type(control_type: ControlType):
 	# Apply immediate changes based on control type
 	match control_type:
 		ControlType.DIRECT:
-			cancel_all_input_components()
+			cancel_click_navigation()
 			print("   → Direct control: WASD/gamepad only")
 		ControlType.TARGET_BASED:
 			print("   → Target-based control: Click navigation only")
 		ControlType.HYBRID:
 			print("   → Hybrid control: WASD overrides click navigation")
 
-func set_control_sensitivity(sensitivity: float):
-	"""Set control sensitivity"""
-	# TODO: Implement advanced control sensitivity
-	print("🎮 CCC_ControlManager: Control sensitivity set to ", sensitivity)
-
-func enable_input_buffering(enabled: bool):
-	"""Enable/disable input buffering"""
-	# TODO: Implement input buffering system
-	print("🎮 CCC_ControlManager: Input buffering ", "enabled" if enabled else "disabled")
-
 # === DEBUG INFO ===
 
 func get_debug_info() -> Dictionary:
 	"""Get comprehensive debug information"""
-	var debug_data = {
+	return {
 		"control_type": ControlType.keys()[current_control_type],
-		"current_priority": current_input_priority,
-		"wasd_overriding": wasd_is_overriding,
-		"camera_mode": "click_nav" if is_in_click_navigation_camera_mode() else "orbit"
+		"wasd_input": wasd_input,
+		"click_input": click_input,
+		"resolved_input": resolve_input_priority(wasd_input, click_input),
+		"input_deadzone": input_deadzone,
+		"sprint_held": is_sprint_held,
+		"input_components": input_components.size()
 	}
-	
-	if input_manager:
-		debug_data.merge({
-			"raw_wasd": get_raw_wasd_input(),
-			"click_input": get_click_navigation_input(),
-			"resolved_input": resolve_input_priority(),
-			"movement_active": is_movement_active(),
-			"input_deadzone": get_input_deadzone()
-		})
-	else:
-		debug_data["input_manager"] = "missing"
-	
-	return debug_data

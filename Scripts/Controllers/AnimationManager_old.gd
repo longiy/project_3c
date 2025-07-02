@@ -1,6 +1,6 @@
 # AnimationManager.gd - Updated for MovementManager
 extends Node
-class_name AnimationManager
+class_name AnimationManager_old
 
 @export var animation_tree: AnimationTree
 
