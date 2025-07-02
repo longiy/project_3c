@@ -1,14 +1,14 @@
-# CCC_ControlManager.gd - CLEANED UP: Pure CCC with migrated input logic
+# CCC_ControlManager.gd - Enhanced with migrated input priority logic
 extends Node
 class_name CCC_ControlManager
 
 # === WRAPPED COMPONENT ===
 @export var input_manager: InputManager
 
-# === CAMERA REFERENCE ===
+# === CAMERA REFERENCE (Migrated from InputManager) ===
 var camera_manager: CCC_CameraManager
 
-# === SIGNALS ===
+# === SIGNALS (Passthrough from InputManager) ===
 signal movement_started(direction: Vector2, magnitude: float)
 signal movement_updated(direction: Vector2, magnitude: float)
 signal movement_stopped()
@@ -30,7 +30,7 @@ enum ControlType {
 
 var current_control_type: ControlType = ControlType.HYBRID
 
-# === INPUT STATE ===
+# === MIGRATED INPUT STATE (from InputManager) ===
 var wasd_is_overriding = false
 var current_input_priority: String = "none"
 
@@ -38,7 +38,7 @@ func _ready():
 	setup_input_manager()
 	setup_camera_reference()
 	connect_input_signals()
-	print("✅ CCC_ControlManager: Initialized with pure CCC architecture")
+	print("✅ CCC_ControlManager: Initialized with migrated input logic")
 
 func setup_input_manager():
 	"""Find and reference InputManager"""
@@ -46,6 +46,7 @@ func setup_input_manager():
 		input_manager = get_node_or_null("InputManager")
 	
 	if not input_manager:
+		# Try finding it as a sibling
 		input_manager = get_parent().get_node_or_null("InputManager")
 	
 	if not input_manager:
@@ -59,11 +60,11 @@ func setup_camera_reference():
 		push_warning("CCC_ControlManager: No CCC_CameraManager found - using legacy camera detection")
 
 func connect_input_signals():
-	"""Connect InputManager signals"""
+	"""Connect InputManager signals but intercept movement for processing"""
 	if not input_manager:
 		return
 	
-	# Connect discrete input signals directly
+	# Connect discrete input signals directly (no processing needed)
 	input_manager.jump_pressed.connect(_on_jump_pressed)
 	input_manager.sprint_started.connect(_on_sprint_started)
 	input_manager.sprint_stopped.connect(_on_sprint_stopped)
@@ -72,22 +73,24 @@ func connect_input_signals():
 	input_manager.reset_pressed.connect(_on_reset_pressed)
 	input_manager.click_navigation.connect(_on_click_navigation)
 	
-	# Take over movement signal generation
+	# MIGRATION: Disable InputManager's movement processing
 	input_manager.disable_legacy_movement_processing()
+	
+	# Take over movement signal generation
 	print("🔄 CCC_ControlManager: Taking over movement processing from InputManager")
 
 func _physics_process(delta):
-	"""Handle movement input processing"""
+	"""MIGRATED: Handle movement input processing (was in InputManager)"""
 	process_movement_input(delta)
 
-# === INPUT PRIORITY LOGIC ===
+# === MIGRATED INPUT PRIORITY LOGIC ===
 
 func process_movement_input(delta: float):
-	"""Main movement input processing"""
+	"""MIGRATED: Main movement input processing from InputManager"""
 	if not input_manager:
 		return
 	
-	# Get current input using priority system
+	# Get current input using new priority system
 	var new_input = resolve_input_priority()
 	var input_magnitude = new_input.length()
 	var has_input = input_magnitude > get_input_deadzone()
@@ -98,7 +101,7 @@ func process_movement_input(delta: float):
 	var was_moving = input_manager.movement_active
 	var is_moving = has_input
 	
-	# Movement state changes
+	# Movement state changes (same logic as InputManager)
 	if is_moving and not was_moving:
 		input_manager.movement_active = true
 		input_manager.movement_start_time = Time.get_ticks_msec() / 1000.0
@@ -126,14 +129,14 @@ func process_movement_input(delta: float):
 		movement_updated.emit(new_input, input_magnitude)
 
 func resolve_input_priority() -> Vector2:
-	"""Smart input priority resolution based on control type"""
+	"""MIGRATED: Smart input priority resolution (was InputManager.get_current_movement_input)"""
 	match current_control_type:
 		ControlType.DIRECT:
 			return get_direct_input()
 		ControlType.TARGET_BASED:
 			return get_target_based_input()
 		ControlType.HYBRID:
-			return get_hybrid_input()
+			return get_hybrid_input()  # Current implementation
 		_:
 			return Vector2.ZERO
 
@@ -141,7 +144,7 @@ func get_direct_input() -> Vector2:
 	"""Direct control only - WASD/gamepad"""
 	current_input_priority = "direct"
 	wasd_is_overriding = false
-	cancel_all_input_components()
+	cancel_all_input_components()  # Cancel any click navigation
 	return get_raw_wasd_input()
 
 func get_target_based_input() -> Vector2:
@@ -151,7 +154,7 @@ func get_target_based_input() -> Vector2:
 	return get_click_navigation_input()
 
 func get_hybrid_input() -> Vector2:
-	"""Hybrid control with WASD override"""
+	"""MIGRATED: Hybrid control with WASD override (current system)"""
 	# Check if we're in click navigation camera mode
 	if is_in_click_navigation_camera_mode():
 		# In click navigation mode - check WASD first (override priority)
@@ -172,13 +175,13 @@ func get_hybrid_input() -> Vector2:
 		current_input_priority = "wasd_orbit"
 		var wasd_input = get_raw_wasd_input()
 		if wasd_input.length() > get_input_deadzone():
-			cancel_all_input_components()
+			cancel_all_input_components()  # Cancel click nav when switching to orbit
 			return wasd_input
 	
 	current_input_priority = "none"
 	return Vector2.ZERO
 
-# === RAW INPUT DETECTION ===
+# === RAW INPUT DETECTION (Simplified from InputManager) ===
 
 func get_raw_wasd_input() -> Vector2:
 	"""Get raw WASD input without any processing"""
@@ -242,7 +245,7 @@ func cancel_all_input_components():
 	if input_manager:
 		input_manager.cancel_all_input_components()
 
-# === SIGNAL HANDLERS ===
+# === DIRECT PASSTHROUGH HANDLERS (Unchanged) ===
 
 func _on_jump_pressed():
 	jump_pressed.emit()
@@ -265,7 +268,7 @@ func _on_reset_pressed():
 func _on_click_navigation(world_position: Vector3):
 	click_navigation.emit(world_position)
 
-# === PASSTHROUGH METHODS ===
+# === PASSTHROUGH METHODS (Some now delegated to new logic) ===
 
 func get_current_input_direction() -> Vector2:
 	"""Get current input direction"""
@@ -285,7 +288,7 @@ func get_movement_duration() -> float:
 		return input_manager.get_movement_duration()
 	return 0.0
 
-# === CCC CONTROL INTERFACE ===
+# === CCC CONTROL INTERFACE (Enhanced) ===
 
 func configure_control_type(control_type: ControlType):
 	"""Configure the control scheme"""
@@ -305,24 +308,25 @@ func configure_control_type(control_type: ControlType):
 			print("   → Hybrid control: WASD overrides click navigation")
 
 func set_control_sensitivity(sensitivity: float):
-	"""Set control sensitivity"""
-	# TODO: Implement advanced control sensitivity
-	print("🎮 CCC_ControlManager: Control sensitivity set to ", sensitivity)
+	"""Set control sensitivity (future implementation)"""
+	# TODO: Implement when adding advanced control configuration
+	pass
 
 func enable_input_buffering(enabled: bool):
-	"""Enable/disable input buffering"""
-	# TODO: Implement input buffering system
-	print("🎮 CCC_ControlManager: Input buffering ", "enabled" if enabled else "disabled")
+	"""Enable/disable input buffering (future implementation)"""
+	# TODO: Implement when adding advanced control features
+	pass
 
-# === DEBUG INFO ===
+# === DEBUG INFO (Enhanced) ===
 
 func get_debug_info() -> Dictionary:
-	"""Get comprehensive debug information"""
+	"""Get enhanced debug information"""
 	var debug_data = {
 		"control_type": ControlType.keys()[current_control_type],
 		"current_priority": current_input_priority,
 		"wasd_overriding": wasd_is_overriding,
-		"camera_mode": "click_nav" if is_in_click_navigation_camera_mode() else "orbit"
+		"camera_mode": "click_nav" if is_in_click_navigation_camera_mode() else "orbit",
+		"migration_status": "input_priority_migrated"
 	}
 	
 	if input_manager:
