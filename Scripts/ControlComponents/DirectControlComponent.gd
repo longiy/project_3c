@@ -76,6 +76,7 @@ func process_keyboard_input(event: InputEventKey):
 		action_command.emit(action_name, event.pressed)
 
 func process_mouse_motion(event: InputEventMouseMotion):
+	# Only process mouse look when in orbit mode (captured) and active
 	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and is_active:
 		var mouse_delta = event.relative * mouse_sensitivity
 		
@@ -83,7 +84,7 @@ func process_mouse_motion(event: InputEventMouseMotion):
 			mouse_delta.y = -mouse_delta.y
 		
 		look_command.emit(mouse_delta)
-
+		
 func calculate_movement_vector():
 	target_movement = Vector2.ZERO
 	

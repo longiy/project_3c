@@ -92,17 +92,16 @@ func process_unhandled_input(event: InputEvent):
 # ===== INPUT CLASSIFICATION & ROUTING =====
 
 func classify_and_route_input(event: InputEvent):
-	# Determine input type and route to appropriate component
-	var input_type = classify_input_event(event)
+	# Handle specific input types with action-based routing
 	
-	if input_type != InputType.DIRECT:  # Only switch if not already DIRECT
-		set_active_input(input_type)
-	
-	# Route to active component
-	route_to_active_component(event)
-	
-	# Also send to all components as fallback
-	route_fallback_input(event)
+	if event is InputEventMouseButton:
+		handle_mouse_button(event)
+	elif event is InputEventMouseMotion:
+		handle_mouse_motion(event)
+	elif event is InputEventKey:
+		handle_keyboard_input(event)
+	elif event is InputEventJoypadButton or event is InputEventJoypadMotion:
+		handle_gamepad_input(event)
 
 func classify_input_event(event: InputEvent) -> InputType:
 	# Mouse motion (for camera look) - DIRECT
@@ -145,54 +144,55 @@ func get_action_name_for_event(event: InputEventKey) -> String:
 # ===== INDIVIDUAL INPUT HANDLERS =====
 
 func handle_mouse_motion(event: InputEventMouseMotion):
-	set_active_input(InputType.DIRECT)
-	route_to_active_component(event)
+	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		# In orbit mode - route to direct control for camera
+		set_active_input(InputType.DIRECT)
+		route_to_active_component(event)
+	# In click navigation mode, mouse motion doesn't change input type
+	else:
+		route_to_active_component(event)
 
 func handle_mouse_button(event: InputEventMouseButton):
-	# Use Input Map actions instead of hardcoded buttons
-	if event.is_action("clicknav"):
-		# Click navigation action
+	# Only handle left click for navigation when not in orbit mode
+	if event.is_action("clicknav") and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		set_active_input(InputType.TARGET)
 		route_to_active_component(event)
-	elif event.is_action("orbit"):
-		# Orbit mode action
-		set_active_input(InputType.DIRECT)
-		if event.pressed:
-			# Capture mouse for orbit mode
-			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-			print("InputCore: Switched to orbit mode")
-		else:
-			# Release mouse when orbit button released
-			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-			print("InputCore: Exited orbit mode")
+	# Ignore mouse2 (right click) - does nothing
+	# Other buttons route to current active component
+	elif not event.is_action("clicknav"):
 		route_to_active_component(event)
-	else:
-		# Other mouse buttons default to current active input
-		route_to_active_component(event)
+
+func cancel_active_navigation():
+	# Cancel any active click navigation when entering orbit mode
+	var target_component = registered_components.get(InputType.TARGET)
+	if target_component and target_component.has_method("force_stop_navigation"):
+		target_component.force_stop_navigation()
+		print("InputCore: Cancelled active navigation")
 
 func toggle_orbit_mode():
 	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		# Exit orbit mode
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-		print("InputCore: Exited orbit mode")
+		print("InputCore: Exited orbit mode - cursor visible")
 	else:
-		# Enter orbit mode
+		# Enter orbit mode - cancel any active navigation first
+		cancel_active_navigation()
 		set_active_input(InputType.DIRECT)
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-		print("InputCore: Entered orbit mode")
+		print("InputCore: Entered orbit mode - cursor captured")
 
 func handle_keyboard_input(event: InputEventKey):
-	var action_name = get_action_name_for_event(event)
-	
-	# Handle orbit mode toggle action
+	# Handle orbit mode toggle - highest priority
 	if event.is_action_pressed("orbit"):
 		toggle_orbit_mode()
 		return
 	
-	# Handle WASD movement
-	if action_name in wasd_actions:
+	# WASD always sets DIRECT mode when not in orbit
+	var action_name = get_action_name_for_event(event)
+	if action_name in wasd_actions and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		set_active_input(InputType.DIRECT)
 	
+	# Always route keyboard input
 	route_to_active_component(event)
 
 func handle_gamepad_input(event: InputEvent):
