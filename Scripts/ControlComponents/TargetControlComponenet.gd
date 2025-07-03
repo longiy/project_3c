@@ -65,25 +65,13 @@ func setup_cursor_marker():
 		cursor_marker.visible = false
 
 func connect_to_character_rotation():
-	# Connect to MovementComponent for both rotation and navigation
+	# Connect to MovementComponent or CharacterComponent for rotation
 	var movement_component_path = "../../../CHARACTER/CharacterComponents/MovementComponent"
 	var character_core_path = "../../../CHARACTER/CharacterCore"
 	
 	var movement_component = get_node(movement_component_path)
-	if movement_component:
-		# Connect character look command for rotation
-		if movement_component.has_method("_on_character_look_command"):
-			character_look_command.connect(movement_component._on_character_look_command)
-		
-		# MISSING CONNECTION ADDED: Connect navigate command for movement
-		if movement_component.has_method("_on_navigate_command"):
-			navigate_command.connect(movement_component._on_navigate_command)
-			print("TargetControlComponent: Connected navigate_command to MovementComponent")
-		
-		# Connect stop navigation command
-		if movement_component.has_method("_on_stop_navigation_command"):
-			stop_navigation_command.connect(movement_component._on_stop_navigation_command)
-			print("TargetControlComponent: Connected stop_navigation_command to MovementComponent")
+	if movement_component and movement_component.has_method("_on_character_look_command"):
+		character_look_command.connect(movement_component._on_character_look_command)
 	else:
 		# Try connecting to CharacterCore directly if it has rotation handling
 		var character_core_node = get_node(character_core_path)

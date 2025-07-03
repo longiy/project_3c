@@ -8,4 +8,3 @@ res://Scripts/ControlComponents/GamepadControlComponent.gd
 res://Scripts/CCC_Manager.gd
 res://Scripts/CameraComponents/DistanceComponent.gd
 res://Scripts/ControlComponents/InputVisualFeedback.gd
-res://Scripts/CharacterComponents/MovementComponent.gd

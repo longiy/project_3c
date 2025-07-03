@@ -103,31 +103,13 @@ func connect_direct_control_signals():
 			direct_control_component.action_command.connect(_on_action_command)
 
 func connect_target_control_signals():
-	# Try export reference first, then fallback to node path
-	var target_component = target_control_component
-	if not target_component:
-		target_component = get_node("../../../CONTROL/ControlComponents/TargetControlComponent")
-		if target_component:
-			# Cache the reference for future use
-			target_control_component = target_component
-	
-	if target_component:
-		# Connect navigate command - CRITICAL for click movement
-		if not target_component.navigate_command.is_connected(_on_navigate_command):
-			target_component.navigate_command.connect(_on_navigate_command)
-			print("MovementComponent: Connected to navigate_command")
-		
-		# Connect character look command for rotation
-		if not target_component.character_look_command.is_connected(_on_character_look_command):
-			target_component.character_look_command.connect(_on_character_look_command)
-			print("MovementComponent: Connected to character_look_command")
-		
-		# Connect stop navigation command
-		if not target_component.stop_navigation_command.is_connected(_on_stop_navigation_command):
-			target_component.stop_navigation_command.connect(_on_stop_navigation_command)
-			print("MovementComponent: Connected to stop_navigation_command")
-	else:
-		push_error("MovementComponent: Could not find TargetControlComponent for signal connections")
+	if target_control_component:
+		if not target_control_component.navigate_command.is_connected(_on_navigate_command):
+			target_control_component.navigate_command.connect(_on_navigate_command)
+		if not target_control_component.character_look_command.is_connected(_on_character_look_command):
+			target_control_component.character_look_command.connect(_on_character_look_command)
+		if not target_control_component.stop_navigation_command.is_connected(_on_stop_navigation_command):
+			target_control_component.stop_navigation_command.connect(_on_stop_navigation_command)
 
 func connect_gamepad_control_signals():
 	if gamepad_control_component:
