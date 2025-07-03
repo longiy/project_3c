@@ -134,7 +134,6 @@ target_control_component = NodePath("../../../CONTROL/ControlComponents/TargetCo
 gamepad_control_component = NodePath("../../../CONTROL/ControlComponents/GamepadControlComponent")
 character_core = NodePath("../../CharacterCore")
 camera_system = NodePath("../../../CAMERA")
-enable_direction_snap = true
 destination_threshold = 0.1
 
 [node name="CAMERA" type="Node3D" parent="." node_paths=PackedStringArray("spring_arm", "camera_core", "orbit_component", "distance_component", "follow_component", "target_node")]
