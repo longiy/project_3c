@@ -1,6 +1,6 @@
 # CCC_Manager.gd
 # Central coordinator for CHARACTER, CAMERA, CONTROL systems
-# Refactored: Export variables instead of absolute paths
+# PHASE 4: Updated to reference InputCore directly, removed InputPriorityManager dependency
 
 extends Node3D
 class_name CCC_Manager
@@ -87,11 +87,10 @@ func update_debug_display():
 	debug_text += "CAMERA: " + ("✓" if camera_system else "✗") + "\n"
 	debug_text += "CONTROL: " + ("✓" if control_system else "✗") + "\n"
 	
-	# Input system status
+	# UPDATED: Input system status - reference InputCore directly
 	if control_system and control_system.input_core:
-		var priority_mgr = control_system.input_core.input_priority_manager
-		if priority_mgr:
-			var input_type = priority_mgr.get_active_input_type()
-			debug_text += "Input: " + priority_mgr.get_input_type_name(input_type) + "\n"
+		var input_core = control_system.input_core
+		var input_type = input_core.get_active_input_type()
+		debug_text += "Input: " + input_core.get_input_type_name(input_type) + "\n"
 	
 	debug_label.text = debug_text
