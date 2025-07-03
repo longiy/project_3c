@@ -1,4 +1,4 @@
-[gd_scene load_steps=20 format=3 uid="uid://diueuwbtv4w82"]
+[gd_scene load_steps=19 format=3 uid="uid://diueuwbtv4w82"]
 
 [ext_resource type="Script" uid="uid://dykru37xmsyne" path="res://Scripts/CHARACTER.gd" id="1_eromc"]
 [ext_resource type="Script" uid="uid://b45fddjajjx8r" path="res://Scripts/CCC_Manager.gd" id="1_in1na"]
@@ -7,7 +7,6 @@
 [ext_resource type="Script" uid="uid://5h6dkq132qk4" path="res://Scripts/InputCore.gd" id="4_6po8h"]
 [ext_resource type="Script" uid="uid://cgx42y8g35q8v" path="res://Scripts/CONTROL.gd" id="4_35j32"]
 [ext_resource type="Script" uid="uid://br42dys6ahaqr" path="res://Scripts/CameraComponents/OrbitComponent.gd" id="5_35j32"]
-[ext_resource type="Script" uid="uid://biuvjt8k8ovt5" path="res://Scripts/RawInputProcessor.gd" id="5_85dx6"]
 [ext_resource type="Script" uid="uid://cs68pcxkaivl0" path="res://Scripts/InputPriorityManager.gd" id="6_2j1nk"]
 [ext_resource type="Script" uid="uid://dqb4v5q4c1moa" path="res://Scripts/ControlComponents/DirectControlComponent.gd" id="7_85dx6"]
 [ext_resource type="Script" uid="uid://chl2y2xkcppm7" path="res://Scripts/ControlComponents/TargetControlComponenet.gd" id="8_121sy"]
@@ -85,14 +84,10 @@ script = ExtResource("4_35j32")
 
 [node name="CURSOR" parent="CONTROL" instance=ExtResource("19_qtd55")]
 
-[node name="InputCore" type="Node3D" parent="CONTROL" node_paths=PackedStringArray("raw_input_processor", "input_priority_manager", "control_system")]
+[node name="InputCore" type="Node3D" parent="CONTROL" node_paths=PackedStringArray("input_priority_manager", "control_system")]
 script = ExtResource("4_6po8h")
-raw_input_processor = NodePath("RawInputProcessor")
 input_priority_manager = NodePath("InputPriorityManager")
 control_system = NodePath("..")
-
-[node name="RawInputProcessor" type="Node" parent="CONTROL/InputCore"]
-script = ExtResource("5_85dx6")
 
 [node name="InputPriorityManager" type="Node" parent="CONTROL/InputCore"]
 script = ExtResource("6_2j1nk")
