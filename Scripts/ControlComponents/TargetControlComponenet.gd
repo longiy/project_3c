@@ -131,7 +131,7 @@ func process_fallback_input(event: InputEvent):
 				start_navigation(target)
 
 func process_mouse_button(event: InputEventMouseButton):
-	if event.is_action("clicknav"):  # Instead of checking MOUSE_BUTTON_RIGHT
+	if event.button_index == MOUSE_BUTTON_RIGHT:
 		if event.pressed:
 			handle_click_start(event.position)
 		else:

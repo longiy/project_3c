@@ -149,50 +149,13 @@ func handle_mouse_motion(event: InputEventMouseMotion):
 	route_to_active_component(event)
 
 func handle_mouse_button(event: InputEventMouseButton):
-	# Use Input Map actions instead of hardcoded buttons
-	if event.is_action("clicknav"):
-		# Click navigation action
-		set_active_input(InputType.TARGET)
-		route_to_active_component(event)
-	elif event.is_action("orbit"):
-		# Orbit mode action
-		set_active_input(InputType.DIRECT)
-		if event.pressed:
-			# Capture mouse for orbit mode
-			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-			print("InputCore: Switched to orbit mode")
-		else:
-			# Release mouse when orbit button released
-			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-			print("InputCore: Exited orbit mode")
-		route_to_active_component(event)
-	else:
-		# Other mouse buttons default to current active input
-		route_to_active_component(event)
-
-func toggle_orbit_mode():
-	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		# Exit orbit mode
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-		print("InputCore: Exited orbit mode")
-	else:
-		# Enter orbit mode
-		set_active_input(InputType.DIRECT)
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-		print("InputCore: Entered orbit mode")
+	set_active_input(InputType.TARGET)
+	route_to_active_component(event)
 
 func handle_keyboard_input(event: InputEventKey):
 	var action_name = get_action_name_for_event(event)
-	
-	# Handle orbit mode toggle action
-	if event.is_action_pressed("orbit"):
-		toggle_orbit_mode()
-		return
-	
-	# Handle WASD movement
 	if action_name in wasd_actions:
 		set_active_input(InputType.DIRECT)
-	
 	route_to_active_component(event)
 
 func handle_gamepad_input(event: InputEvent):
