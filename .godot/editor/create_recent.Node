@@ -1,3 +1,4 @@
+Node
 Panel
 ProgressBar
 VBoxContainer
@@ -5,11 +6,9 @@ Label
 Control
 NavigationRegion3D
 NavigationLink3D
-Node
 Node3D
 MeshInstance3D
 WorldEnvironment
 Sprite3D
 AnimationTree
 SpringArm3D
-CSGBox3D

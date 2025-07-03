@@ -1,206 +1,217 @@
 # DistanceComponent.gd
-# Day 11: CAMERA Distance Component for SpringArm3D zoom control
-# Handles camera distance/zoom with mouse wheel and gamepad triggers
+# Handles camera distance adjustments based on input type
+# Refactored: Uses InputCore instead of InputPriorityManager
 
 extends Node
 class_name DistanceComponent
 
-# References
-var camera_system: CameraSystem
-var input_priority_manager: InputPriorityManager
+# Export references for inspector assignment
+@export_group("System References")
+@export var input_core: InputCore
+@export var spring_arm: SpringArm3D
+@export var camera_system: CameraSystem
 
-# Distance settings
 @export_group("Distance Settings")
-@export var zoom_speed: float = 1.0
-@export var zoom_smoothing: float = 8.0
+@export var default_distance: float = 4.0
+@export var direct_input_distance: float = 4.0
+@export var target_input_distance: float = 6.0
+@export var gamepad_distance: float = 5.0
+@export var distance_smoothing: float = 8.0
+
+@export_group("Zoom Settings")
+@export var enable_scroll_zoom: bool = true
+@export var zoom_speed: float = 0.5
 @export var min_distance: float = 1.0
 @export var max_distance: float = 10.0
-@export var default_distance: float = 4.0
 
-@export_group("Input Settings")
-@export var mouse_wheel_enabled: bool = true
-@export var gamepad_zoom_enabled: bool = true
-@export var keyboard_zoom_enabled: bool = true
+@export_group("Debug")
+@export var debug_enabled: bool = false
 
-# Zoom input tracking
+# Internal state
+var current_distance: float
 var target_distance: float
-var zoom_input_velocity: float = 0.0
-var last_zoom_time: float = 0.0
-
-# Input actions for keyboard zoom
-var zoom_in_action: String = "zoom_in"    # + key
-var zoom_out_action: String = "zoom_out"  # - key
+var last_input_type: InputCore.InputType
 
 func _ready():
-	# Get camera system reference
-	camera_system = get_node("../../") as CameraSystem
-	if not camera_system:
-		push_error("DistanceComponent: CAMERA system not found")
+	if not verify_references():
 		return
 	
-	# Get input priority manager for gamepad input
-	input_priority_manager = get_node("../../../CONTROL/InputCore/InputPriorityManager")
+	setup_component()
 	
-	# Initialize distance
+	if debug_enabled:
+		print("DistanceComponent: Initialized")
+
+func verify_references() -> bool:
+	var missing = []
+	
+	if not input_core:
+		missing.append("input_core")
+	if not spring_arm:
+		missing.append("spring_arm")
+	
+	if missing.size() > 0:
+		push_error("DistanceComponent: Missing references: " + str(missing))
+		push_error("Please assign missing references in the Inspector")
+		return false
+	
+	return true
+
+func setup_component():
+	# Initialize distances
+	current_distance = default_distance
 	target_distance = default_distance
 	
-	# Connect to input signals if available
-	connect_input_signals()
+	if spring_arm:
+		spring_arm.spring_length = current_distance
 	
-	print("DistanceComponent: Initialized")
-
-func _input(event):
-	# Handle mouse wheel zoom
-	if mouse_wheel_enabled and event is InputEventMouseButton:
-		handle_mouse_wheel_zoom(event)
+	# Set up processing
+	set_process(true)
+	
+	# Get initial input type
+	if input_core:
+		last_input_type = input_core.get_active_input_type()
+		update_distance_for_input_type(last_input_type)
 
 func _process(delta):
-	# Handle continuous keyboard zoom
-	if keyboard_zoom_enabled:
-		handle_keyboard_zoom(delta)
+	if not input_core:
+		return
 	
-	# Handle gamepad zoom
-	if gamepad_zoom_enabled:
-		handle_gamepad_zoom(delta)
+	# Check for input type changes
+	var current_input_type = input_core.get_active_input_type()
+	if current_input_type != last_input_type:
+		on_input_type_changed(current_input_type)
+		last_input_type = current_input_type
 	
-	# Update camera distance smoothly
+	# Smooth distance transitions
 	update_distance_smoothing(delta)
 
-func connect_input_signals():
-	# Connect to control components for integrated zoom input
-	var direct_control = get_node("../../../CONTROL/ControlComponents/DirectControlComponent")
-	if direct_control and direct_control.has_signal("action_command"):
-		direct_control.action_command.connect(_on_action_command)
-
-func handle_mouse_wheel_zoom(event: InputEventMouseButton):
-	if event.pressed:
-		var zoom_delta = 0.0
-		
-		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			zoom_delta = -zoom_speed
-		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			zoom_delta = zoom_speed
-		
-		if zoom_delta != 0.0:
-			apply_zoom_delta(zoom_delta)
-			update_zoom_activity()
-
-func handle_keyboard_zoom(delta: float):
-	var zoom_delta = 0.0
-	
-	if Input.is_action_pressed(zoom_in_action):
-		zoom_delta = -zoom_speed * delta * 3.0  # Continuous zoom
-	elif Input.is_action_pressed(zoom_out_action):
-		zoom_delta = zoom_speed * delta * 3.0
-	
-	if zoom_delta != 0.0:
-		apply_zoom_delta(zoom_delta)
-		update_zoom_activity()
-
-func handle_gamepad_zoom(delta: float):
-	if not input_priority_manager:
+func _input(event):
+	if not enable_scroll_zoom:
 		return
 	
-	# Use gamepad triggers for zoom (assuming RT=zoom out, LT=zoom in)
-	var zoom_out = Input.get_joy_axis(0, JOY_AXIS_TRIGGER_RIGHT)
-	var zoom_in = Input.get_joy_axis(0, JOY_AXIS_TRIGGER_LEFT)
-	
-	var zoom_delta = 0.0
-	
-	# Apply deadzone
-	var trigger_deadzone = 0.1
-	if zoom_out > trigger_deadzone:
-		zoom_delta = zoom_speed * zoom_out * delta * 2.0
-	elif zoom_in > trigger_deadzone:
-		zoom_delta = -zoom_speed * zoom_in * delta * 2.0
-	
-	if zoom_delta != 0.0:
-		apply_zoom_delta(zoom_delta)
-		update_zoom_activity()
-		
-		# Notify input system of gamepad activity
-		if input_priority_manager.has_method("update_input_activity"):
-			input_priority_manager.update_input_activity(InputPriorityManager.InputType.GAMEPAD)
+	# Handle mouse wheel zoom
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			zoom_in()
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			zoom_out()
 
-func apply_zoom_delta(delta: float):
-	# Apply zoom change with velocity for smooth feel
-	zoom_input_velocity += delta
-	target_distance = clamp(target_distance + delta, min_distance, max_distance)
+# ===== INPUT TYPE HANDLING =====
+
+func on_input_type_changed(new_input_type: InputCore.InputType):
+	update_distance_for_input_type(new_input_type)
+	
+	if debug_enabled:
+		var type_name = input_core.get_input_type_name(new_input_type)
+		print("DistanceComponent: Input type changed to ", type_name)
+
+func update_distance_for_input_type(input_type: InputCore.InputType):
+	# Set target distance based on input type
+	match input_type:
+		InputCore.InputType.DIRECT:
+			target_distance = direct_input_distance
+		InputCore.InputType.TARGET:
+			target_distance = target_input_distance
+		InputCore.InputType.GAMEPAD:
+			target_distance = gamepad_distance
+		_:
+			target_distance = default_distance
+
+# ===== DISTANCE SMOOTHING =====
 
 func update_distance_smoothing(delta: float):
-	# Apply velocity damping
-	zoom_input_velocity = lerp(zoom_input_velocity, 0.0, 5.0 * delta)
-	
-	# Get current distance from camera system
-	var current_distance = camera_system.get_current_distance()
-	
-	# Apply smooth zoom if distance changed
-	if abs(target_distance - current_distance) > 0.01:
-		camera_system.set_distance(target_distance, true)
-
-func update_zoom_activity():
-	last_zoom_time = Time.get_ticks_msec() / 1000.0
-
-func _on_action_command(action: String, pressed: bool):
-	# Handle zoom actions from other input components
-	if not pressed:
+	if not spring_arm:
 		return
 	
-	match action:
-		"zoom_in":
-			apply_zoom_delta(-zoom_speed * 0.5)
-			update_zoom_activity()
-		"zoom_out":
-			apply_zoom_delta(zoom_speed * 0.5)
-			update_zoom_activity()
+	# Smooth transition to target distance
+	current_distance = lerp(current_distance, target_distance, distance_smoothing * delta)
+	
+	# Clamp to min/max values
+	current_distance = clamp(current_distance, min_distance, max_distance)
+	
+	# Apply to spring arm
+	spring_arm.spring_length = current_distance
 
-# === PUBLIC API ===
+# ===== ZOOM CONTROLS =====
 
-func set_zoom_speed(speed: float):
-	zoom_speed = clamp(speed, 0.1, 5.0)
+func zoom_in():
+	var new_distance = target_distance - zoom_speed
+	set_target_distance(new_distance)
+	
+	if debug_enabled:
+		print("DistanceComponent: Zoom in to ", new_distance)
 
-func set_distance_range(min_dist: float, max_dist: float):
-	min_distance = min_dist
-	max_distance = max_dist
-	target_distance = clamp(target_distance, min_distance, max_distance)
+func zoom_out():
+	var new_distance = target_distance + zoom_speed
+	set_target_distance(new_distance)
+	
+	if debug_enabled:
+		print("DistanceComponent: Zoom out to ", new_distance)
 
-func set_target_distance(distance: float, smooth: bool = true):
+func set_target_distance(distance: float):
 	target_distance = clamp(distance, min_distance, max_distance)
-	if not smooth:
-		camera_system.set_distance(target_distance, false)
+
+# ===== PUBLIC API =====
+
+func get_current_distance() -> float:
+	return current_distance
 
 func get_target_distance() -> float:
 	return target_distance
 
-func get_zoom_activity_level() -> float:
-	var current_time = Time.get_ticks_msec() / 1000.0
-	var time_since_zoom = current_time - last_zoom_time
-	return max(0.0, 1.0 - (time_since_zoom / 2.0))  # Activity decays over 2 seconds
+func set_distance_immediately(distance: float):
+	var clamped_distance = clamp(distance, min_distance, max_distance)
+	current_distance = clamped_distance
+	target_distance = clamped_distance
+	
+	if spring_arm:
+		spring_arm.spring_length = current_distance
 
 func reset_to_default():
-	target_distance = default_distance
-	zoom_input_velocity = 0.0
+	set_target_distance(default_distance)
 
-# === CONFIGURATION API ===
+func set_distance_for_input_type(input_type: InputCore.InputType, distance: float):
+	# Allow runtime adjustment of input-specific distances
+	match input_type:
+		InputCore.InputType.DIRECT:
+			direct_input_distance = clamp(distance, min_distance, max_distance)
+		InputCore.InputType.TARGET:
+			target_input_distance = clamp(distance, min_distance, max_distance)
+		InputCore.InputType.GAMEPAD:
+			gamepad_distance = clamp(distance, min_distance, max_distance)
+	
+	# Update current target if this is the active input type
+	if input_core and input_core.get_active_input_type() == input_type:
+		target_distance = distance
 
-func enable_mouse_wheel(enabled: bool):
-	mouse_wheel_enabled = enabled
+# ===== CONFIGURATION =====
 
-func enable_gamepad_zoom(enabled: bool):
-	gamepad_zoom_enabled = enabled
+func set_smoothing_speed(speed: float):
+	distance_smoothing = clamp(speed, 1.0, 20.0)
 
-func enable_keyboard_zoom(enabled: bool):
-	keyboard_zoom_enabled = enabled
+func set_zoom_speed(speed: float):
+	zoom_speed = clamp(speed, 0.1, 2.0)
 
-# === DEBUG INFO ===
+func set_distance_limits(min_dist: float, max_dist: float):
+	min_distance = max(0.1, min_dist)
+	max_distance = max(min_distance + 0.1, max_dist)
+	
+	# Re-clamp current values
+	current_distance = clamp(current_distance, min_distance, max_distance)
+	target_distance = clamp(target_distance, min_distance, max_distance)
+
+# ===== DEBUG =====
 
 func get_debug_info() -> Dictionary:
+	var input_type_name = "Unknown"
+	if input_core:
+		input_type_name = input_core.get_input_type_name(input_core.get_active_input_type())
+	
 	return {
+		"current_distance": current_distance,
 		"target_distance": target_distance,
-		"current_distance": camera_system.get_current_distance() if camera_system else 0.0,
-		"zoom_velocity": zoom_input_velocity,
-		"activity_level": get_zoom_activity_level(),
-		"mouse_wheel_enabled": mouse_wheel_enabled,
-		"gamepad_enabled": gamepad_zoom_enabled,
-		"keyboard_enabled": keyboard_zoom_enabled
+		"input_type": input_type_name,
+		"spring_arm_length": spring_arm.spring_length if spring_arm else 0.0,
+		"zoom_enabled": enable_scroll_zoom,
+		"distance_limits": {"min": min_distance, "max": max_distance}
 	}

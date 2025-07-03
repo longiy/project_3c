@@ -87,11 +87,15 @@ func update_debug_display():
 	debug_text += "CAMERA: " + ("✓" if camera_system else "✗") + "\n"
 	debug_text += "CONTROL: " + ("✓" if control_system else "✗") + "\n"
 	
-	# Input system status
+	# UPDATED: Direct InputCore access instead of InputPriorityManager
 	if control_system and control_system.input_core:
-		var priority_mgr = control_system.input_core.input_priority_manager
-		if priority_mgr:
-			var input_type = priority_mgr.get_active_input_type()
-			debug_text += "Input: " + priority_mgr.get_input_type_name(input_type) + "\n"
+		var input_core = control_system.input_core
+		var input_type = input_core.get_active_input_type()
+		debug_text += "Input: " + input_core.get_input_type_name(input_type) + "\n"
+		
+		# Optional: Add more debug info
+		if input_core.debug_enabled:
+			var debug_info = input_core.get_debug_info()
+			debug_text += "Mouse: " + str(debug_info.mouse_mode) + "\n"
 	
 	debug_label.text = debug_text

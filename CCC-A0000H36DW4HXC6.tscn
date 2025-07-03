@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3 uid="uid://diueuwbtv4w82"]
+[gd_scene load_steps=18 format=3 uid="uid://dxtk01cthlg4x"]
 
 [ext_resource type="Script" uid="uid://dykru37xmsyne" path="res://Scripts/CHARACTER.gd" id="1_eromc"]
 [ext_resource type="Script" uid="uid://b45fddjajjx8r" path="res://Scripts/CCC_Manager.gd" id="1_in1na"]
@@ -87,16 +87,13 @@ gamepad_component = NodePath("../ControlComponents/GamepadControlComponent")
 
 [node name="ControlComponents" type="Node3D" parent="CONTROL"]
 
-[node name="DirectControlComponent" type="Node" parent="CONTROL/ControlComponents" node_paths=PackedStringArray("input_core", "camera_system")]
+[node name="DirectControlComponent" type="Node" parent="CONTROL/ControlComponents" node_paths=PackedStringArray("camera_system")]
 script = ExtResource("7_85dx6")
-input_core = NodePath("../../InputCore")
 camera_system = NodePath("../../../CAMERA")
 
-[node name="TargetControlComponent" type="Node" parent="CONTROL/ControlComponents" node_paths=PackedStringArray("character_core", "input_core", "camera_system", "cursor_marker")]
+[node name="TargetControlComponent" type="Node" parent="CONTROL/ControlComponents" node_paths=PackedStringArray("character_core", "cursor_marker")]
 script = ExtResource("8_121sy")
 character_core = NodePath("../../../CHARACTER/CharacterCore")
-input_core = NodePath("../../InputCore")
-camera_system = NodePath("../../../CAMERA")
 cursor_marker = NodePath("../../CURSOR")
 
 [node name="GamepadControlComponent" type="Node" parent="CONTROL/ControlComponents"]
@@ -120,11 +117,9 @@ shape = SubResource("CapsuleShape3D_jiddn")
 
 [node name="CharacterComponents" type="Node3D" parent="CHARACTER"]
 
-[node name="MovementComponent" type="Node" parent="CHARACTER/CharacterComponents" node_paths=PackedStringArray("direct_control_component", "target_control_component", "gamepad_control_component")]
+[node name="MovementComponent" type="Node" parent="CHARACTER/CharacterComponents" node_paths=PackedStringArray("character_core")]
 script = ExtResource("10_2j1nk")
-direct_control_component = NodePath("../../../CONTROL/ControlComponents/DirectControlComponent")
-target_control_component = NodePath("../../../CONTROL/ControlComponents/TargetControlComponent")
-gamepad_control_component = NodePath("../../../CONTROL/ControlComponents/GamepadControlComponent")
+character_core = NodePath("../../CharacterCore")
 
 [node name="CAMERA" type="Node3D" parent="." node_paths=PackedStringArray("spring_arm", "camera_core", "orbit_component", "distance_component", "follow_component", "target_node")]
 script = ExtResource("3_in1na")
@@ -151,12 +146,8 @@ use_smoothing = false
 [node name="DistanceComponent" type="Node" parent="CAMERA/CameraComponents"]
 script = ExtResource("16_i47c0")
 
-[node name="FollowComponent" type="Node" parent="CAMERA/CameraComponents" node_paths=PackedStringArray("camera_system", "character_system", "movement_component", "target_node")]
+[node name="FollowComponent" type="Node" parent="CAMERA/CameraComponents"]
 script = ExtResource("17_2ojfn")
-camera_system = NodePath("../..")
-character_system = NodePath("../../../CHARACTER")
-movement_component = NodePath("../../../CHARACTER/CharacterComponents/MovementComponent")
-target_node = NodePath("../../../CHARACTER/CharacterCore")
 motion_prediction = false
 vertical_lag = false
 

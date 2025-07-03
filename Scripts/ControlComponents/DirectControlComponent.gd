@@ -1,6 +1,6 @@
 # DirectControlComponent.gd
 # WASD + mouse control for character movement
-# Refactored: Export references, minimal debug output
+# Simple fix: Replace InputPriorityManager with InputCore
 
 extends Node
 class_name DirectControlComponent
@@ -10,9 +10,9 @@ signal movement_command(direction: Vector2, magnitude: float)
 signal look_command(delta: Vector2)
 signal action_command(action: String, pressed: bool)
 
-# Export references instead of hardcoded paths
+# Export references - CHANGED: InputPriorityManager → InputCore
 @export_group("References")
-@export var input_priority_manager: InputPriorityManager
+@export var input_core: InputCore
 @export var camera_system: CameraSystem
 
 @export_group("Input Settings")
@@ -33,9 +33,9 @@ var current_movement: Vector2 = Vector2.ZERO
 var target_movement: Vector2 = Vector2.ZERO
 
 func _ready():
-	# Register with priority manager
-	if input_priority_manager:
-		input_priority_manager.register_component(InputPriorityManager.InputType.DIRECT, self)
+	# Register with InputCore - CHANGED: input_priority_manager → input_core
+	if input_core:
+		input_core.register_component(InputCore.InputType.DIRECT, self)
 	
 	# Connect to camera if available
 	if camera_system:
@@ -53,10 +53,11 @@ func _process(delta):
 		movement_command.emit(current_movement.normalized(), current_movement.length())
 
 func process_input(event: InputEvent):
-	if not input_priority_manager:
+	# CHANGED: input_priority_manager → input_core
+	if not input_core:
 		return
 	
-	is_active = input_priority_manager.is_input_active(InputPriorityManager.InputType.DIRECT)
+	is_active = input_core.is_input_active(InputCore.InputType.DIRECT)
 	
 	if event is InputEventKey:
 		process_keyboard_input(event)
@@ -90,37 +91,25 @@ func calculate_movement_vector():
 		if Input.is_action_pressed(action):
 			target_movement += movement_actions[action]
 	
-	target_movement = target_movement.limit_length(1.0)
-	
-	# Set as active input if movement detected
-	if target_movement.length() > 0 and input_priority_manager:
-		input_priority_manager.set_active_input(InputPriorityManager.InputType.DIRECT)
+	if target_movement.length() > 1.0:
+		target_movement = target_movement.normalized()
 
 func get_action_name_for_event(event: InputEventKey) -> String:
-	var actions = ["move_left", "move_right", "move_forward", "move_backward", 
-				   "jump", "sprint", "walk", "reset"]
+	for action in movement_actions:
+		if InputMap.action_has_event(action, event):
+			return action
 	
-	for action in actions:
+	var other_actions = ["jump", "sprint", "walk", "reset"]
+	for action in other_actions:
 		if InputMap.action_has_event(action, event):
 			return action
 	
 	return ""
 
 func connect_to_camera_system():
-	if not camera_system:
-		return
-	
-	var orbit_component = camera_system.get_node_or_null("CameraComponents/OrbitComponent")
-	if orbit_component and orbit_component.has_method("_on_look_command"):
-		look_command.connect(orbit_component._on_look_command)
+	if camera_system and not look_command.is_connected(_on_look_command):
+		look_command.connect(_on_look_command)
 
-# Public API
-func get_current_movement() -> Vector2:
-	return current_movement
-
-func get_is_active() -> bool:
-	return is_active
-
-func reset_movement():
-	current_movement = Vector2.ZERO
-	target_movement = Vector2.ZERO
+func _on_look_command(delta: Vector2):
+	if camera_system and camera_system.has_method("handle_look_input"):
+		camera_system.handle_look_input(delta)

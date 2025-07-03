@@ -1,148 +1,87 @@
 # InputVisualFeedback.gd
-# Visual feedback system for input method switching
-# Fixed: Removed dependency on missing methods, simplified
+# Provides visual feedback for input system state
+# Refactored: Uses InputCore instead of InputPriorityManager
 
-extends Control
+extends Node
 class_name InputVisualFeedback
 
-# Export reference instead of onready
-@export var input_priority_manager: InputPriorityManager
-
-@export_group("UI References")
-@export var input_method_label: Label
-@export var transition_progress: ProgressBar
+# Export reference for inspector assignment
+@export_group("References")
+@export var input_core: InputCore
 
 @export_group("Visual Settings")
-@export var fade_duration: float = 3.0
-@export var auto_hide: bool = true
+@export var debug_label: Label
+@export var update_rate: float = 0.1
+@export var show_detailed_info: bool = false
 
-# Color themes for different input types
-var input_colors: Dictionary = {
-	InputPriorityManager.InputType.DIRECT: Color.CYAN,
-	InputPriorityManager.InputType.TARGET: Color.ORANGE, 
-	InputPriorityManager.InputType.GAMEPAD: Color.GREEN
-}
-
-var current_alpha: float = 1.0
-var fade_timer: float = 0.0
-var is_visible_state: bool = false
+var update_timer: float = 0.0
 
 func _ready():
-	if not input_priority_manager:
-		push_error("InputVisualFeedback: Please assign InputPriorityManager in the Inspector")
+	if not input_core:
+		push_error("InputVisualFeedback: Please assign InputCore in the Inspector")
 		return
 	
-	connect_to_input_signals()
-	setup_ui_elements()
-	
-	if auto_hide:
-		hide_feedback()
-
-func connect_to_input_signals():
-	if not input_priority_manager:
+	if not debug_label:
+		push_error("InputVisualFeedback: Please assign debug_label in the Inspector")
 		return
 	
-	# Connect to available signals
-	if input_priority_manager.has_signal("input_method_changed"):
-		input_priority_manager.input_method_changed.connect(_on_input_method_changed)
-	
-	if input_priority_manager.has_signal("transition_started"):
-		input_priority_manager.transition_started.connect(_on_transition_started)
-	
-	if input_priority_manager.has_signal("transition_completed"):
-		input_priority_manager.transition_completed.connect(_on_transition_completed)
-
-func setup_ui_elements():
-	# Setup input method label
-	if input_method_label:
-		input_method_label.text = "DIRECT"
-		input_method_label.modulate = input_colors[InputPriorityManager.InputType.DIRECT]
-	
-	# Setup transition progress bar
-	if transition_progress:
-		transition_progress.visible = false
-		transition_progress.value = 0.0
+	# Set up update timer
+	set_process(true)
 
 func _process(delta):
-	# Handle auto-hide timing
-	if auto_hide and is_visible_state:
-		fade_timer += delta
-		if fade_timer > fade_duration:
-			hide_feedback()
+	update_timer += delta
 	
-	# Update transition progress if available
-	update_transition_display()
+	if update_timer >= update_rate:
+		update_visual_feedback()
+		update_timer = 0.0
 
-func update_transition_display():
-	if not transition_progress or not input_priority_manager:
+func update_visual_feedback():
+	if not input_core or not debug_label:
 		return
 	
-	# Get transition info if method exists
-	if input_priority_manager.has_method("get_transition_progress"):
-		var progress = input_priority_manager.get_transition_progress()
-		transition_progress.value = progress
-
-func _on_input_method_changed(new_type: InputPriorityManager.InputType, _old_type: InputPriorityManager.InputType):
-	# Update input method display
-	if input_method_label:
-		input_method_label.text = input_priority_manager.get_input_type_name(new_type)
-		input_method_label.modulate = input_colors[new_type]
+	var feedback_text = ""
 	
-	# Show feedback
-	show_feedback()
-	fade_timer = 0.0
-
-func _on_transition_started(_from_type: InputPriorityManager.InputType, _to_type: InputPriorityManager.InputType):
-	# Show transition progress
-	if transition_progress:
-		transition_progress.visible = true
-		transition_progress.value = 0.0
+	# Basic input type info
+	var active_type = input_core.get_active_input_type()
+	feedback_text += "Active Input: " + input_core.get_input_type_name(active_type) + "\n"
 	
-	show_feedback()
-
-func _on_transition_completed(_final_type: InputPriorityManager.InputType):
-	# Hide transition progress
-	if transition_progress:
-		transition_progress.visible = false
+	# Mouse mode info
+	var mouse_mode_text = ""
+	match Input.mouse_mode:
+		Input.MOUSE_MODE_VISIBLE:
+			mouse_mode_text = "Mouse: Visible"
+		Input.MOUSE_MODE_CAPTURED:
+			mouse_mode_text = "Mouse: Captured"
+		Input.MOUSE_MODE_CONFINED:
+			mouse_mode_text = "Mouse: Confined"
+		_:
+			mouse_mode_text = "Mouse: Unknown"
 	
-	# Start fade timer
-	fade_timer = 0.0
-
-func show_feedback():
-	if not is_visible_state:
-		is_visible_state = true
-		visible = true
+	feedback_text += mouse_mode_text + "\n"
+	
+	# Show detailed debug info if enabled
+	if show_detailed_info:
+		var debug_info = input_core.get_debug_info()
+		feedback_text += "---\n"
+		feedback_text += "Components: " + str(debug_info.registered_components.size()) + "\n"
 		
-		# Animate appearance
-		var tween = create_tween()
-		modulate.a = 0.0
-		tween.tween_property(self, "modulate:a", 1.0, 0.2)
+		for component_name in debug_info.registered_components:
+			var component = debug_info.registered_components[component_name]
+			feedback_text += "  " + component_name + ": " + str(component) + "\n"
+	
+	debug_label.text = feedback_text
 
-func hide_feedback():
-	if is_visible_state:
-		is_visible_state = false
-		
-		# Animate disappearance
-		var tween = create_tween()
-		tween.tween_property(self, "modulate:a", 0.0, 0.3)
-		tween.tween_callback(func(): visible = false)
+func set_detailed_info(enabled: bool):
+	show_detailed_info = enabled
 
-# Manual control API
-func force_show():
-	auto_hide = false
-	show_feedback()
+func set_update_rate(rate: float):
+	update_rate = clamp(rate, 0.05, 1.0)
 
-func force_hide():
-	auto_hide = false
-	hide_feedback()
+# Public API for manual updates
+func force_update():
+	update_visual_feedback()
 
-func set_auto_hide(enabled: bool):
-	auto_hide = enabled
-	fade_timer = 0.0
-
-# Update from external source
-func update_input_method(input_type: InputPriorityManager.InputType):
-	if input_method_label:
-		input_method_label.text = input_priority_manager.get_input_type_name(input_type)
-		input_method_label.modulate = input_colors[input_type]
-	show_feedback()
+func get_current_input_type() -> String:
+	if input_core:
+		return input_core.get_input_type_name(input_core.get_active_input_type())
+	return "Unknown"
