@@ -332,6 +332,20 @@ func _on_action_command(action: String, pressed: bool):
 func _on_navigate_command(target_position: Vector3):
 	navigation_target = target_position
 	is_navigating = true
+	
+	# ADDED: Immediately calculate rotation toward target
+	if enable_navigation_rotation and character_core:
+		var current_position = character_core.global_position
+		var direction_to_target = (target_position - current_position).normalized()
+		
+		# Only rotate on Y axis (horizontal plane)
+		direction_to_target.y = 0
+		direction_to_target = direction_to_target.normalized()
+		
+		if direction_to_target.length() > 0.1:
+			target_character_rotation = atan2(direction_to_target.x, direction_to_target.z)
+			has_rotation_target = true
+			print("MovementComponent: Set rotation toward navigation target: ", rad_to_deg(target_character_rotation))
 
 func _on_character_look_command(target_direction_3d: Vector3):
 	if enable_navigation_rotation:
