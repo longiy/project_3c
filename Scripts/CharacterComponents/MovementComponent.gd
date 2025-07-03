@@ -35,6 +35,9 @@ class_name MovementComponent
 @export var navigation_speed: float = 6.0
 @export var destination_threshold: float = 0.3
 
+var is_stopping_from_drag: bool = false
+var is_drag_stopping: bool = false
+
 # ===== CORE REFERENCES =====
 var character_core: CharacterBody3D
 var camera_system: CameraSystem
@@ -105,11 +108,10 @@ func connect_to_input_signals():
 		if not gamepad_control_component.action_command.is_connected(_on_action_command):
 			gamepad_control_component.action_command.connect(_on_action_command)
 
-# Add new signal handler
 func _on_stop_navigation_command():
-	is_navigating = false
+	# This only gets called for drag stops, not normal clicks
+	is_drag_stopping = true
 	navigation_target = Vector3.ZERO
-	# Character stops immediately
 
 # ===== PHYSICS PROCESSING =====
 func _physics_process(delta):
@@ -155,6 +157,23 @@ func calculate_direct_movement(delta: float):
 	character_core.velocity.z = movement_3d.z * current_speed
 
 func calculate_navigation_movement(delta: float):
+	if is_drag_stopping:
+		# Smooth deceleration for drag stops
+		var current_speed = Vector2(character_core.velocity.x, character_core.velocity.z).length()
+		current_speed = lerp(current_speed, 0.0, deceleration * delta)
+		
+		if current_speed < 0.1:
+			character_core.velocity.x = 0
+			character_core.velocity.z = 0
+			is_drag_stopping = false
+			is_navigating = false
+		else:
+			var direction = Vector2(character_core.velocity.x, character_core.velocity.z).normalized()
+			character_core.velocity.x = direction.x * current_speed
+			character_core.velocity.z = direction.y * current_speed
+		return
+	
+	# NORMAL NAVIGATION LOGIC (this was missing!)
 	var current_position = character_core.global_position
 	var distance_to_target = Vector2(
 		navigation_target.x - current_position.x,

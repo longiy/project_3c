@@ -57,7 +57,19 @@ func _ready():
 	connect_to_character_rotation()
 	
 func _process(delta):
-	# Check navigation timeout
+	# Update cursor position while mouse button is held, even without motion
+	if Input.is_action_pressed("click") and (is_dragging or has_drag_started):
+		var mouse_pos = get_viewport().get_mouse_position()
+		var target = raycast_to_ground(mouse_pos)
+		if target != Vector3.ZERO:
+			# Update marker position regardless of motion
+			show_destination_marker(target)
+			
+			# Only update navigation if drag has started
+			if has_drag_started:
+				update_navigation_target(target)
+	
+	# Existing navigation timeout check
 	if is_navigating:
 		var time_since_nav = Time.get_ticks_msec() / 1000.0 - last_navigation_time
 		if time_since_nav > navigation_timeout:
@@ -98,10 +110,12 @@ func process_mouse_button(event: InputEventMouseButton):
 			var hold_duration = Time.get_ticks_msec() / 1000.0 - click_start_time
 			
 			if has_drag_started or hold_duration > drag_time_threshold:
-				# Was dragging or held long enough - stop immediately
+				# Was dragging - emit stop signal for smooth deceleration
 				stop_navigation_command.emit()
 				stop_navigation()
-			# Otherwise let normal click navigation continue
+			else:
+				# Was a quick click - let normal navigation continue
+				pass
 			
 			is_dragging = false
 			has_drag_started = false
