@@ -1,15 +1,13 @@
 # DistanceComponent.gd
-# CAMERA Distance Component for SpringArm3D zoom control
-# PHASE 4: Updated to reference InputCore directly, removed InputPriorityManager dependency
+# Day 11: CAMERA Distance Component for SpringArm3D zoom control
+# Handles camera distance/zoom with mouse wheel and gamepad triggers
 
 extends Node
 class_name DistanceComponent
 
-# Export references for modularity
-@export_group("References")
-@export var camera_system: CameraSystem
-@export var input_core: InputCore
-@export var direct_control_component: DirectControlComponent
+# References
+var camera_system: CameraSystem
+var input_priority_manager: InputPriorityManager
 
 # Distance settings
 @export_group("Distance Settings")
@@ -34,16 +32,14 @@ var zoom_in_action: String = "zoom_in"    # + key
 var zoom_out_action: String = "zoom_out"  # - key
 
 func _ready():
-	# Fallback to node paths if exports not set
-	if not camera_system:
-		camera_system = get_node("../../") as CameraSystem
-	
+	# Get camera system reference
+	camera_system = get_node("../../") as CameraSystem
 	if not camera_system:
 		push_error("DistanceComponent: CAMERA system not found")
 		return
 	
-	if not input_core:
-		input_core = get_node("../../../CONTROL/InputCore")
+	# Get input priority manager for gamepad input
+	input_priority_manager = get_node("../../../CONTROL/InputCore/InputPriorityManager")
 	
 	# Initialize distance
 	target_distance = default_distance
@@ -72,11 +68,9 @@ func _process(delta):
 
 func connect_input_signals():
 	# Connect to control components for integrated zoom input
-	if not direct_control_component:
-		direct_control_component = get_node("../../../CONTROL/ControlComponents/DirectControlComponent")
-	
-	if direct_control_component and direct_control_component.has_signal("action_command"):
-		direct_control_component.action_command.connect(_on_action_command)
+	var direct_control = get_node("../../../CONTROL/ControlComponents/DirectControlComponent")
+	if direct_control and direct_control.has_signal("action_command"):
+		direct_control.action_command.connect(_on_action_command)
 
 func handle_mouse_wheel_zoom(event: InputEventMouseButton):
 	if event.pressed:
@@ -104,7 +98,7 @@ func handle_keyboard_zoom(delta: float):
 		update_zoom_activity()
 
 func handle_gamepad_zoom(delta: float):
-	if not input_core:
+	if not input_priority_manager:
 		return
 	
 	# Use gamepad triggers for zoom (assuming RT=zoom out, LT=zoom in)
@@ -124,9 +118,9 @@ func handle_gamepad_zoom(delta: float):
 		apply_zoom_delta(zoom_delta)
 		update_zoom_activity()
 		
-		# UPDATED: Notify InputCore of gamepad activity
-		if input_core.has_method("set_active_input"):
-			input_core.set_active_input(InputCore.InputType.GAMEPAD)
+		# Notify input system of gamepad activity
+		if input_priority_manager.has_method("update_input_activity"):
+			input_priority_manager.update_input_activity(InputPriorityManager.InputType.GAMEPAD)
 
 func apply_zoom_delta(delta: float):
 	# Apply zoom change with velocity for smooth feel

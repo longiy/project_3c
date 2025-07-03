@@ -1,6 +1,6 @@
 # DirectControlComponent.gd
 # WASD + mouse control for character movement
-# PHASE 2: Updated to reference InputCore directly
+# Refactored: Export references, minimal debug output
 
 extends Node
 class_name DirectControlComponent
@@ -10,9 +10,9 @@ signal movement_command(direction: Vector2, magnitude: float)
 signal look_command(delta: Vector2)
 signal action_command(action: String, pressed: bool)
 
-# Export references - UPDATED: Reference InputCore instead of InputPriorityManager
+# Export references instead of hardcoded paths
 @export_group("References")
-@export var input_core: InputCore
+@export var input_priority_manager: InputPriorityManager
 @export var camera_system: CameraSystem
 
 @export_group("Input Settings")
@@ -33,9 +33,9 @@ var current_movement: Vector2 = Vector2.ZERO
 var target_movement: Vector2 = Vector2.ZERO
 
 func _ready():
-	# UPDATED: Register with InputCore directly
-	if input_core:
-		input_core.register_component(InputCore.InputType.DIRECT, self)
+	# Register with priority manager
+	if input_priority_manager:
+		input_priority_manager.register_component(InputPriorityManager.InputType.DIRECT, self)
 	
 	# Connect to camera if available
 	if camera_system:
@@ -53,11 +53,10 @@ func _process(delta):
 		movement_command.emit(current_movement.normalized(), current_movement.length())
 
 func process_input(event: InputEvent):
-	if not input_core:
+	if not input_priority_manager:
 		return
 	
-	# UPDATED: Check activity with InputCore
-	is_active = input_core.is_input_active(InputCore.InputType.DIRECT)
+	is_active = input_priority_manager.is_input_active(InputPriorityManager.InputType.DIRECT)
 	
 	if event is InputEventKey:
 		process_keyboard_input(event)
@@ -93,9 +92,9 @@ func calculate_movement_vector():
 	
 	target_movement = target_movement.limit_length(1.0)
 	
-	# UPDATED: Set as active input if movement detected
-	if target_movement.length() > 0 and input_core:
-		input_core.set_active_input(InputCore.InputType.DIRECT)
+	# Set as active input if movement detected
+	if target_movement.length() > 0 and input_priority_manager:
+		input_priority_manager.set_active_input(InputPriorityManager.InputType.DIRECT)
 
 func get_action_name_for_event(event: InputEventKey) -> String:
 	var actions = ["move_left", "move_right", "move_forward", "move_backward", 

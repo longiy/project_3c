@@ -1,6 +1,6 @@
 # TargetControlComponent.gd
 # Handles point-and-click navigation
-# PHASE 2: Updated to reference InputCore directly
+# Casts rays to ground and generates navigation commands
 
 extends Node
 class_name TargetControlComponent
@@ -13,8 +13,7 @@ signal stop_navigation_command()
 
 # ===== EXPORTS & CONFIGURATION =====
 @export var character_core: CharacterBody3D
-# UPDATED: Reference InputCore instead of InputPriorityManager
-@export var input_core: InputCore
+@export var input_priority_manager: InputPriorityManager
 @export var camera_system: CameraSystem
 @export var cursor_marker: Node3D
 
@@ -25,6 +24,9 @@ signal stop_navigation_command()
 @export_group("Input Timing")
 @export var drag_time_threshold: float = 0.1  # seconds - adjust as needed
 @export var navigation_timeout: float = 2.0
+
+# ===== CORE REFERENCES =====
+# (References now set via exports above)
 
 # ===== NAVIGATION STATE =====
 var is_navigating: bool = false
@@ -44,9 +46,11 @@ func _ready():
 	print("TargetControlComponent: Initialized successfully")
 
 func find_system_references():
-	# UPDATED: Register with InputCore directly
-	if input_core:
-		input_core.register_component(InputCore.InputType.TARGET, self)
+	# Fallback to node paths if exports not set
+	if not input_priority_manager:
+		input_priority_manager = get_node("../../InputCore/InputPriorityManager")
+	if input_priority_manager:
+		input_priority_manager.register_component(InputPriorityManager.InputType.TARGET, self)
 	
 	if not camera_system:
 		camera_system = get_node("../../../CAMERA") as CameraSystem
@@ -104,124 +108,70 @@ func check_navigation_timeout():
 
 # ===== INPUT PROCESSING =====
 func process_input(event: InputEvent):
-	# Main input processing - called by InputCore
+	# Main input processing - called by InputPriorityManager
 	if event is InputEventMouseButton:
 		process_mouse_button(event)
 	elif event is InputEventMouseMotion:
 		process_mouse_motion(event)
 
 func process_fallback_input(event: InputEvent):
-	# Minimal fallback processing for click events
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
-		if event.pressed:
-			var target = raycast_to_ground(get_viewport().get_mouse_position())
-			if target != Vector3.ZERO:
-				start_navigation(target)
+	# No fallback behavior for click navigation
+	pass
 
 func process_mouse_button(event: InputEventMouseButton):
-	if event.button_index == MOUSE_BUTTON_RIGHT:
+	if event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
-			handle_click_start(event.position)
+			handle_mouse_press(event)
 		else:
-			handle_click_release(event.position)
+			handle_mouse_release()
 
-func process_mouse_motion(event: InputEventMouseMotion):
-	# UPDATED: Check activity with InputCore
-	var is_active = input_core and input_core.is_input_active(InputCore.InputType.TARGET)
-	
-	if Input.is_action_pressed("click") and is_active:
-		handle_drag_motion(event.position)
-
-# ===== CLICK HANDLING =====
-func handle_click_start(mouse_pos: Vector2):
+func handle_mouse_press(event: InputEventMouseButton):
 	click_start_time = Time.get_ticks_msec() / 1000.0
-	is_dragging = false
 	has_drag_started = false
-	
-	# UPDATED: Set as active input
-	if input_core:
-		input_core.set_active_input(InputCore.InputType.TARGET)
-
-func handle_click_release(mouse_pos: Vector2):
-	var click_duration = Time.get_ticks_msec() / 1000.0 - click_start_time
-	
-	if click_duration < drag_time_threshold:
-		# Quick click - immediate navigation
-		handle_quick_click(mouse_pos)
-	else:
-		# Drag release - finalize drag navigation
-		handle_drag_release(mouse_pos)
-	
-	# Reset drag state
-	is_dragging = false
-	has_drag_started = false
-
-func handle_quick_click(mouse_pos: Vector2):
-	var target = raycast_to_ground(mouse_pos)
+	var target = raycast_to_ground(event.position)
 	if target != Vector3.ZERO:
 		start_navigation(target)
 
-func handle_drag_motion(mouse_pos: Vector2):
-	var current_time = Time.get_ticks_msec() / 1000.0
-	var drag_duration = current_time - click_start_time
+func handle_mouse_release():
+	# Mouse released
+	var hold_duration = Time.get_ticks_msec() / 1000.0 - click_start_time
 	
-	if drag_duration >= drag_time_threshold and not has_drag_started:
-		has_drag_started = true
-		is_dragging = true
+	if has_drag_started or hold_duration > drag_time_threshold:
+		# Was dragging - emit stop signal for smooth deceleration
+		stop_navigation_command.emit()
+		stop_navigation()
+	else:
+		# Was a quick click - let normal navigation continue
+		pass
 	
-	if has_drag_started:
-		var target = raycast_to_ground(mouse_pos)
-		if target != Vector3.ZERO:
-			show_destination_marker(target)
-			update_navigation_target(target)
+	reset_input_state()
 
-func handle_drag_release(mouse_pos: Vector2):
-	if has_drag_started:
-		var target = raycast_to_ground(mouse_pos)
-		if target != Vector3.ZERO:
-			finalize_navigation(target)
+func reset_input_state():
+	is_dragging = false
+	has_drag_started = false
 
-# ===== NAVIGATION CONTROL =====
-func start_navigation(target_position: Vector3):
-	navigation_target = target_position
-	is_navigating = true
-	last_navigation_time = Time.get_ticks_msec() / 1000.0
-	
-	show_destination_marker(target_position)
-	navigate_command.emit(target_position)
+func process_mouse_motion(event: InputEventMouseMotion):
+	if is_navigating and Input.is_action_pressed("click"):  # mouse1 still held
+		var hold_duration = Time.get_ticks_msec() / 1000.0 - click_start_time
+		
+		if hold_duration > drag_time_threshold and not has_drag_started:
+			start_drag_mode()
+		
+		if has_drag_started:
+			handle_drag_motion(event)
 
-func update_navigation_target(target_position: Vector3):
-	if is_navigating:
-		navigation_target = target_position
-		last_navigation_time = Time.get_ticks_msec() / 1000.0
-		navigate_command.emit(target_position)
+func start_drag_mode():
+	has_drag_started = true
+	is_dragging = true
 
-func finalize_navigation(target_position: Vector3):
-	navigation_target = target_position
-	is_navigating = true
-	last_navigation_time = Time.get_ticks_msec() / 1000.0
-	
-	navigate_command.emit(target_position)
+func handle_drag_motion(event: InputEventMouseMotion):
+	var target = raycast_to_ground(event.position)
+	if target != Vector3.ZERO:
+		update_navigation_target(target)
 
-func stop_navigation():
-	is_navigating = false
-	hide_destination_marker()
-	stop_navigation_command.emit()
-
-# ===== VISUAL FEEDBACK =====
-func show_destination_marker(position: Vector3):
-	if cursor_marker:
-		cursor_marker.global_position = position
-		cursor_marker.visible = true
-		destination_command.emit(true, position)
-
-func hide_destination_marker():
-	if cursor_marker:
-		cursor_marker.visible = false
-		destination_command.emit(false, Vector3.ZERO)
-
-# ===== RAYCASTING =====
+# ===== RAYCAST OPERATIONS =====
 func raycast_to_ground(screen_pos: Vector2) -> Vector3:
+	# Cast ray from camera to ground
 	if not camera_system:
 		return Vector3.ZERO
 	
@@ -229,25 +179,145 @@ func raycast_to_ground(screen_pos: Vector2) -> Vector3:
 	if not camera:
 		return Vector3.ZERO
 	
+	# Get ray from camera
 	var from = camera.project_ray_origin(screen_pos)
 	var to = from + camera.project_ray_normal(screen_pos) * raycast_distance
 	
+	# Perform raycast
 	var space_state = camera.get_world_3d().direct_space_state
 	var query = PhysicsRayQueryParameters3D.create(from, to)
 	query.collision_mask = ground_layer_mask
 	
 	var result = space_state.intersect_ray(query)
+	
 	if result:
 		return result.position
 	
 	return Vector3.ZERO
 
+# ===== NAVIGATION MANAGEMENT =====
+func start_navigation(target_position: Vector3):
+	# Start navigation to target position
+	navigation_target = target_position
+	is_navigating = true
+	last_navigation_time = Time.get_ticks_msec() / 1000.0
+	
+	# Set this input as active priority
+	activate_input_priority()
+	
+	# Show cursor marker at target
+	show_destination_marker(target_position)
+	
+	# Calculate and emit character rotation towards target
+	emit_character_rotation_towards_target()
+	
+	# Emit navigation command
+	navigate_command.emit(target_position)
+	
+	print("TargetControlComponent: Navigation started to ", target_position)
+
+func update_navigation_target(target_position: Vector3):
+	# Update existing navigation during drag
+	if not is_navigating:
+		return
+	
+	navigation_target = target_position
+	last_navigation_time = Time.get_ticks_msec() / 1000.0
+	
+	# Update marker position
+	show_destination_marker(target_position)
+	
+	# Update activity timestamp to prevent timeout during drag
+	update_input_activity()
+	
+	# Continuously rotate character towards new target during drag
+	emit_character_rotation_towards_target()
+	
+	# Emit new navigation command
+	navigate_command.emit(target_position)
+
+func stop_navigation():
+	# Stop current navigation
+	is_navigating = false
+	is_dragging = false
+	
+	# Hide cursor marker
+	hide_destination_marker()
+	
+	# Reset to direct control priority
+	reset_input_priority()
+	
+	print("TargetControlComponent: Navigation stopped")
+
+func activate_input_priority():
+	if input_priority_manager:
+		input_priority_manager.set_active_input(InputPriorityManager.InputType.TARGET)
+		# Update activity timestamp to prevent immediate timeout
+		update_input_activity()
+
+func update_input_activity():
+	if input_priority_manager and input_priority_manager.has_method("update_input_activity"):
+		input_priority_manager.update_input_activity(InputPriorityManager.InputType.TARGET)
+
+func reset_input_priority():
+	if input_priority_manager:
+		input_priority_manager.reset_to_direct_control()
+
+# ===== CHARACTER ROTATION =====
+func emit_character_rotation_towards_target():
+	# Use export reference first, fallback to node path
+	var char_core = character_core
+	if not char_core:
+		char_core = get_node("../../../CHARACTER/CharacterCore")
+		# Cache the reference for future use
+		character_core = char_core
+	
+	if char_core and navigation_target != Vector3.ZERO:
+		var character_pos = char_core.global_position
+		var direction_to_target = (navigation_target - character_pos)
+		
+		# Only rotate on Y axis (horizontal plane)
+		direction_to_target.y = 0
+		direction_to_target = direction_to_target.normalized()
+		
+		# Emit the direction for character rotation
+		character_look_command.emit(direction_to_target)
+
+# ===== UI FEEDBACK =====
+func show_destination_marker(position: Vector3):
+	# Show visual marker at destination
+	if cursor_marker:
+		cursor_marker.global_position = position
+		cursor_marker.visible = true
+		destination_command.emit(true, position)
+
+func hide_destination_marker():
+	# Hide destination marker
+	if cursor_marker:
+		cursor_marker.visible = false
+		destination_command.emit(false, Vector3.ZERO)
+
 # ===== PUBLIC API =====
+func on_destination_reached():
+	# Called when character reaches navigation target
+	stop_navigation()
+
 func get_is_navigating() -> bool:
 	return is_navigating
 
 func get_navigation_target() -> Vector3:
-	return navigation_target
+	return navigation_target if is_navigating else Vector3.ZERO
 
-func force_stop_navigation():
+func cancel_navigation():
+	# Cancel current navigation
 	stop_navigation()
+
+# ===== DEBUG =====
+func get_debug_info() -> Dictionary:
+	return {
+		"is_navigating": is_navigating,
+		"is_dragging": is_dragging,
+		"navigation_target": navigation_target,
+		"time_since_last_nav": Time.get_ticks_msec() / 1000.0 - last_navigation_time if is_navigating else 0.0,
+		"cursor_marker_visible": cursor_marker.visible if cursor_marker else false
+	}

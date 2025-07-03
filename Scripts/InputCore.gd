@@ -1,29 +1,14 @@
 # InputCore.gd
 # Central input processing hub for CONTROL system
-# PHASE 1: Direct component routing implementation
+# MERGED: RawInputProcessor functionality integrated directly
 
 extends Node
 class_name InputCore
 
-# Input types enum (moved from InputPriorityManager)
-enum InputType {
-	DIRECT,     # WASD + Mouse look
-	TARGET,     # Click navigation
-	GAMEPAD     # Controller input
-}
-
-# Export references for direct component access
+# Export references
 @export_group("References")
+@export var input_priority_manager: InputPriorityManager
 @export var control_system: ControlSystem
-@export var direct_control_component: DirectControlComponent
-@export var target_control_component: TargetControlComponent
-@export var gamepad_control_component: GamepadControlComponent
-
-# Component registration system
-var registered_components: Dictionary = {}
-
-# Active input tracking - simple "last input wins" logic
-var active_input_type: InputType = InputType.DIRECT
 
 # Input classification (from RawInputProcessor)
 var wasd_actions = ["move_left", "move_right", "move_forward", "move_backward"]
@@ -34,16 +19,14 @@ func _ready():
 	if not verify_references():
 		return
 	
-	setup_component_registration()
+	setup_input_processors()
 	detect_gamepad()
 
 func verify_references() -> bool:
 	var missing = []
 	
+	if not input_priority_manager: missing.append("input_priority_manager")
 	if not control_system: missing.append("control_system")
-	if not direct_control_component: missing.append("direct_control_component")
-	if not target_control_component: missing.append("target_control_component")
-	if not gamepad_control_component: missing.append("gamepad_control_component")
 	
 	if missing.size() > 0:
 		push_error("InputCore: Missing references: " + str(missing))
@@ -51,36 +34,12 @@ func verify_references() -> bool:
 	
 	return true
 
-func setup_component_registration():
-	# Register components directly
-	register_component(InputType.DIRECT, direct_control_component)
-	register_component(InputType.TARGET, target_control_component)
-	register_component(InputType.GAMEPAD, gamepad_control_component)
-
-# Component registration system
-func register_component(input_type: InputType, component: Node):
-	if component:
-		registered_components[input_type] = component
-		print("InputCore: Registered component for type: ", InputType.keys()[input_type])
-
-# Active input tracking
-func set_active_input(input_type: InputType):
-	active_input_type = input_type
-
-func is_input_active(input_type: InputType) -> bool:
-	return active_input_type == input_type
-
-func get_active_input_type() -> InputType:
-	return active_input_type
-
-# Direct routing method
-func route_to_active_component(event: InputEvent):
-	var active_component = registered_components.get(active_input_type)
-	if active_component and active_component.has_method("process_input"):
-		active_component.process_input(event)
+func setup_input_processors():
+	if input_priority_manager and input_priority_manager.has_method("set_input_core"):
+		input_priority_manager.set_input_core(self)
 
 func process_input(event: InputEvent):
-	# Direct input processing with component routing
+	# Direct input processing - no more RawInputProcessor middleman
 	classify_and_route_input(event)
 
 func process_unhandled_input(event: InputEvent):
@@ -90,108 +49,119 @@ func process_unhandled_input(event: InputEvent):
 			handle_escape_key()
 
 # ===== INPUT CLASSIFICATION & ROUTING =====
+# (Merged from RawInputProcessor)
 
 func classify_and_route_input(event: InputEvent):
-	# Determine input type and route to appropriate component
-	var input_type = classify_input_event(event)
+	# Categorize and route input events directly
 	
-	if input_type != InputType.DIRECT:  # Only switch if not already DIRECT
-		set_active_input(input_type)
-	
-	# Route to active component
-	route_to_active_component(event)
-	
-	# Also send to all components as fallback
-	route_fallback_input(event)
-
-func classify_input_event(event: InputEvent) -> InputType:
-	# Mouse motion (for camera look) - DIRECT
+	# Mouse motion (for camera look)
 	if event is InputEventMouseMotion:
-		return InputType.DIRECT
+		handle_mouse_motion(event)
 	
-	# Mouse buttons (for click navigation) - TARGET
+	# Mouse buttons (for click navigation)
 	elif event is InputEventMouseButton:
-		return InputType.TARGET
+		handle_mouse_button(event)
 	
-	# Keyboard input (for WASD and actions) - DIRECT
+	# Keyboard input (for WASD and actions)
 	elif event is InputEventKey:
-		var action_name = get_action_name_for_event(event)
-		if action_name in wasd_actions:
-			return InputType.DIRECT
-		return InputType.DIRECT  # Default to DIRECT for keyboard
+		handle_keyboard_input(event)
 	
-	# Gamepad input - GAMEPAD
+	# Gamepad input
 	elif event is InputEventJoypadButton or event is InputEventJoypadMotion:
-		return InputType.GAMEPAD
-	
-	return InputType.DIRECT  # Default fallback
+		handle_gamepad_input(event)
 
-func route_fallback_input(event: InputEvent):
-	# Send input to all components for fallback processing
-	for component in registered_components.values():
-		if component and component.has_method("process_fallback_input"):
-			component.process_fallback_input(event)
+func handle_mouse_motion(event: InputEventMouseMotion):
+	# Route mouse motion to appropriate input type
+	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		# Mouse look mode - route to direct control
+		route_to_priority_manager(event, "DIRECT")
+	else:
+		# Free mouse mode - route to target control for drag detection
+		route_to_priority_manager(event, "TARGET")
 
-func get_action_name_for_event(event: InputEventKey) -> String:
-	var actions = ["move_left", "move_right", "move_forward", "move_backward", 
-				   "jump", "sprint", "walk", "reset"]
+func handle_mouse_button(event: InputEventMouseButton):
+	# Determine input type based on mouse mode and button
+	if event.button_index == MOUSE_BUTTON_LEFT:
+		if Input.mouse_mode == Input.MOUSE_MODE_VISIBLE:
+			# Left click in visible mode - route to click navigation
+			route_to_priority_manager(event, "TARGET")
+	elif event.button_index == MOUSE_BUTTON_RIGHT:
+		# Right click - could toggle mouse modes
+		if event.pressed:
+			toggle_mouse_mode()
+
+func handle_keyboard_input(event: InputEventKey):
+	# Check if it's a movement key
+	var action_name = get_action_for_key(event)
 	
-	for action in actions:
+	if action_name in wasd_actions:
+		# Movement input - route to direct control
+		route_to_priority_manager(event, "DIRECT")
+	else:
+		# Other keyboard input (jump, sprint, etc.)
+		route_to_priority_manager(event, "DIRECT")
+
+func handle_gamepad_input(event: InputEvent):
+	# Gamepad input detected
+	if not gamepad_detected:
+		gamepad_detected = true
+		print("InputCore: Gamepad detected")
+	
+	# Route to gamepad control
+	route_to_priority_manager(event, "GAMEPAD")
+
+func get_action_for_key(event: InputEventKey) -> String:
+	# Map key events to action names
+	for action in wasd_actions:
+		if InputMap.action_has_event(action, event):
+			return action
+	
+	# Check other actions
+	var other_actions = ["jump", "sprint", "walk", "reset"]
+	for action in other_actions:
 		if InputMap.action_has_event(action, event):
 			return action
 	
 	return ""
 
-# ===== INDIVIDUAL INPUT HANDLERS =====
-
-func handle_mouse_motion(event: InputEventMouseMotion):
-	set_active_input(InputType.DIRECT)
-	route_to_active_component(event)
-
-func handle_mouse_button(event: InputEventMouseButton):
-	set_active_input(InputType.TARGET)
-	route_to_active_component(event)
-
-func handle_keyboard_input(event: InputEventKey):
-	var action_name = get_action_name_for_event(event)
-	if action_name in wasd_actions:
-		set_active_input(InputType.DIRECT)
-	route_to_active_component(event)
-
-func handle_gamepad_input(event: InputEvent):
-	set_active_input(InputType.GAMEPAD)
-	route_to_active_component(event)
-
-func handle_escape_key():
-	# Handle escape key logic
+func toggle_mouse_mode():
+	# Toggle between captured and visible mouse modes
 	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		print("InputCore: Mouse released")
 	else:
-		get_tree().quit()
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		print("InputCore: Mouse captured")
 
-# ===== GAMEPAD DETECTION =====
+func handle_escape_key():
+	# Handle escape key - typically releases mouse
+	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		print("InputCore: Mouse released (ESC)")
 
 func detect_gamepad():
-	# Check for connected gamepads
-	for device in Input.get_connected_joypads():
-		gamepad_detected = true
-		print("InputCore: Gamepad detected: ", Input.get_joy_name(device))
-		break
+	# Check if gamepad is connected
+	for i in range(4):  # Check first 4 controller slots
+		if Input.get_connected_joypads().has(i):
+			gamepad_detected = true
+			print("InputCore: Gamepad detected at slot ", i)
+			break
+
+# ===== PRIORITY MANAGER INTERFACE =====
+
+func route_to_priority_manager(event: InputEvent, input_type: String):
+	if input_priority_manager:
+		input_priority_manager.route_input(event, input_type)
 
 func get_control_components():
-	# Helper method for component access
-	if control_system:
-		return control_system.get_components()
-	return null
+	return control_system.get_components() if control_system else null
 
-# ===== DEBUG HELPERS =====
-
-func get_input_type_name(input_type: InputType) -> String:
-	return InputType.keys()[input_type]
+# ===== DEBUG INFO =====
 
 func get_debug_info() -> Dictionary:
 	return {
-		"active_input_type": get_input_type_name(active_input_type),
-		"registered_components": registered_components.keys().size(),
-		"gamepad_detected": gamepad_detected
+		"mouse_look_active": mouse_look_active,
+		"gamepad_detected": gamepad_detected,
+		"mouse_mode": Input.mouse_mode,
+		"connected_joypads": Input.get_connected_joypads()
 	}
