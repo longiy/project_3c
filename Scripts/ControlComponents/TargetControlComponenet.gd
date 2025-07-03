@@ -9,6 +9,7 @@ class_name TargetControlComponent
 signal navigate_command(target_position: Vector3)
 signal destination_command(show: bool, position: Vector3)
 signal character_look_command(target_direction: Vector3)
+signal stop_navigation_command()
 
 # References
 var input_priority_manager: InputPriorityManager
@@ -22,9 +23,9 @@ var navigation_target: Vector3
 var navigation_timeout: float = 2.0
 var last_navigation_time: float = 0.0
 
-var drag_threshold: float = 5.0  # pixels
-var initial_click_position: Vector2
-var has_moved_enough: bool = false
+var drag_time_threshold: float = 0.1  # seconds - adjust as needed
+var click_start_time: float = 0.0
+var has_drag_started: bool = false
 
 @export var character_core: CharacterBody3D
 # Raycast properties
@@ -87,26 +88,36 @@ func process_fallback_input(event: InputEvent):
 func process_mouse_button(event: InputEventMouseButton):
 	if event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
-			initial_click_position = event.position
-			has_moved_enough = false
+			click_start_time = Time.get_ticks_msec() / 1000.0
+			has_drag_started = false
 			var target = raycast_to_ground(event.position)
 			if target != Vector3.ZERO:
 				start_navigation(target)
-				is_dragging = true  # Start drag immediately
 		else:
+			# Mouse released
+			var hold_duration = Time.get_ticks_msec() / 1000.0 - click_start_time
+			
+			if has_drag_started or hold_duration > drag_time_threshold:
+				# Was dragging or held long enough - stop immediately
+				stop_navigation_command.emit()
+				stop_navigation()
+			# Otherwise let normal click navigation continue
+			
 			is_dragging = false
-			has_moved_enough = false
+			has_drag_started = false
 			
 func process_mouse_motion(event: InputEventMouseMotion):
-	if is_dragging:
-		if not has_moved_enough:
-			var distance = initial_click_position.distance_to(event.position)
-			if distance > drag_threshold:
-				has_moved_enough = true
+	if is_navigating and Input.is_action_pressed("click"):  # mouse1 still held
+		var hold_duration = Time.get_ticks_msec() / 1000.0 - click_start_time
 		
-		var target = raycast_to_ground(event.position)
-		if target != Vector3.ZERO:
-			update_navigation_target(target)
+		if hold_duration > drag_time_threshold and not has_drag_started:
+			has_drag_started = true
+			is_dragging = true
+		
+		if has_drag_started:
+			var target = raycast_to_ground(event.position)
+			if target != Vector3.ZERO:
+				update_navigation_target(target)
 
 func raycast_to_ground(screen_pos: Vector2) -> Vector3:
 	# Cast ray from camera to ground

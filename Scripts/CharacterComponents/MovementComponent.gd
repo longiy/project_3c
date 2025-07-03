@@ -17,9 +17,9 @@ class_name MovementComponent
 @export var sprint_speed: float = 8.0
 
 @export_group("Character Rotation")
-@export var movement_rotation_speed: float = 8.0
-@export var navigation_rotation_speed: float = 5.0
-@export var camera_align_rotation_speed: float = 3.0
+@export var movement_rotation_speed: float = 12
+@export var navigation_rotation_speed: float = 12
+@export var camera_align_rotation_speed: float = 12
 @export var snap_rotation_threshold: float = 0.1
 @export var enable_navigation_rotation: bool = true
 @export var enable_direction_snap: bool = false
@@ -93,6 +93,10 @@ func connect_to_input_signals():
 			target_control_component.navigate_command.connect(_on_navigate_command)
 		if not target_control_component.character_look_command.is_connected(_on_character_look_command):
 			target_control_component.character_look_command.connect(_on_character_look_command)
+		# In MovementComponent connect_to_input_signals()
+		if not target_control_component.stop_navigation_command.is_connected(_on_stop_navigation_command):
+			target_control_component.stop_navigation_command.connect(_on_stop_navigation_command)
+			
 	
 	# Connect to GamepadControlComponent
 	if gamepad_control_component:
@@ -100,6 +104,12 @@ func connect_to_input_signals():
 			gamepad_control_component.movement_command.connect(_on_movement_command)
 		if not gamepad_control_component.action_command.is_connected(_on_action_command):
 			gamepad_control_component.action_command.connect(_on_action_command)
+
+# Add new signal handler
+func _on_stop_navigation_command():
+	is_navigating = false
+	navigation_target = Vector3.ZERO
+	# Character stops immediately
 
 # ===== PHYSICS PROCESSING =====
 func _physics_process(delta):

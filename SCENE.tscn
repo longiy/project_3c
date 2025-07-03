@@ -97,5 +97,8 @@ camera_system = NodePath("../../../CAMERA")
 [node name="GamepadControlComponent" parent="CCC/CONTROL/ControlComponents" index="2" node_paths=PackedStringArray("camera_system")]
 camera_system = NodePath("../../../CAMERA")
 
+[node name="MovementComponent" parent="CCC/CHARACTER/CharacterComponents" index="0"]
+enable_direction_snap = false
+
 [editable path="CCC"]
 [editable path="CCC/CHARACTER/CharacterCore/Character"]
