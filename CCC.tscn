@@ -4,7 +4,7 @@
 [ext_resource type="Script" uid="uid://b45fddjajjx8r" path="res://Scripts/CCC_Manager.gd" id="1_in1na"]
 [ext_resource type="Script" uid="uid://dn53vssdavg31" path="res://Scripts/ControlComponents/InputVisualFeedback.gd" id="2_ps1uw"]
 [ext_resource type="Script" uid="uid://bae17qmm6fsja" path="res://Scripts/CAMERA.gd" id="3_in1na"]
-[ext_resource type="Script" uid="uid://5h6dkq132qk4" path="res://Scripts/ControlComponents/InputCore.gd" id="4_6po8h"]
+[ext_resource type="Script" uid="uid://5h6dkq132qk4" path="res://Scripts/InputCore.gd" id="4_6po8h"]
 [ext_resource type="Script" uid="uid://cgx42y8g35q8v" path="res://Scripts/CONTROL.gd" id="4_35j32"]
 [ext_resource type="Script" uid="uid://br42dys6ahaqr" path="res://Scripts/CameraComponents/OrbitComponent.gd" id="5_35j32"]
 [ext_resource type="Script" uid="uid://dqb4v5q4c1moa" path="res://Scripts/ControlComponents/DirectControlComponent.gd" id="7_85dx6"]
