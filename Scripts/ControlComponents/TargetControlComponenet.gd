@@ -96,17 +96,15 @@ func _process(delta):
 	check_navigation_timeout()
 
 func update_cursor_during_drag():
-	# Only update cursor if not in orbit mode
-	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		return
-		
-	# Use clicknav action instead of "click"
-	if Input.is_action_pressed("clicknav") and (is_dragging or has_drag_started):
+	# Update cursor position while mouse button is held, even without motion
+	if Input.is_action_pressed("click") and (is_dragging or has_drag_started):
 		var mouse_pos = get_viewport().get_mouse_position()
 		var target = raycast_to_ground(mouse_pos)
 		if target != Vector3.ZERO:
+			# Update marker position regardless of motion
 			show_destination_marker(target)
 			
+			# Only update navigation if drag has started
 			if has_drag_started:
 				update_navigation_target(target)
 
@@ -118,10 +116,6 @@ func check_navigation_timeout():
 
 # ===== INPUT PROCESSING =====
 func process_input(event: InputEvent):
-	# Only process input when not in orbit mode
-	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		return  # Orbit mode is active - ignore all target control input
-	
 	# Main input processing - called by InputCore
 	if event is InputEventMouseButton:
 		process_mouse_button(event)
@@ -137,21 +131,18 @@ func process_fallback_input(event: InputEvent):
 				start_navigation(target)
 
 func process_mouse_button(event: InputEventMouseButton):
-	# Only handle clicknav action (left mouse button)
-	if event.is_action("clicknav"):
+	if event.is_action("clicknav"):  # Instead of checking MOUSE_BUTTON_RIGHT
 		if event.pressed:
 			handle_click_start(event.position)
 		else:
 			handle_click_release(event.position)
 
 func process_mouse_motion(event: InputEventMouseMotion):
-	# Check if we're active and not in orbit mode
+	# UPDATED: Check activity with InputCore
 	var is_active = input_core and input_core.is_input_active(InputCore.InputType.TARGET)
 	
-	# Use clicknav action and ensure not in orbit mode
-	if Input.is_action_pressed("clicknav") and is_active and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+	if Input.is_action_pressed("click") and is_active:
 		handle_drag_motion(event.position)
-
 
 # ===== CLICK HANDLING =====
 func handle_click_start(mouse_pos: Vector2):
@@ -227,10 +218,7 @@ func finalize_navigation(target_position: Vector3):
 func stop_navigation():
 	is_navigating = false
 	hide_destination_marker()
-	# Don't emit stop command if cancelled by orbit mode
-	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
-		stop_navigation_command.emit()
-
+	stop_navigation_command.emit()
 
 # ===== VISUAL FEEDBACK =====
 func show_destination_marker(position: Vector3):
