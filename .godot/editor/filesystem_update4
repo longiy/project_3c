@@ -1,4 +1,5 @@
-res://CCC.tscn
-res://AnimationTreeMove1d.tres
 res://Scripts/CharacterComponents/MovementComponent.gd
+res://Scripts/ControlComponents/TargetControlComponenet.gd
 res://SCENE.tscn
+res://AnimationTreeMove1d.tres
+res://CCC.tscn

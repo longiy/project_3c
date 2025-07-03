@@ -22,6 +22,10 @@ var navigation_target: Vector3
 var navigation_timeout: float = 2.0
 var last_navigation_time: float = 0.0
 
+var drag_threshold: float = 5.0  # pixels
+var initial_click_position: Vector2
+var has_moved_enough: bool = false
+
 @export var character_core: CharacterBody3D
 # Raycast properties
 @export_group("Raycast Settings")
@@ -81,35 +85,28 @@ func process_fallback_input(event: InputEvent):
 	pass
 
 func process_mouse_button(event: InputEventMouseButton):
-	# Handle mouse button events for click and drag
 	if event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
-			# Start click/drag operation
-			if Input.mouse_mode == Input.MOUSE_MODE_VISIBLE:
-				var target = raycast_to_ground(event.position)
-				if target != Vector3.ZERO:
-					start_navigation(target)
-					is_dragging = true
+			initial_click_position = event.position
+			has_moved_enough = false
+			var target = raycast_to_ground(event.position)
+			if target != Vector3.ZERO:
+				start_navigation(target)
+				is_dragging = true  # Start drag immediately
 		else:
-			# End drag operation
-			if is_dragging:
-				is_dragging = false
-			else:
-				print("TargetControlComponent: Mouse released but was not dragging")
+			is_dragging = false
+			has_moved_enough = false
 			
 func process_mouse_motion(event: InputEventMouseMotion):
-	# Handle continuous drag updates
-	if is_dragging and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE:
+	if is_dragging:
+		if not has_moved_enough:
+			var distance = initial_click_position.distance_to(event.position)
+			if distance > drag_threshold:
+				has_moved_enough = true
+		
 		var target = raycast_to_ground(event.position)
 		if target != Vector3.ZERO:
-			# Update navigation target while dragging
 			update_navigation_target(target)
-			# Keep input priority active during drag AND update activity timestamp
-			if input_priority_manager:
-				input_priority_manager.set_active_input(InputPriorityManager.InputType.TARGET)
-				# Force update activity to prevent timeout during drag
-				if input_priority_manager.has_method("update_input_activity"):
-					input_priority_manager.update_input_activity(InputPriorityManager.InputType.TARGET)
 
 func raycast_to_ground(screen_pos: Vector2) -> Vector3:
 	# Cast ray from camera to ground
