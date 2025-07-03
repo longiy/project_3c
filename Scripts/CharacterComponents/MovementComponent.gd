@@ -13,6 +13,8 @@ class_name MovementComponent
 @export var direct_control_component: DirectControlComponent
 @export var target_control_component: TargetControlComponent
 @export var gamepad_control_component: GamepadControlComponent
+@export var character_core: CharacterBody3D
+@export var camera_system: CameraSystem
 
 @export_group("Movement Speeds")
 @export var walk_speed: float = 4.0
@@ -39,8 +41,7 @@ class_name MovementComponent
 @export var destination_threshold: float = 0.3
 
 # ===== CORE REFERENCES =====
-var character_core: CharacterBody3D
-var camera_system: CameraSystem
+# (References now set via exports above)
 
 # ===== MOVEMENT STATE =====
 var current_direction: Vector2 = Vector2.ZERO
@@ -74,12 +75,15 @@ func _ready():
 	print("MovementComponent: Initialized successfully")
 
 func find_core_references() -> bool:
-	character_core = get_node("../../CharacterCore") as CharacterBody3D
+	# Use export references first, fallback to node paths
+	if not character_core:
+		character_core = get_node("../../CharacterCore") as CharacterBody3D
 	if not character_core:
 		push_error("MovementComponent: CharacterCore not found")
 		return false
 	
-	camera_system = get_node("../../../CAMERA") as CameraSystem
+	if not camera_system:
+		camera_system = get_node("../../../CAMERA") as CameraSystem
 	if not camera_system:
 		push_error("MovementComponent: CAMERA system not found")
 		return false

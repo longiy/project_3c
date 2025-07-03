@@ -13,6 +13,9 @@ signal stop_navigation_command()
 
 # ===== EXPORTS & CONFIGURATION =====
 @export var character_core: CharacterBody3D
+@export var input_priority_manager: InputPriorityManager
+@export var camera_system: CameraSystem
+@export var cursor_marker: Node3D
 
 @export_group("Raycast Settings")
 @export var raycast_distance: float = 1000.0
@@ -23,9 +26,7 @@ signal stop_navigation_command()
 @export var navigation_timeout: float = 2.0
 
 # ===== CORE REFERENCES =====
-var input_priority_manager: InputPriorityManager
-var camera_system: CameraSystem
-var cursor_marker: Node3D
+# (References now set via exports above)
 
 # ===== NAVIGATION STATE =====
 var is_navigating: bool = false
@@ -45,11 +46,14 @@ func _ready():
 	print("TargetControlComponent: Initialized successfully")
 
 func find_system_references():
-	input_priority_manager = get_node("../../InputCore/InputPriorityManager")
+	# Fallback to node paths if exports not set
+	if not input_priority_manager:
+		input_priority_manager = get_node("../../InputCore/InputPriorityManager")
 	if input_priority_manager:
 		input_priority_manager.register_component(InputPriorityManager.InputType.TARGET, self)
 	
-	camera_system = get_node("../../../CAMERA") as CameraSystem
+	if not camera_system:
+		camera_system = get_node("../../../CAMERA") as CameraSystem
 	if not camera_system:
 		push_error("TargetControlComponent: CAMERA system not found")
 		return
@@ -58,18 +62,23 @@ func setup_signal_connections():
 	connect_to_character_rotation()
 
 func setup_cursor_marker():
-	cursor_marker = get_node("../../CURSOR")
+	# Fallback to node path if export not set
+	if not cursor_marker:
+		cursor_marker = get_node("../../CURSOR")
 	if cursor_marker:
 		cursor_marker.visible = false
 
 func connect_to_character_rotation():
 	# Connect to MovementComponent or CharacterComponent for rotation
-	var movement_component = get_node("../../../CHARACTER/CharacterComponents/MovementComponent")
+	var movement_component_path = "../../../CHARACTER/CharacterComponents/MovementComponent"
+	var character_core_path = "../../../CHARACTER/CharacterCore"
+	
+	var movement_component = get_node(movement_component_path)
 	if movement_component and movement_component.has_method("_on_character_look_command"):
 		character_look_command.connect(movement_component._on_character_look_command)
 	else:
 		# Try connecting to CharacterCore directly if it has rotation handling
-		var character_core_node = get_node("../../../CHARACTER/CharacterCore")
+		var character_core_node = get_node(character_core_path)
 		if character_core_node and character_core_node.has_method("_on_character_look_command"):
 			character_look_command.connect(character_core_node._on_character_look_command)
 
@@ -256,11 +265,15 @@ func reset_input_priority():
 
 # ===== CHARACTER ROTATION =====
 func emit_character_rotation_towards_target():
-	if not character_core:
-		character_core = get_node("../../../CHARACTER/CharacterCore")
+	# Use export reference first, fallback to node path
+	var char_core = character_core
+	if not char_core:
+		char_core = get_node("../../../CHARACTER/CharacterCore")
+		# Cache the reference for future use
+		character_core = char_core
 	
-	if character_core and navigation_target != Vector3.ZERO:
-		var character_pos = character_core.global_position
+	if char_core and navigation_target != Vector3.ZERO:
+		var character_pos = char_core.global_position
 		var direction_to_target = (navigation_target - character_pos)
 		
 		# Only rotate on Y axis (horizontal plane)
