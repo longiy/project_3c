@@ -99,9 +99,10 @@ script = ExtResource("6_2j1nk")
 
 [node name="ControlComponents" type="Node3D" parent="CONTROL"]
 
-[node name="DirectControlComponent" type="Node" parent="CONTROL/ControlComponents" node_paths=PackedStringArray("input_priority_manager")]
+[node name="DirectControlComponent" type="Node" parent="CONTROL/ControlComponents" node_paths=PackedStringArray("input_priority_manager", "camera_system")]
 script = ExtResource("7_85dx6")
 input_priority_manager = NodePath("../../InputCore/InputPriorityManager")
+camera_system = NodePath("../../../CAMERA")
 
 [node name="TargetControlComponent" type="Node" parent="CONTROL/ControlComponents" node_paths=PackedStringArray("character_core", "input_priority_manager", "camera_system", "cursor_marker")]
 script = ExtResource("8_121sy")
@@ -110,9 +111,10 @@ input_priority_manager = NodePath("../../InputCore/InputPriorityManager")
 camera_system = NodePath("../../../CAMERA")
 cursor_marker = NodePath("../../CURSOR")
 
-[node name="GamepadControlComponent" type="Node" parent="CONTROL/ControlComponents" node_paths=PackedStringArray("input_priority_manager")]
+[node name="GamepadControlComponent" type="Node" parent="CONTROL/ControlComponents" node_paths=PackedStringArray("input_priority_manager", "camera_system")]
 script = ExtResource("10_oa0io")
 input_priority_manager = NodePath("../../InputCore/InputPriorityManager")
+camera_system = NodePath("../../../CAMERA")
 
 [node name="CHARACTER" type="Node3D" parent="."]
 script = ExtResource("1_eromc")

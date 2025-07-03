@@ -89,16 +89,4 @@ skeleton = NodePath("../../root/@EditorNode@21272/@Panel@14/@VBoxContainer@15/Do
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Environment/Platforms/MeshInstance3D/StaticBody3D"]
 shape = SubResource("ConcavePolygonShape3D_caybs")
 
-[node name="CCC" parent="." instance=ExtResource("1_5si1x")]
-
-[node name="DirectControlComponent" parent="CCC/CONTROL/ControlComponents" index="0" node_paths=PackedStringArray("camera_system")]
-camera_system = NodePath("../../../CAMERA")
-
-[node name="GamepadControlComponent" parent="CCC/CONTROL/ControlComponents" index="2" node_paths=PackedStringArray("camera_system")]
-camera_system = NodePath("../../../CAMERA")
-
-[node name="MovementComponent" parent="CCC/CHARACTER/CharacterComponents" index="0"]
-enable_direction_snap = false
-
-[editable path="CCC"]
-[editable path="CCC/CHARACTER/CharacterCore/Character"]
+[node name="CCC_Manager" parent="." instance=ExtResource("1_5si1x")]
