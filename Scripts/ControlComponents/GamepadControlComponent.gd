@@ -1,73 +1,83 @@
 # GamepadControlComponent.gd
-# Gamepad input handling
-# Simple fix: Replace InputPriorityManager with InputCore
+# Gamepad/controller input for character control
+# Refactored: Export references, cleaned up
 
 extends Node
 class_name GamepadControlComponent
 
-# Signals
-signal movement_command(direction: Vector3)
-signal look_command(look_delta: Vector2)
+# Command signals
+signal movement_command(direction: Vector2, magnitude: float)
+signal look_command(delta: Vector2)
 signal action_command(action: String, pressed: bool)
 
-# Export references - CHANGED: InputPriorityManager → InputCore
+# Export references
 @export_group("References")
-@export var input_core: InputCore
+@export var input_priority_manager: InputPriorityManager
+@export var camera_system: CameraSystem
 
 @export_group("Gamepad Settings")
-@export var device_id: int = 0
-@export var movement_sensitivity: float = 1.0
-@export var look_sensitivity: float = 2.0
 @export var stick_deadzone: float = 0.2
+@export var trigger_deadzone: float = 0.1
+@export var look_sensitivity: float = 2.0
 @export var invert_y: bool = false
+@export var device_id: int = 0
 
-@export_group("Button Mapping")
+@export_group("Input Mapping")
 @export var jump_button: JoyButton = JOY_BUTTON_A
 @export var sprint_button: JoyButton = JOY_BUTTON_X
+@export var walk_button: JoyButton = JOY_BUTTON_B
 
 # Internal state
 var is_active: bool = false
 var current_movement: Vector2 = Vector2.ZERO
 
 func _ready():
-	# Register with InputCore - CHANGED: input_priority_manager → input_core
-	if input_core:
-		input_core.register_component(InputCore.InputType.GAMEPAD, self)
+	if input_priority_manager:
+		input_priority_manager.register_component(InputPriorityManager.InputType.GAMEPAD, self)
 
 func _process(delta):
-	if not is_active:
-		return
+	check_gamepad_activity()
 	
-	process_movement_input()
-	process_look_input()
+	if is_active or should_process_fallback():
+		process_gamepad_input(delta)
 
 func process_input(event: InputEvent):
-	if not is_active:
+	if not input_priority_manager:
 		return
 	
-	if event is InputEventJoypadButton:
-		process_button_inputs()
-	elif event is InputEventJoypadMotion:
-		# Movement and look are handled in _process
-		pass
+	is_active = input_priority_manager.is_input_active(InputPriorityManager.InputType.GAMEPAD)
 
-func process_movement_input():
+func process_fallback_input(_event: InputEvent):
+	# Gamepad processes in _process() not events
+	pass
+
+func check_gamepad_activity():
 	var movement = get_movement_input()
-	
-	if movement.length() > stick_deadzone:
-		var movement_3d = Vector3(movement.x, 0, movement.y) * movement_sensitivity
-		movement_command.emit(movement_3d)
-	else:
-		movement_command.emit(Vector3.ZERO)
-
-func process_look_input():
 	var look = get_look_input()
 	
+	if movement.length() > stick_deadzone or look.length() > stick_deadzone:
+		if input_priority_manager:
+			input_priority_manager.set_active_input(InputPriorityManager.InputType.GAMEPAD)
+
+func process_gamepad_input(_delta: float):
+	# Movement
+	var movement = get_movement_input()
+	if movement.length() > stick_deadzone:
+		current_movement = movement.normalized()
+		movement_command.emit(current_movement, movement.length())
+	else:
+		current_movement = Vector2.ZERO
+	
+	# Look
+	var look = get_look_input()
 	if look.length() > stick_deadzone:
 		var look_delta = look * look_sensitivity
 		if invert_y:
 			look_delta.y = -look_delta.y
 		look_command.emit(look_delta)
+	
+	# Buttons
+	process_button_inputs()
 
 func get_movement_input() -> Vector2:
 	return Vector2(
@@ -89,9 +99,8 @@ func process_button_inputs():
 		action_command.emit("sprint", true)
 
 func should_process_fallback() -> bool:
-	# CHANGED: input_priority_manager → input_core
-	return not is_active and input_core and \
-		   input_core.get_active_input_type() != InputCore.InputType.GAMEPAD
+	return not is_active and input_priority_manager and \
+		   input_priority_manager.get_active_input_type() != InputPriorityManager.InputType.GAMEPAD
 
 # Public API
 func get_current_movement() -> Vector2:

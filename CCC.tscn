@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3 uid="uid://diueuwbtv4w82"]
+[gd_scene load_steps=20 format=3 uid="uid://diueuwbtv4w82"]
 
 [ext_resource type="Script" uid="uid://dykru37xmsyne" path="res://Scripts/CHARACTER.gd" id="1_eromc"]
 [ext_resource type="Script" uid="uid://b45fddjajjx8r" path="res://Scripts/CCC_Manager.gd" id="1_in1na"]
@@ -7,6 +7,8 @@
 [ext_resource type="Script" uid="uid://5h6dkq132qk4" path="res://Scripts/InputCore.gd" id="4_6po8h"]
 [ext_resource type="Script" uid="uid://cgx42y8g35q8v" path="res://Scripts/CONTROL.gd" id="4_35j32"]
 [ext_resource type="Script" uid="uid://br42dys6ahaqr" path="res://Scripts/CameraComponents/OrbitComponent.gd" id="5_35j32"]
+[ext_resource type="Script" uid="uid://biuvjt8k8ovt5" path="res://Scripts/RawInputProcessor.gd" id="5_85dx6"]
+[ext_resource type="Script" uid="uid://cs68pcxkaivl0" path="res://Scripts/InputPriorityManager.gd" id="6_2j1nk"]
 [ext_resource type="Script" uid="uid://dqb4v5q4c1moa" path="res://Scripts/ControlComponents/DirectControlComponent.gd" id="7_85dx6"]
 [ext_resource type="Script" uid="uid://chl2y2xkcppm7" path="res://Scripts/ControlComponents/TargetControlComponenet.gd" id="8_121sy"]
 [ext_resource type="Script" uid="uid://colhxkqbvk53v" path="res://Scripts/CharacterComponents/MovementComponent.gd" id="10_2j1nk"]
@@ -33,12 +35,16 @@ camera_core = NodePath("CAMERA/SpringArm3D/Camera3D")
 debug_mode = true
 debug_label = NodePath("DebugUI/DebugLabel")
 
-[node name="UI" type="Control" parent="."]
+[node name="UI" type="Control" parent="." node_paths=PackedStringArray("input_priority_manager", "input_method_label", "transition_progress")]
 layout_mode = 3
 anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
 script = ExtResource("2_ps1uw")
+input_priority_manager = NodePath("../CONTROL/InputCore/InputPriorityManager")
+input_method_label = NodePath("VBoxContainer/InputMethodLabel")
+transition_progress = NodePath("VBoxContainer/TransitionProgress")
+auto_hide = false
 
 [node name="VBoxContainer" type="VBoxContainer" parent="UI"]
 layout_mode = 0
@@ -79,28 +85,36 @@ script = ExtResource("4_35j32")
 
 [node name="CURSOR" parent="CONTROL" instance=ExtResource("19_qtd55")]
 
-[node name="InputCore" type="Node" parent="CONTROL" node_paths=PackedStringArray("direct_component", "target_component", "gamepad_component")]
+[node name="InputCore" type="Node3D" parent="CONTROL" node_paths=PackedStringArray("raw_input_processor", "input_priority_manager", "control_system")]
 script = ExtResource("4_6po8h")
-direct_component = NodePath("../ControlComponents/DirectControlComponent")
-target_component = NodePath("../ControlComponents/TargetControlComponent")
-gamepad_component = NodePath("../ControlComponents/GamepadControlComponent")
+raw_input_processor = NodePath("RawInputProcessor")
+input_priority_manager = NodePath("InputPriorityManager")
+control_system = NodePath("..")
+
+[node name="RawInputProcessor" type="Node" parent="CONTROL/InputCore"]
+script = ExtResource("5_85dx6")
+
+[node name="InputPriorityManager" type="Node" parent="CONTROL/InputCore"]
+script = ExtResource("6_2j1nk")
 
 [node name="ControlComponents" type="Node3D" parent="CONTROL"]
 
-[node name="DirectControlComponent" type="Node" parent="CONTROL/ControlComponents" node_paths=PackedStringArray("input_core", "camera_system")]
+[node name="DirectControlComponent" type="Node" parent="CONTROL/ControlComponents" node_paths=PackedStringArray("input_priority_manager", "camera_system")]
 script = ExtResource("7_85dx6")
-input_core = NodePath("../../InputCore")
+input_priority_manager = NodePath("../../InputCore/InputPriorityManager")
 camera_system = NodePath("../../../CAMERA")
 
-[node name="TargetControlComponent" type="Node" parent="CONTROL/ControlComponents" node_paths=PackedStringArray("character_core", "input_core", "camera_system", "cursor_marker")]
+[node name="TargetControlComponent" type="Node" parent="CONTROL/ControlComponents" node_paths=PackedStringArray("character_core", "input_priority_manager", "camera_system", "cursor_marker")]
 script = ExtResource("8_121sy")
 character_core = NodePath("../../../CHARACTER/CharacterCore")
-input_core = NodePath("../../InputCore")
+input_priority_manager = NodePath("../../InputCore/InputPriorityManager")
 camera_system = NodePath("../../../CAMERA")
 cursor_marker = NodePath("../../CURSOR")
 
-[node name="GamepadControlComponent" type="Node" parent="CONTROL/ControlComponents"]
+[node name="GamepadControlComponent" type="Node" parent="CONTROL/ControlComponents" node_paths=PackedStringArray("input_priority_manager", "camera_system")]
 script = ExtResource("10_oa0io")
+input_priority_manager = NodePath("../../InputCore/InputPriorityManager")
+camera_system = NodePath("../../../CAMERA")
 
 [node name="CHARACTER" type="Node3D" parent="."]
 script = ExtResource("1_eromc")
@@ -120,11 +134,15 @@ shape = SubResource("CapsuleShape3D_jiddn")
 
 [node name="CharacterComponents" type="Node3D" parent="CHARACTER"]
 
-[node name="MovementComponent" type="Node" parent="CHARACTER/CharacterComponents" node_paths=PackedStringArray("direct_control_component", "target_control_component", "gamepad_control_component")]
+[node name="MovementComponent" type="Node" parent="CHARACTER/CharacterComponents" node_paths=PackedStringArray("direct_control_component", "target_control_component", "gamepad_control_component", "character_core", "camera_system")]
 script = ExtResource("10_2j1nk")
 direct_control_component = NodePath("../../../CONTROL/ControlComponents/DirectControlComponent")
 target_control_component = NodePath("../../../CONTROL/ControlComponents/TargetControlComponent")
 gamepad_control_component = NodePath("../../../CONTROL/ControlComponents/GamepadControlComponent")
+character_core = NodePath("../../CharacterCore")
+camera_system = NodePath("../../../CAMERA")
+enable_direction_snap = true
+destination_threshold = 0.1
 
 [node name="CAMERA" type="Node3D" parent="." node_paths=PackedStringArray("spring_arm", "camera_core", "orbit_component", "distance_component", "follow_component", "target_node")]
 script = ExtResource("3_in1na")
@@ -151,12 +169,8 @@ use_smoothing = false
 [node name="DistanceComponent" type="Node" parent="CAMERA/CameraComponents"]
 script = ExtResource("16_i47c0")
 
-[node name="FollowComponent" type="Node" parent="CAMERA/CameraComponents" node_paths=PackedStringArray("camera_system", "character_system", "movement_component", "target_node")]
+[node name="FollowComponent" type="Node" parent="CAMERA/CameraComponents"]
 script = ExtResource("17_2ojfn")
-camera_system = NodePath("../..")
-character_system = NodePath("../../../CHARACTER")
-movement_component = NodePath("../../../CHARACTER/CharacterComponents/MovementComponent")
-target_node = NodePath("../../../CHARACTER/CharacterCore")
 motion_prediction = false
 vertical_lag = false
 
