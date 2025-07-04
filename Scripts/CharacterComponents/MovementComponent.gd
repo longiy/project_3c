@@ -69,6 +69,7 @@ var is_drag_stopping: bool = false
 # ===== INITIALIZATION =====
 func _ready():
 	if not find_core_references():
+		push_error("MovementComponent: Required references not set in Inspector")
 		return
 	
 	call_deferred("connect_to_input_signals")

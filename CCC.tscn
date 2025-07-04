@@ -139,6 +139,4 @@ script = ExtResource("17_2ojfn")
 motion_prediction = false
 vertical_lag = false
 
-[node name="EffectsComponent" type="Node" parent="CAMERA/CameraComponents"]
-
 [editable path="CHARACTER/CharacterCore/Character"]
