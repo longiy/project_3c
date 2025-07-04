@@ -49,20 +49,18 @@ func _ready():
 func verify_camera_components() -> bool:
 	var missing = []
 	
-	# Check for orbit component
-	if not orbit_component:
-		orbit_component = find_child("OrbitComponent")
-		if not orbit_component:
-			missing.append("orbit_component")
-	# Add other camera component checks
-	
-	if missing.size() > 0:
-		push_error("CameraSystem: Missing components: " + str(missing))
-		return false
+	if not spring_arm: missing.append("spring_arm")
+	if not camera_core: missing.append("camera_core")
+	if not orbit_component: missing.append("orbit_component")
+	if not distance_component: missing.append("distance_component")  # MISSING
+	if not follow_component: missing.append("follow_component")      # MISSING
+	if not target_node: missing.append("target_node")               # MISSING
 	
 	return true
 	
 func _process(delta):
+	if not target_node:  # MISSING check before use
+		return
 	update_camera_following(delta)
 	update_camera_properties(delta)
 

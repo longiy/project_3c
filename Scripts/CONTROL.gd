@@ -12,14 +12,20 @@ class_name ControlSystem
 var manager: CCC_Manager
 
 func _ready():
-	# Verify structure
-	if not input_core:
-		push_error("CONTROL: InputCore not found")
+	if not verify_references():
 		return
-		
-	if not control_components:
-		push_error("CONTROL: ControlComponents not found")
-		return
+
+func verify_references() -> bool:  # MISSING FUNCTION
+	var missing = []	
+	
+	if not input_core: missing.append("input_core")
+	if not control_components: missing.append("control_components")
+	
+	if missing.size() > 0:
+		push_error("ControlSystem: Missing references: " + str(missing))
+		return false
+	
+	return true
 
 func set_manager(control_manager: CCC_Manager):
 	manager = control_manager

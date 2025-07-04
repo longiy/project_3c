@@ -6,7 +6,6 @@ extends Node
 class_name DistanceComponent
 
 # Export references for modularity
-@export_group("References")
 @export var camera_system: CameraSystem
 @export var input_core: InputCore
 @export var direct_control_component: DirectControlComponent

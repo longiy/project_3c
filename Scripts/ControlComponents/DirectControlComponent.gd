@@ -11,7 +11,6 @@ signal look_command(delta: Vector2)
 signal action_command(action: String, pressed: bool)
 
 # Export references - UPDATED: Reference InputCore instead of InputPriorityManager
-@export_group("References")
 @export var input_core: InputCore
 @export var camera_system: CameraSystem
 

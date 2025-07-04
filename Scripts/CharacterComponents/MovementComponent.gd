@@ -100,31 +100,21 @@ func connect_direct_control_signals():
 			direct_control_component.action_command.connect(_on_action_command)
 
 func connect_target_control_signals():
-	# Try export reference first, then fallback to node path
-	var target_component = target_control_component
-	if not target_component:
-		target_component = get_node("../../../CONTROL/ControlComponents/TargetControlComponent")
-		if target_component:
-			# Cache the reference for future use
-			target_control_component = target_component
+	if not target_control_component:
+		push_error("MovementComponent: target_control_component not assigned in Inspector")
+		return
 	
-	if target_component:
-		# Connect navigate command - CRITICAL for click movement
-		if not target_component.navigate_command.is_connected(_on_navigate_command):
-			target_component.navigate_command.connect(_on_navigate_command)
-			print("MovementComponent: Connected to navigate_command")
-		
-		# Connect character look command for rotation
-		if not target_component.character_look_command.is_connected(_on_character_look_command):
-			target_component.character_look_command.connect(_on_character_look_command)
-			print("MovementComponent: Connected to character_look_command")
-		
-		# Connect stop navigation command
-		if not target_component.stop_navigation_command.is_connected(_on_stop_navigation_command):
-			target_component.stop_navigation_command.connect(_on_stop_navigation_command)
-			print("MovementComponent: Connected to stop_navigation_command")
-	else:
-		push_error("MovementComponent: Could not find TargetControlComponent for signal connections")
+	# Connect navigate command - CRITICAL for click movement
+	if not target_control_component.navigate_command.is_connected(_on_navigate_command):
+		target_control_component.navigate_command.connect(_on_navigate_command)
+	
+	# Connect character look command for rotation  
+	if not target_control_component.character_look_command.is_connected(_on_character_look_command):
+		target_control_component.character_look_command.connect(_on_character_look_command)
+	
+	# Connect stop navigation command
+	if not target_control_component.stop_navigation_command.is_connected(_on_stop_navigation_command):
+		target_control_component.stop_navigation_command.connect(_on_stop_navigation_command)
 
 func connect_gamepad_control_signals():
 	if gamepad_control_component:
@@ -137,12 +127,17 @@ func connect_gamepad_control_signals():
 func _physics_process(delta):
 	if not character_core:
 		return
-	
+		
+	if not camera_system:
+		return
 	apply_gravity(delta)
 	handle_jumping()
 	calculate_movement(delta)
 	apply_rotation(delta)
 	character_core.move_and_slide()
+
+		# MISSING: null checks before camera_system usage
+
 
 func apply_gravity(delta: float):
 	if not character_core.is_on_floor():
@@ -180,6 +175,8 @@ func calculate_direct_movement(delta: float):
 	character_core.velocity.z = movement_3d.z * current_speed
 
 func calculate_navigation_movement(delta: float):
+	if not character_core:  # MISSING
+		return
 	if is_drag_stopping:
 		handle_drag_stop_deceleration(delta)
 		return

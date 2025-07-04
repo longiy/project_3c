@@ -6,7 +6,6 @@ extends Node
 class_name OrbitComponent
 
 # System references
-@export_group("References")
 @export var camera_system: CameraSystem
 
 # Orbit settings

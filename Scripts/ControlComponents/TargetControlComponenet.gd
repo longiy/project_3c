@@ -13,10 +13,10 @@ signal stop_navigation_command()
 
 # ===== EXPORTS & CONFIGURATION =====
 @export var character_core: CharacterBody3D
-# UPDATED: Reference InputCore instead of InputPriorityManager
 @export var input_core: InputCore
 @export var camera_system: CameraSystem
 @export var cursor_marker: Node3D
+@export var movement_component: MovementComponent
 
 @export_group("Raycast Settings")
 @export var raycast_distance: float = 1000.0
@@ -58,40 +58,31 @@ func find_system_references():
 		push_error("TargetControlComponent: cursor_marker not assigned")
 
 func setup_signal_connections():
-	connect_to_character_rotation()
+	connect_to_movement_component()
 
 func setup_cursor_marker():
-	# Fallback to node path if export not set
 	if not cursor_marker:
-		cursor_marker = get_node("../../CURSOR")
+		push_error("TargetControlComponent: cursor_marker not assigned")
 	if cursor_marker:
 		cursor_marker.visible = false
 
-func connect_to_character_rotation():
-	# Connect to MovementComponent for both rotation and navigation
-	var movement_component_path = "../../../CHARACTER/CharacterComponents/MovementComponent"
-	var character_core_path = "../../../CHARACTER/CharacterCore"
+func connect_to_movement_component():
+	if not movement_component:
+		push_error("TargetControlComponent: movement_component not assigned in Inspector")
+		return
 	
-	var movement_component = get_node(movement_component_path)
-	if movement_component:
-		# Connect character look command for rotation
-		if movement_component.has_method("_on_character_look_command"):
-			character_look_command.connect(movement_component._on_character_look_command)
-		
-		# MISSING CONNECTION ADDED: Connect navigate command for movement
-		if movement_component.has_method("_on_navigate_command"):
+	# Connect all navigation signals to MovementComponent
+	if movement_component.has_method("_on_navigate_command"):
+		if not navigate_command.is_connected(movement_component._on_navigate_command):
 			navigate_command.connect(movement_component._on_navigate_command)
-			print("TargetControlComponent: Connected navigate_command to MovementComponent")
-		
-		# Connect stop navigation command
-		if movement_component.has_method("_on_stop_navigation_command"):
+	
+	if movement_component.has_method("_on_character_look_command"):
+		if not character_look_command.is_connected(movement_component._on_character_look_command):
+			character_look_command.connect(movement_component._on_character_look_command)
+	
+	if movement_component.has_method("_on_stop_navigation_command"):
+		if not stop_navigation_command.is_connected(movement_component._on_stop_navigation_command):
 			stop_navigation_command.connect(movement_component._on_stop_navigation_command)
-			print("TargetControlComponent: Connected stop_navigation_command to MovementComponent")
-	else:
-		# Try connecting to CharacterCore directly if it has rotation handling
-		var character_core_node = get_node(character_core_path)
-		if character_core_node and character_core_node.has_method("_on_character_look_command"):
-			character_look_command.connect(character_core_node._on_character_look_command)
 
 # ===== FRAME PROCESSING =====
 func _process(delta):

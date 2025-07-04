@@ -13,7 +13,6 @@ enum InputType {
 }
 
 # Export references for direct component access
-@export_group("References")
 @export var control_system: ControlSystem
 @export var direct_control_component: DirectControlComponent
 @export var target_control_component: TargetControlComponent

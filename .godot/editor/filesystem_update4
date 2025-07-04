@@ -8,3 +8,6 @@ res://Scripts/ControlComponents/TargetControlComponenet.gd
 res://Scripts/ControlComponents/GamepadControlComponent.gd
 res://Scripts/CAMERA.gd
 res://Scripts/CameraComponents/OrbitComponent.gd
+res://Scripts/CONTROL.gd
+res://Scripts/CameraComponents/DistanceComponent.gd
+res://Scripts/CameraComponents/FollowComponent.gd
