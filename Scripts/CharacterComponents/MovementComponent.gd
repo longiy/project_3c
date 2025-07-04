@@ -1,12 +1,13 @@
 # MovementComponent.gd
-# Handles character physics movement with navigation and rotation
-# Cleaned: Export references, organized function order, removed hardcoded paths
+# STEP 4: Fixed missing signal connections and added bidirectional communication
 
 extends Node
 class_name MovementComponent
 
-# ===== SIGNALS =====
-# (Add any signals here if needed in future)
+# ===== FEEDBACK SIGNALS TO CONTROL COMPONENTS =====
+signal movement_state_changed(is_moving: bool, direction: Vector2, speed: float)
+signal navigation_state_changed(is_navigating: bool, target: Vector3)
+signal rotation_state_changed(current_rotation: float, target_rotation: float)
 
 # ===== EXPORTS & CONFIGURATION =====
 @export_group("Component References")
@@ -40,9 +41,6 @@ class_name MovementComponent
 @export var navigation_speed: float = 6.0
 @export var destination_threshold: float = 0.3
 
-# ===== CORE REFERENCES =====
-# (References now set via exports above)
-
 # ===== MOVEMENT STATE =====
 var current_direction: Vector2 = Vector2.ZERO
 var target_direction: Vector2 = Vector2.ZERO
@@ -66,7 +64,6 @@ var has_rotation_target: bool = false
 var is_stopping_from_drag: bool = false
 var is_drag_stopping: bool = false
 
-# ===== INITIALIZATION =====
 func _ready():
 	if not find_core_references():
 		push_error("MovementComponent: Required references not set in Inspector")
@@ -93,11 +90,18 @@ func connect_to_input_signals():
 	connect_gamepad_control_signals()
 
 func connect_direct_control_signals():
-	if direct_control_component:
-		if not direct_control_component.movement_command.is_connected(_on_movement_command):
-			direct_control_component.movement_command.connect(_on_movement_command)
-		if not direct_control_component.action_command.is_connected(_on_action_command):
-			direct_control_component.action_command.connect(_on_action_command)
+	if not direct_control_component:
+		push_error("MovementComponent: direct_control_component not assigned")
+		return
+	
+	# Ensure ALL required signals are connected
+	if not direct_control_component.movement_command.is_connected(_on_movement_command):
+		direct_control_component.movement_command.connect(_on_movement_command)
+		print("MovementComponent: Connected to DirectControlComponent.movement_command")
+	
+	if not direct_control_component.action_command.is_connected(_on_action_command):
+		direct_control_component.action_command.connect(_on_action_command)
+		print("MovementComponent: Connected to DirectControlComponent.action_command")
 
 func connect_target_control_signals():
 	if not target_control_component:
@@ -107,21 +111,30 @@ func connect_target_control_signals():
 	# Connect navigate command - CRITICAL for click movement
 	if not target_control_component.navigate_command.is_connected(_on_navigate_command):
 		target_control_component.navigate_command.connect(_on_navigate_command)
+		print("MovementComponent: Connected to TargetControlComponent.navigate_command")
 	
 	# Connect character look command for rotation  
 	if not target_control_component.character_look_command.is_connected(_on_character_look_command):
 		target_control_component.character_look_command.connect(_on_character_look_command)
+		print("MovementComponent: Connected to TargetControlComponent.character_look_command")
 	
 	# Connect stop navigation command
 	if not target_control_component.stop_navigation_command.is_connected(_on_stop_navigation_command):
 		target_control_component.stop_navigation_command.connect(_on_stop_navigation_command)
+		print("MovementComponent: Connected to TargetControlComponent.stop_navigation_command")
 
 func connect_gamepad_control_signals():
-	if gamepad_control_component:
-		if not gamepad_control_component.movement_command.is_connected(_on_movement_command):
-			gamepad_control_component.movement_command.connect(_on_movement_command)
-		if not gamepad_control_component.action_command.is_connected(_on_action_command):
-			gamepad_control_component.action_command.connect(_on_action_command)
+	if not gamepad_control_component:
+		print("MovementComponent: gamepad_control_component not assigned (optional)")
+		return
+	
+	if not gamepad_control_component.movement_command.is_connected(_on_movement_command):
+		gamepad_control_component.movement_command.connect(_on_movement_command)
+		print("MovementComponent: Connected to GamepadControlComponent.movement_command")
+	
+	if not gamepad_control_component.action_command.is_connected(_on_action_command):
+		gamepad_control_component.action_command.connect(_on_action_command)
+		print("MovementComponent: Connected to GamepadControlComponent.action_command")
 
 # ===== PHYSICS PROCESSING =====
 func _physics_process(delta):
@@ -130,16 +143,138 @@ func _physics_process(delta):
 		
 	if not camera_system:
 		return
+		
 	apply_gravity(delta)
 	handle_jumping()
 	calculate_movement(delta)
 	apply_rotation(delta)
 	character_core.move_and_slide()
+	
+	# Emit state changes for feedback
+	emit_movement_state_feedback()
+	emit_navigation_state_feedback()
+	emit_rotation_state_feedback()
 
-		# MISSING: null checks before camera_system usage
+# ===== STATE FEEDBACK EMISSION =====
+func emit_movement_state_feedback():
+	var is_moving = current_speed > 0.1
+	movement_state_changed.emit(is_moving, current_direction, current_speed)
 
+func emit_navigation_state_feedback():
+	navigation_state_changed.emit(is_navigating, navigation_target)
 
-func apply_gravity(delta: float):
+func emit_rotation_state_feedback():
+	if has_rotation_target:
+		rotation_state_changed.emit(character_core.rotation.y, target_character_rotation)
+
+# ===== INPUT SIGNAL HANDLERS =====
+func _on_movement_command(direction: Vector2, magnitude: float):
+	target_direction = direction * magnitude
+	
+	# Stop navigation when manual movement starts
+	if is_navigating and direction.length() > 0:
+		stop_navigation()
+
+func _on_action_command(action: String, pressed: bool):
+	match action:
+		"jump":
+			if pressed and character_core.is_on_floor():
+				is_jumping = true
+		"sprint":
+			is_sprinting = pressed
+		"walk":
+			is_walking = pressed
+
+func _on_navigate_command(target_position: Vector3):
+	start_navigation(target_position)
+
+func _on_character_look_command(target_direction: Vector3):
+	set_character_look_direction(target_direction)
+
+func _on_stop_navigation_command():
+	stop_navigation()
+
+# ===== NAVIGATION CONTROL =====
+func start_navigation(target_position: Vector3):
+	navigation_target = target_position
+	is_navigating = true
+	
+	print("MovementComponent: Started navigation to ", target_position)
+
+func stop_navigation():
+	if is_navigating:
+		is_navigating = false
+		print("MovementComponent: Navigation stopped")
+
+func calculate_navigation_direction() -> Vector2:
+	if not is_navigating:
+		return Vector2.ZERO
+	
+	var char_pos = character_core.global_position
+	var target_pos = navigation_target
+	
+	# Calculate 2D direction (ignore Y)
+	var direction_3d = (target_pos - char_pos).normalized()
+	var direction_2d = Vector2(direction_3d.x, direction_3d.z)
+	
+	# Check if we've reached the destination
+	var distance = char_pos.distance_to(target_pos)
+	if distance < destination_threshold:
+		stop_navigation()
+		return Vector2.ZERO
+	
+	return direction_2d
+
+# ===== MOVEMENT CALCULATION =====
+func calculate_movement(delta):
+	# Priority: Navigation > Manual input
+	var input_direction = Vector2.ZERO
+	
+	if is_navigating:
+		input_direction = calculate_navigation_direction()
+		target_speed = navigation_speed
+	else:
+		input_direction = target_direction
+		calculate_target_speed()
+	
+	# Update current direction and speed
+	current_direction = current_direction.lerp(input_direction, acceleration * delta)
+	current_speed = lerp(current_speed, target_speed, acceleration * delta)
+	
+	# Apply movement relative to camera
+	if current_direction.length() > 0.01:
+		apply_camera_relative_movement()
+
+func calculate_target_speed():
+	if target_direction.length() == 0:
+		target_speed = 0.0
+	elif is_sprinting:
+		target_speed = sprint_speed
+	elif is_walking:
+		target_speed = walk_speed
+	else:
+		target_speed = run_speed
+
+func apply_camera_relative_movement():
+	if not camera_system:
+		return
+	
+	# Use CameraSystem's utility methods - invert forward for correct WASD behavior
+	var camera_forward = -camera_system.get_camera_forward()  # Invert so W moves away from camera
+	var camera_right = camera_system.get_camera_right()
+	
+	# Calculate camera-relative movement
+	var forward_movement = camera_forward * current_direction.y * current_speed
+	var right_movement = camera_right * current_direction.x * current_speed
+	var world_movement = forward_movement + right_movement
+	
+	# Remove Y component for ground movement
+	world_movement.y = 0
+	character_core.velocity.x = world_movement.x
+	character_core.velocity.z = world_movement.z
+
+# ===== PHYSICS =====
+func apply_gravity(delta):
 	if not character_core.is_on_floor():
 		character_core.velocity.y -= gravity * delta
 
@@ -148,205 +283,45 @@ func handle_jumping():
 		character_core.velocity.y = jump_velocity
 		is_jumping = false
 
-func calculate_movement(delta: float):
-	if is_navigating:
-		calculate_navigation_movement(delta)
-	else:
-		calculate_direct_movement(delta)
-
-func apply_rotation(delta: float):
-	if has_rotation_target and enable_navigation_rotation:
-		apply_character_rotation(delta)
-
-# ===== MOVEMENT CALCULATION =====
-func calculate_direct_movement(delta: float):
-	# Smooth direction and speed
-	current_direction = current_direction.lerp(target_direction, acceleration * delta)
-	
-	if target_direction.length() > 0:
-		current_speed = lerp(current_speed, target_speed, acceleration * delta)
-		rotate_toward_movement_direction(delta)
-	else:
-		current_speed = lerp(current_speed, 0.0, deceleration * delta)
-	
-	# Apply movement
-	var movement_3d = convert_to_world_space(current_direction)
-	character_core.velocity.x = movement_3d.x * current_speed
-	character_core.velocity.z = movement_3d.z * current_speed
-
-func calculate_navigation_movement(delta: float):
-	if not character_core:  # MISSING
-		return
-	if is_drag_stopping:
-		handle_drag_stop_deceleration(delta)
+# ===== ROTATION =====
+func apply_rotation(delta):
+	if current_direction.length() < 0.01:
 		return
 	
-	handle_normal_navigation(delta)
-
-func handle_drag_stop_deceleration(delta: float):
-	# Smooth deceleration for drag stops
-	var current_speed = Vector2(character_core.velocity.x, character_core.velocity.z).length()
-	current_speed = lerp(current_speed, 0.0, deceleration * delta)
+	var movement_angle = atan2(current_direction.x, current_direction.y)
 	
-	if current_speed < 0.1:
-		stop_character_movement()
-	else:
-		maintain_deceleration_direction(current_speed)
-
-func stop_character_movement():
-	character_core.velocity.x = 0
-	character_core.velocity.z = 0
-	is_drag_stopping = false
-	is_navigating = false
-
-func maintain_deceleration_direction(current_speed: float):
-	var direction = Vector2(character_core.velocity.x, character_core.velocity.z).normalized()
-	character_core.velocity.x = direction.x * current_speed
-	character_core.velocity.z = direction.y * current_speed
-
-func handle_normal_navigation(delta: float):
-	var current_position = character_core.global_position
-	var distance_to_target = Vector2(
-		navigation_target.x - current_position.x,
-		navigation_target.z - current_position.z
-	).length()
-	
-	if distance_to_target < destination_threshold:
-		finish_navigation()
-		return
-	
-	apply_navigation_velocity(current_position)
-
-func apply_navigation_velocity(current_position: Vector3):
-	var direction = (navigation_target - current_position).normalized()
-	character_core.velocity.x = direction.x * navigation_speed
-	character_core.velocity.z = direction.z * navigation_speed
-
-# ===== ROTATION HANDLING =====
-func rotate_toward_movement_direction(delta: float):
-	var movement_3d = convert_to_world_space(current_direction)
-	if movement_3d.length() > 0.1:
-		var target_rotation = atan2(movement_3d.x, movement_3d.z)
+	if camera_system:
+		var camera_forward = camera_system.get_camera_forward()
+		var camera_angle = atan2(camera_forward.x, camera_forward.z)
+		movement_angle += camera_angle
 		
-		if enable_direction_snap:
-			apply_snapped_rotation(target_rotation)
-		else:
-			apply_smooth_movement_rotation(target_rotation, delta)
-
-func apply_snapped_rotation(target_rotation: float):
-	target_rotation = snap_to_angle_increments(target_rotation)
-	character_core.rotation.y = target_rotation
-
-func apply_smooth_movement_rotation(target_rotation: float, delta: float):
-	character_core.rotation.y = lerp_angle(
-		character_core.rotation.y, 
-		target_rotation, 
-		movement_rotation_speed * delta
-	)
-
-func apply_character_rotation(delta: float):
-	if enable_direction_snap:
-		apply_snapped_character_rotation()
-	else:
-		apply_smooth_character_rotation(delta)
-
-func apply_snapped_character_rotation():
-	# Use same snapping logic as movement rotation
-	var snapped_rotation = snap_to_angle_increments(target_character_rotation)
-	character_core.rotation.y = snapped_rotation
-	has_rotation_target = false
-
-func apply_smooth_character_rotation(delta: float):
-	character_core.rotation.y = lerp_angle(
-		character_core.rotation.y,
-		target_character_rotation,
-		navigation_rotation_speed * delta
-	)
+		# Add 180 degrees to face the direction of movement instead of backing into it
+		movement_angle += PI
 	
-	if abs(angle_difference(character_core.rotation.y, target_character_rotation)) < snap_rotation_threshold:
-		character_core.rotation.y = target_character_rotation
-		has_rotation_target = false
-
-# ===== UTILITY FUNCTIONS =====
-func convert_to_world_space(direction: Vector2) -> Vector3:
-	if not camera_system or not camera_system.camera_core:
-		return Vector3(direction.x, 0, direction.y)
+	target_character_rotation = movement_angle
+	has_rotation_target = true
 	
-	var camera_transform = camera_system.camera_core.global_transform
-	var camera_forward = camera_transform.basis.z  # Changed: removed negative sign
-	var camera_right = camera_transform.basis.x
-	
-	camera_forward.y = 0
-	camera_right.y = 0
-	camera_forward = camera_forward.normalized()
-	camera_right = camera_right.normalized()
-	
-	return (camera_right * direction.x + camera_forward * direction.y).normalized()
+	var current_rotation = character_core.rotation.y
+	var new_rotation = lerp_angle(current_rotation, target_character_rotation, movement_rotation_speed * delta)
+	character_core.rotation.y = new_rotation
 
-func snap_to_angle_increments(angle: float) -> float:
-	var snap_radians = deg_to_rad(snap_angle_degrees)
-	return round(angle / snap_radians) * snap_radians
+func set_character_look_direction(target_direction: Vector3):
+	var look_angle = atan2(target_direction.x, target_direction.z)
+	target_character_rotation = look_angle
+	has_rotation_target = true
 
-func get_speed_for_state() -> float:
-	if is_sprinting:
-		return sprint_speed
-	elif is_walking:
-		return walk_speed
-	else:
-		return run_speed
+# ===== PUBLIC API =====
+func get_current_speed() -> float:
+	return current_speed
 
-func finish_navigation():
-	is_navigating = false
-	navigation_target = Vector3.ZERO
+func get_is_navigating() -> bool:
+	return is_navigating
+
+func get_navigation_target() -> Vector3:
+	return navigation_target
+
+func force_stop():
 	target_direction = Vector2.ZERO
+	current_direction = Vector2.ZERO
 	target_speed = 0.0
-
-func reset_character_position():
-	if character_core:
-		character_core.global_position = Vector3.ZERO
-		character_core.velocity = Vector3.ZERO
-
-# ===== SIGNAL HANDLERS =====
-func _on_movement_command(direction: Vector2, magnitude: float):
-	target_direction = direction
-	target_speed = get_speed_for_state() * magnitude
-
-func _on_action_command(action: String, pressed: bool):
-	match action:
-		"jump": 
-			is_jumping = pressed and character_core.is_on_floor()
-		"sprint": 
-			is_sprinting = pressed
-		"walk": 
-			is_walking = pressed
-		"reset": 
-			if pressed: 
-				reset_character_position()
-
-func _on_navigate_command(target_position: Vector3):
-	navigation_target = target_position
-	is_navigating = true
-	
-	# ADDED: Immediately calculate rotation toward target
-	if enable_navigation_rotation and character_core:
-		var current_position = character_core.global_position
-		var direction_to_target = (target_position - current_position).normalized()
-		
-		# Only rotate on Y axis (horizontal plane)
-		direction_to_target.y = 0
-		direction_to_target = direction_to_target.normalized()
-		
-		if direction_to_target.length() > 0.1:
-			target_character_rotation = atan2(direction_to_target.x, direction_to_target.z)
-			has_rotation_target = true
-			print("MovementComponent: Set rotation toward navigation target: ", rad_to_deg(target_character_rotation))
-
-func _on_character_look_command(target_direction_3d: Vector3):
-	if enable_navigation_rotation:
-		target_character_rotation = atan2(target_direction_3d.x, target_direction_3d.z)
-		has_rotation_target = true
-
-func _on_stop_navigation_command():
-	# This only gets called for drag stops, not normal clicks
-	is_drag_stopping = true
-	navigation_target = Vector3.ZERO
+	stop_navigation()

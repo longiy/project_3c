@@ -61,10 +61,11 @@ gamepad_control_component = NodePath("../ControlComponents/GamepadControlCompone
 
 [node name="ControlComponents" type="Node3D" parent="CONTROL"]
 
-[node name="DirectControlComponent" type="Node" parent="CONTROL/ControlComponents" node_paths=PackedStringArray("input_core", "camera_system")]
+[node name="DirectControlComponent" type="Node" parent="CONTROL/ControlComponents" node_paths=PackedStringArray("input_core", "camera_system", "orbit_component")]
 script = ExtResource("7_85dx6")
 input_core = NodePath("../../InputCore")
 camera_system = NodePath("../../../CAMERA")
+orbit_component = NodePath("../../../CAMERA/CameraComponents/OrbitComponent")
 
 [node name="TargetControlComponent" type="Node" parent="CONTROL/ControlComponents" node_paths=PackedStringArray("character_core", "input_core", "camera_system", "cursor_marker", "movement_component")]
 script = ExtResource("8_121sy")

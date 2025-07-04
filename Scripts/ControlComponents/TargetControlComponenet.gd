@@ -1,6 +1,5 @@
 # TargetControlComponent.gd
-# Handles point-and-click navigation
-# PHASE 2: Updated to reference InputCore directly
+# STEP 4: Verified signal connections with proper error handling
 
 extends Node
 class_name TargetControlComponent
@@ -36,7 +35,6 @@ var is_dragging: bool = false
 var has_drag_started: bool = false
 var click_start_time: float = 0.0
 
-# ===== INITIALIZATION =====
 func _ready():
 	find_system_references()
 	setup_signal_connections()
@@ -71,18 +69,48 @@ func connect_to_movement_component():
 		push_error("TargetControlComponent: movement_component not assigned in Inspector")
 		return
 	
-	# Connect all navigation signals to MovementComponent
+	# Connect all navigation signals to MovementComponent with verification
 	if movement_component.has_method("_on_navigate_command"):
 		if not navigate_command.is_connected(movement_component._on_navigate_command):
 			navigate_command.connect(movement_component._on_navigate_command)
+			print("TargetControlComponent: Connected navigate_command to MovementComponent")
+		else:
+			print("TargetControlComponent: navigate_command already connected")
+	else:
+		push_error("TargetControlComponent: MovementComponent missing _on_navigate_command method")
 	
 	if movement_component.has_method("_on_character_look_command"):
 		if not character_look_command.is_connected(movement_component._on_character_look_command):
 			character_look_command.connect(movement_component._on_character_look_command)
+			print("TargetControlComponent: Connected character_look_command to MovementComponent")
+		else:
+			print("TargetControlComponent: character_look_command already connected")
+	else:
+		push_error("TargetControlComponent: MovementComponent missing _on_character_look_command method")
 	
 	if movement_component.has_method("_on_stop_navigation_command"):
 		if not stop_navigation_command.is_connected(movement_component._on_stop_navigation_command):
 			stop_navigation_command.connect(movement_component._on_stop_navigation_command)
+			print("TargetControlComponent: Connected stop_navigation_command to MovementComponent")
+		else:
+			print("TargetControlComponent: stop_navigation_command already connected")
+	else:
+		push_error("TargetControlComponent: MovementComponent missing _on_stop_navigation_command method")
+	
+	# STEP 4: Connect to movement feedback signals for bidirectional communication
+	if movement_component.has_signal("navigation_state_changed"):
+		if not movement_component.navigation_state_changed.is_connected(_on_movement_navigation_state_changed):
+			movement_component.navigation_state_changed.connect(_on_movement_navigation_state_changed)
+			print("TargetControlComponent: Connected to MovementComponent.navigation_state_changed")
+
+# ===== BIDIRECTIONAL COMMUNICATION =====
+func _on_movement_navigation_state_changed(is_nav: bool, target: Vector3):
+	# Sync our state with MovementComponent
+	if not is_nav and is_navigating:
+		# Navigation was stopped by MovementComponent
+		is_navigating = false
+		hide_destination_marker()
+		print("TargetControlComponent: Navigation stopped by MovementComponent")
 
 # ===== FRAME PROCESSING =====
 func _process(delta):
@@ -125,76 +153,35 @@ func process_input(event: InputEvent):
 func process_fallback_input(event: InputEvent):
 	# Minimal fallback processing for click events
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
-		if event.pressed:
-			var target = raycast_to_ground(get_viewport().get_mouse_position())
-			if target != Vector3.ZERO:
-				start_navigation(target)
+		var mouse_pos = get_viewport().get_mouse_position()
+		var target = raycast_to_ground(mouse_pos)
+		if target != Vector3.ZERO:
+			finalize_navigation(target)
 
 func process_mouse_button(event: InputEventMouseButton):
-	# Only handle clicknav action (left mouse button)
-	if event.is_action("clicknav"):
+	if event.is_action("clicknav"):  # Left click
 		if event.pressed:
 			handle_click_start(event.position)
 		else:
 			handle_click_release(event.position)
 
 func process_mouse_motion(event: InputEventMouseMotion):
-	# Check if we're active and not in orbit mode
-	var is_active = input_core and input_core.is_input_active(InputCore.InputType.TARGET)
-	
-	# Use clicknav action and ensure not in orbit mode
-	if Input.is_action_pressed("clicknav") and is_active and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
-		handle_drag_motion(event.position)
+	# Track dragging state during click
+	if Input.is_action_pressed("clicknav"):
+		var time_held = Time.get_ticks_msec() / 1000.0 - click_start_time
+		if time_held > drag_time_threshold and not has_drag_started:
+			has_drag_started = true
+			is_dragging = true
 
-
-# ===== CLICK HANDLING =====
 func handle_click_start(mouse_pos: Vector2):
 	click_start_time = Time.get_ticks_msec() / 1000.0
 	is_dragging = false
 	has_drag_started = false
-	
-	# UPDATED: Set as active input
-	if input_core:
-		input_core.set_active_input(InputCore.InputType.TARGET)
 
 func handle_click_release(mouse_pos: Vector2):
-	var click_duration = Time.get_ticks_msec() / 1000.0 - click_start_time
-	
-	if click_duration < drag_time_threshold:
-		# Quick click - immediate navigation
-		handle_quick_click(mouse_pos)
-	else:
-		# Drag release - finalize drag navigation
-		handle_drag_release(mouse_pos)
-	
-	# Reset drag state
-	is_dragging = false
-	has_drag_started = false
-
-func handle_quick_click(mouse_pos: Vector2):
 	var target = raycast_to_ground(mouse_pos)
 	if target != Vector3.ZERO:
-		start_navigation(target)
-
-func handle_drag_motion(mouse_pos: Vector2):
-	var current_time = Time.get_ticks_msec() / 1000.0
-	var drag_duration = current_time - click_start_time
-	
-	if drag_duration >= drag_time_threshold and not has_drag_started:
-		has_drag_started = true
-		is_dragging = true
-	
-	if has_drag_started:
-		var target = raycast_to_ground(mouse_pos)
-		if target != Vector3.ZERO:
-			show_destination_marker(target)
-			update_navigation_target(target)
-
-func handle_drag_release(mouse_pos: Vector2):
-	if has_drag_started:
-		var target = raycast_to_ground(mouse_pos)
-		if target != Vector3.ZERO:
-			finalize_navigation(target)
+		finalize_navigation(target)
 
 # ===== NAVIGATION CONTROL =====
 func start_navigation(target_position: Vector3):
@@ -204,12 +191,30 @@ func start_navigation(target_position: Vector3):
 	
 	show_destination_marker(target_position)
 	navigate_command.emit(target_position)
+	
+	# ADDED: Emit look command to make character face target immediately
+	if character_core:
+		var current_position = character_core.global_position
+		var direction_to_target = (target_position - current_position).normalized()
+		direction_to_target.y = 0  # Keep on horizontal plane
+		
+		if direction_to_target.length() > 0.1:
+			character_look_command.emit(direction_to_target)
 
 func update_navigation_target(target_position: Vector3):
 	if is_navigating:
 		navigation_target = target_position
 		last_navigation_time = Time.get_ticks_msec() / 1000.0
 		navigate_command.emit(target_position)
+		
+		# ADDED: Emit look command to make character face cursor during drag
+		if character_core:
+			var current_position = character_core.global_position
+			var direction_to_target = (target_position - current_position).normalized()
+			direction_to_target.y = 0  # Keep on horizontal plane
+			
+			if direction_to_target.length() > 0.1:
+				character_look_command.emit(direction_to_target)
 
 func finalize_navigation(target_position: Vector3):
 	navigation_target = target_position
@@ -217,6 +222,15 @@ func finalize_navigation(target_position: Vector3):
 	last_navigation_time = Time.get_ticks_msec() / 1000.0
 	
 	navigate_command.emit(target_position)
+	
+	# ADDED: Emit look command to make character face target immediately
+	if character_core:
+		var current_position = character_core.global_position
+		var direction_to_target = (target_position - current_position).normalized()
+		direction_to_target.y = 0  # Keep on horizontal plane
+		
+		if direction_to_target.length() > 0.1:
+			character_look_command.emit(direction_to_target)
 
 func stop_navigation():
 	is_navigating = false
@@ -224,7 +238,6 @@ func stop_navigation():
 	# Don't emit stop command if cancelled by orbit mode
 	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		stop_navigation_command.emit()
-
 
 # ===== VISUAL FEEDBACK =====
 func show_destination_marker(position: Vector3):

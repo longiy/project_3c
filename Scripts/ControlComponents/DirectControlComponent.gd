@@ -1,6 +1,6 @@
 # DirectControlComponent.gd
 # WASD + mouse control for character movement
-# PHASE 2: Updated to reference InputCore directly
+# STEP 4: Fixed camera connection with export validation
 
 extends Node
 class_name DirectControlComponent
@@ -10,9 +10,10 @@ signal movement_command(direction: Vector2, magnitude: float)
 signal look_command(delta: Vector2)
 signal action_command(action: String, pressed: bool)
 
-# Export references - UPDATED: Reference InputCore instead of InputPriorityManager
+# Export references
 @export var input_core: InputCore
 @export var camera_system: CameraSystem
+@export var orbit_component: OrbitComponent  # NEW: Direct reference to avoid fragile paths
 
 @export_group("Input Settings")
 @export var mouse_sensitivity: Vector2 = Vector2(0.003, 0.003)
@@ -38,8 +39,7 @@ func _ready():
 	if input_core:
 		input_core.register_component(InputCore.InputType.DIRECT, self)
 	
-	if camera_system:
-		connect_to_camera_system()
+	connect_to_camera_system()
 		
 func verify_references() -> bool:
 	var missing = []
@@ -68,7 +68,7 @@ func process_input(event: InputEvent):
 	if not input_core:
 		return
 	
-	# UPDATED: Check activity with InputCore
+	# Check activity with InputCore
 	is_active = input_core.is_input_active(InputCore.InputType.DIRECT)
 	
 	if event is InputEventKey:
@@ -106,7 +106,7 @@ func calculate_movement_vector():
 	
 	target_movement = target_movement.limit_length(1.0)
 	
-	# UPDATED: Set as active input if movement detected
+	# Set as active input if movement detected
 	if target_movement.length() > 0 and input_core:
 		input_core.set_active_input(InputCore.InputType.DIRECT)
 
@@ -122,11 +122,28 @@ func get_action_name_for_event(event: InputEventKey) -> String:
 
 func connect_to_camera_system():
 	if not camera_system:
+		push_error("DirectControlComponent: camera_system not assigned")
 		return
 	
-	var orbit_component = camera_system.get_node_or_null("CameraComponents/OrbitComponent")
-	if orbit_component and orbit_component.has_method("_on_look_command"):
+	# FIXED: Use export reference first, fallback to path if needed
+	if not orbit_component:
+		orbit_component = camera_system.get_node_or_null("CameraComponents/OrbitComponent")
+	
+	if not orbit_component:
+		push_error("DirectControlComponent: orbit_component not found in camera_system")
+		return
+	
+	# Verify orbit component has the required method
+	if not orbit_component.has_method("_on_look_command"):
+		push_error("DirectControlComponent: orbit_component missing _on_look_command method")
+		return
+	
+	# Connect the signal with null check
+	if not look_command.is_connected(orbit_component._on_look_command):
 		look_command.connect(orbit_component._on_look_command)
+		print("DirectControlComponent: Connected look_command to OrbitComponent")
+	else:
+		print("DirectControlComponent: look_command already connected")
 
 # Public API
 func get_current_movement() -> Vector2:
