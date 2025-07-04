@@ -6,7 +6,8 @@ extends Node
 class_name OrbitComponent
 
 # System references
-var camera_system: CameraSystem
+@export_group("References")
+@export var camera_system: CameraSystem
 
 # Orbit settings
 @export_group("Mouse Look Settings")
@@ -25,10 +26,22 @@ var target_pitch: float = 0.0
 var target_yaw: float = 0.0
 
 func _ready():
-	# Get parent CAMERA system
-	camera_system = get_parent().get_parent() as CameraSystem
+	# Verify camera_system reference
 	if not camera_system:
-		push_error("OrbitComponent: Must be child of CAMERA system")
+		# Try to find as direct parent
+		camera_system = get_parent() as CameraSystem
+		
+		# If not direct parent, search up the tree
+		if not camera_system:
+			var parent = get_parent()
+			while parent:
+				if parent is CameraSystem:
+					camera_system = parent
+					break
+				parent = parent.get_parent()
+	
+	if not camera_system:
+		push_error("OrbitComponent: camera_system not assigned and could not be found")
 		return
 	
 	# Initialize rotation
@@ -40,7 +53,7 @@ func _ready():
 	# Wait for camera system to be fully initialized
 	call_deferred("apply_initial_rotation")
 	
-	print("OrbitComponent: Initialized with SpringArm3D")
+	print("OrbitComponent: Initialized with camera_system reference")
 
 func _process(delta):
 	# Smooth rotation if enabled

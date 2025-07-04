@@ -75,17 +75,13 @@ func _ready():
 	print("MovementComponent: Initialized successfully")
 
 func find_core_references() -> bool:
-	# Use export references first, fallback to node paths
+	# Add null checks before signal connections
 	if not character_core:
-		character_core = get_node("../../CharacterCore") as CharacterBody3D
-	if not character_core:
-		push_error("MovementComponent: CharacterCore not found")
+		push_error("MovementComponent: character_core not assigned")
 		return false
 	
 	if not camera_system:
-		camera_system = get_node("../../../CAMERA") as CameraSystem
-	if not camera_system:
-		push_error("MovementComponent: CAMERA system not found")
+		push_error("MovementComponent: camera_system not assigned")
 		return false
 	
 	return true

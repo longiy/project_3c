@@ -33,14 +33,27 @@ var current_movement: Vector2 = Vector2.ZERO
 var target_movement: Vector2 = Vector2.ZERO
 
 func _ready():
-	# UPDATED: Register with InputCore directly
+	if not verify_references():
+		return
+	
 	if input_core:
 		input_core.register_component(InputCore.InputType.DIRECT, self)
 	
-	# Connect to camera if available
 	if camera_system:
 		connect_to_camera_system()
-
+		
+func verify_references() -> bool:
+	var missing = []
+	
+	if not input_core: missing.append("input_core")
+	if not camera_system: missing.append("camera_system")
+	
+	if missing.size() > 0:
+		push_error("DirectControlComponent: Missing references: " + str(missing))
+		return false
+	
+	return true
+	
 func _process(delta):
 	# Update movement vector continuously
 	calculate_movement_vector()

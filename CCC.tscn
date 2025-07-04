@@ -1,11 +1,10 @@
-[gd_scene load_steps=18 format=3 uid="uid://diueuwbtv4w82"]
+[gd_scene load_steps=17 format=3 uid="uid://diueuwbtv4w82"]
 
-[ext_resource type="Script" uid="uid://dykru37xmsyne" path="res://Scripts/CHARACTER.gd" id="1_eromc"]
-[ext_resource type="Script" uid="uid://b45fddjajjx8r" path="res://Scripts/CCC_Manager.gd" id="1_in1na"]
-[ext_resource type="Script" uid="uid://dn53vssdavg31" path="res://Scripts/ControlComponents/InputVisualFeedback.gd" id="2_ps1uw"]
+[ext_resource type="Script" path="res://Scripts/CHARACTER.gd" id="1_eromc"]
+[ext_resource type="Script" path="res://Scripts/CCC_Manager.gd" id="1_in1na"]
 [ext_resource type="Script" uid="uid://bae17qmm6fsja" path="res://Scripts/CAMERA.gd" id="3_in1na"]
 [ext_resource type="Script" uid="uid://5h6dkq132qk4" path="res://Scripts/InputCore.gd" id="4_6po8h"]
-[ext_resource type="Script" uid="uid://cgx42y8g35q8v" path="res://Scripts/CONTROL.gd" id="4_35j32"]
+[ext_resource type="Script" path="res://Scripts/CONTROL.gd" id="4_35j32"]
 [ext_resource type="Script" uid="uid://br42dys6ahaqr" path="res://Scripts/CameraComponents/OrbitComponent.gd" id="5_35j32"]
 [ext_resource type="Script" uid="uid://dqb4v5q4c1moa" path="res://Scripts/ControlComponents/DirectControlComponent.gd" id="7_85dx6"]
 [ext_resource type="Script" uid="uid://chl2y2xkcppm7" path="res://Scripts/ControlComponents/TargetControlComponenet.gd" id="8_121sy"]
@@ -32,36 +31,6 @@ spring_arm = NodePath("CAMERA/SpringArm3D")
 camera_core = NodePath("CAMERA/SpringArm3D/Camera3D")
 debug_mode = true
 debug_label = NodePath("DebugUI/DebugLabel")
-
-[node name="UI" type="Control" parent="." node_paths=PackedStringArray("input_core", "input_method_label", "transition_progress")]
-layout_mode = 3
-anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
-script = ExtResource("2_ps1uw")
-input_core = NodePath("../CONTROL/InputCore")
-input_method_label = NodePath("VBoxContainer/InputMethodLabel")
-transition_progress = NodePath("VBoxContainer/TransitionProgress")
-auto_hide = false
-
-[node name="VBoxContainer" type="VBoxContainer" parent="UI"]
-layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
-
-[node name="InputMethodLabel" type="Label" parent="UI/VBoxContainer"]
-layout_mode = 2
-
-[node name="ActivityBars" type="VBoxContainer" parent="UI/VBoxContainer"]
-layout_mode = 2
-
-[node name="TransitionProgress" type="ProgressBar" parent="UI/VBoxContainer"]
-layout_mode = 2
-
-[node name="StatusPanel" type="Panel" parent="UI"]
-layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
 
 [node name="DebugUI" type="Control" parent="."]
 layout_mode = 3
@@ -154,8 +123,9 @@ transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 
 
 [node name="CameraComponents" type="Node3D" parent="CAMERA"]
 
-[node name="OrbitComponent" type="Node" parent="CAMERA/CameraComponents"]
+[node name="OrbitComponent" type="Node" parent="CAMERA/CameraComponents" node_paths=PackedStringArray("camera_system")]
 script = ExtResource("5_35j32")
+camera_system = NodePath("../..")
 use_smoothing = false
 
 [node name="DistanceComponent" type="Node" parent="CAMERA/CameraComponents" node_paths=PackedStringArray("camera_system", "input_core", "direct_control_component")]

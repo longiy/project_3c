@@ -39,13 +39,29 @@ var current_fov: float
 var target_fov: float
 
 func _ready():
-	if not verify_references():
+	if not verify_camera_components():
 		return
 	
 	initialize_camera_properties()
 	setup_target_following()
 	setup_spring_arm_collision()
-
+	
+func verify_camera_components() -> bool:
+	var missing = []
+	
+	# Check for orbit component
+	if not orbit_component:
+		orbit_component = find_child("OrbitComponent")
+		if not orbit_component:
+			missing.append("orbit_component")
+	# Add other camera component checks
+	
+	if missing.size() > 0:
+		push_error("CameraSystem: Missing components: " + str(missing))
+		return false
+	
+	return true
+	
 func _process(delta):
 	update_camera_following(delta)
 	update_camera_properties(delta)

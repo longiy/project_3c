@@ -44,15 +44,18 @@ func _ready():
 	print("TargetControlComponent: Initialized successfully")
 
 func find_system_references():
-	# UPDATED: Register with InputCore directly
-	if input_core:
-		input_core.register_component(InputCore.InputType.TARGET, self)
+	if not input_core:
+		push_error("TargetControlComponent: input_core not assigned")
+		return
+	
+	input_core.register_component(InputCore.InputType.TARGET, self)
 	
 	if not camera_system:
-		camera_system = get_node("../../../CAMERA") as CameraSystem
-	if not camera_system:
-		push_error("TargetControlComponent: CAMERA system not found")
+		push_error("TargetControlComponent: camera_system not assigned")
 		return
+	
+	if not cursor_marker:
+		push_error("TargetControlComponent: cursor_marker not assigned")
 
 func setup_signal_connections():
 	connect_to_character_rotation()

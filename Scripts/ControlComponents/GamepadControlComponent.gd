@@ -32,10 +32,22 @@ var is_active: bool = false
 var current_movement: Vector2 = Vector2.ZERO
 
 func _ready():
-	# UPDATED: Register with InputCore directly
+	if not verify_references():
+		return
+	
 	if input_core:
 		input_core.register_component(InputCore.InputType.GAMEPAD, self)
 
+func verify_references() -> bool:
+	var missing = []
+	
+	if not input_core: missing.append("input_core")
+	
+	if missing.size() > 0:
+		push_error("GamepadControlComponent: Missing references: " + str(missing))
+		return false
+	
+	return true
 func _process(delta):
 	check_gamepad_activity()
 	

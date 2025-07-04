@@ -2,10 +2,9 @@ res://SCENE.tscn
 res://AnimationTreeMove1d.tres
 res://CCC.tscn
 res://Scripts/InputCore.gd
+res://Scripts/CharacterComponents/MovementComponent.gd
 res://Scripts/ControlComponents/DirectControlComponent.gd
 res://Scripts/ControlComponents/TargetControlComponenet.gd
 res://Scripts/ControlComponents/GamepadControlComponent.gd
-res://Scripts/CCC_Manager.gd
-res://Scripts/CameraComponents/DistanceComponent.gd
-res://Scripts/ControlComponents/InputVisualFeedback.gd
-res://Scripts/CharacterComponents/MovementComponent.gd
+res://Scripts/CAMERA.gd
+res://Scripts/CameraComponents/OrbitComponent.gd
